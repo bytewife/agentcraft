@@ -10,6 +10,8 @@ def setOneBlock(x, y, z, str):
     return response.text
     # print("%i, %i, %i: %s - %s" % (x, y, z, response.status_code, response.text))
 
+
+## NOTE: This takes coordinates floored!
 def getBlock(x, y, z):
     url = 'http://localhost:9000/blocks?x=%i&y=%i&z=%i' % (x, y, z)
     # print(url)
@@ -73,3 +75,15 @@ def requestBuildArea():
     else:
         print(response.text)
         return -1
+
+USE_BATCHING = True
+### This is how we'll place blocks
+def setBlock(x, y, z, block, limit):
+    if USE_BATCHING:
+        placeBlockBatched(x, y, z, block, limit)
+    else:
+        setOneBlock(x, y, z, block)
+
+def set_USE_BATCHING(val):
+    global USE_BATCHING
+    USE_BATCHING = val
