@@ -55,7 +55,7 @@ a = worldSlice.get_surface_blocks_from(*(0, 0, 2, 2))
 
 print(a)
 
-download_schematic(10, 101, 9, 13, 103, 12, "test.txt")
+download_schematic(13, 101, 9, 10, 103, 12, "test.txt")
 place_schematic('test.txt',10, 101, 29)
 
 print("done")

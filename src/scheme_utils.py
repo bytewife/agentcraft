@@ -24,9 +24,9 @@ def download_area(origin_x, origin_y, origin_z, end_x, end_y, end_z):
     if end_z < origin_z:
         dir_z = -1
     # for y in range(origin_y, end_y, 1):
-    for y in range(end_y, origin_y - 1, -dir_y):
-        for z in range(origin_z, end_z+1, dir_z):
-            for x in range(origin_x, end_x+1, dir_x):
+    for y in range(end_y, origin_y-dir_y, -dir_y):
+        for z in range(origin_z, end_z+dir_z, dir_z):
+            for x in range(origin_x, end_x+dir_x, dir_x):
                 block = getBlock(x, y, z)[10:].ljust(34, ' ')  # polished_blackstone_brick_stairs
                 result = result + block + " "
             result+="\n"
