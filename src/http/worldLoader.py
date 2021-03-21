@@ -1,69 +1,67 @@
 from math import ceil, log2
-from bitarray import BitArray
+from src.http.bitarray import BitArray
 from io import BytesIO
 import requests
 import nbt
 import numpy as np
 
-## Wrapper for "GET blocks" endpoint
-def getChunks(x, z, dx, dz, rtype = 'text'):
-    print("getting chunks %i %i %i %i " % (x, z, dx, dz))
-    
-    url = 'http://localhost:9000/chunks?x=%i&z=%i&dx=%i&dz=%i' % (x, z, dx, dz)  # template string
-    print("request url: %s" % url)
+
+def getChunks(x, z, dx, dz, rtype='text'):
+    """**Get raw chunk data.**"""
+    print("getting chunks {} {} {} {} ".format(x, z, dx, dz))
+
+    url = 'http://localhost:9000/chunks?x={}&z={}&dx={}&dz={}'.format(
+        x, z, dx, dz)
+    print("request url: {}".format(url))
     acceptType = 'application/octet-stream' if rtype == 'bytes' else 'text/raw'
     response = requests.get(url, headers={"Accept": acceptType})
-    print("result: %i" % response.status_code)
+    print("result: {}".format(response.status_code))
     if response.status_code >= 400:
-        print("error: %s" % response.text)
-    
+        print("error: {}".format(response.text))
+
     if rtype == 'text':
         return response.text
     elif rtype == 'bytes':
         return response.content
 
+
 class CachedSection:
+    """**Represents a cached chunk section (16x16x16).**"""
+
     def __init__(self, palette, blockStatesBitArray):
         self.palette = palette
         self.blockStatesBitArray = blockStatesBitArray
 
-class WorldSlice:  # TODO wtf is this? It's called at the start of the generator
+
+class WorldSlice:
+    """**Contains information on a slice of the world.**"""
     # TODO format this to blocks
-    # TODO: figure out how to get ohter types
-    # NOTE: The heightmapTypes are predefined. See https://minecraft.gamepedia.com/Chunk_format
-    # This is where you extract information about the world
+
     def __init__(self, rect, heightmapTypes=["MOTION_BLOCKING", "MOTION_BLOCKING_NO_LEAVES", "OCEAN_FLOOR", "WORLD_SURFACE"]):
-        self.rect = rect  # where rect is a rect formed by the area tuple
-        self.chunkRect = (
-            rect[0] >> 4,
-            rect[1] >> 4, 
-            ((rect[0] + rect[2] - 1) >> 4) - (rect[0] >> 4) + 1,
-            ((rect[1] + rect[3] - 1) >> 4) - (rect[1] >> 4) + 1
-        )
+        self.rect = rect
+        self.chunkRect = (rect[0] >> 4, rect[1] >> 4, ((rect[0] + rect[2] - 1) >> 4) - (
+                rect[0] >> 4) + 1, ((rect[1] + rect[3] - 1) >> 4) - (rect[1] >> 4) + 1)
         self.heightmapTypes = heightmapTypes
 
         bytes = getChunks(*self.chunkRect, rtype='bytes')
         file_like = BytesIO(bytes)
 
-        # file1 = open("myfile.txt", "w")
-        # file1.writelines(file_like)
-        # file1.close()
-
         print("parsing NBT")
         self.nbtfile = nbt.nbt.NBTFile(buffer=file_like)
 
-
-        rectOffset = [rect[0] % 16, rect[1] % 16]  # get rect's starting coords block x & y, clamped within ranges of 16
+        rectOffset = [rect[0] % 16, rect[1] % 16]
 
         # heightmaps
         self.heightmaps = {}
         for hmName in self.heightmapTypes:
-            self.heightmaps[hmName] = np.zeros((rect[2], rect[3]), dtype=np.int)  # create an array of zeros with gives shape of rect[2] * rect[3
+            self.heightmaps[hmName] = np.zeros(
+                (rect[2], rect[3]), dtype=np.int)
 
         # Sections are in x,z,y order!!! (reverse minecraft order :p)
-        self.sections = [[[None for i in range(16)] for z in range(self.chunkRect[3])] for x in range(self.chunkRect[2])]  # create 3D array
+        self.sections = [[[None for i in range(16)] for z in range(
+            self.chunkRect[3])] for x in range(self.chunkRect[2])]
 
-        # Get a Heightmap based on the Heightmap Name (like without leaves, etc)
+        # heightmaps
         print("extracting heightmaps")
 
         for x in range(self.chunkRect[2]):
@@ -74,13 +72,13 @@ class WorldSlice:  # TODO wtf is this? It's called at the start of the generator
                 for hmName in self.heightmapTypes:
                     # hmRaw = hms['MOTION_BLOCKING']
                     hmRaw = hms[hmName]
-                    heightmapBitArray = BitArray(9, 16 * 16, hmRaw) # 256(since a chunk is 16x16 blocks) values, in which there are 9 bits per value
+                    heightmapBitArray = BitArray(9, 16 * 16, hmRaw)
                     heightmap = self.heightmaps[hmName]
                     for cz in range(16):
                         for cx in range(16):
                             try:
-                                heightmap[-rectOffset[0] + x * 16 + cx, -rectOffset[
-                                    1] + z * 16 + cz] = heightmapBitArray.getAt(cz * 16 + cx)
+                                heightmap[-rectOffset[0] + x * 16 + cx, -rectOffset[1] +
+                                          z * 16 + cz] = heightmapBitArray.getAt(cz * 16 + cx)
                             except IndexError:
                                 pass
 
@@ -98,17 +96,18 @@ class WorldSlice:  # TODO wtf is this? It's called at the start of the generator
                     if not ('BlockStates' in section) or len(section['BlockStates']) == 0:
                         continue
 
-                    palette = section['Palette']  # the different set of blocks used in the Chunk
+                    palette = section['Palette']
                     rawBlockStates = section['BlockStates']
                     bitsPerEntry = max(4, ceil(log2(len(palette))))
-                    blockStatesBitArray = BitArray(bitsPerEntry, 16 * 16 * 16, rawBlockStates)
+                    blockStatesBitArray = BitArray(
+                        bitsPerEntry, 16 * 16 * 16, rawBlockStates)
 
-                    self.sections[x][z][y] = CachedSection(palette, blockStatesBitArray)  # cache the sections
-
-        print("done")
+                    self.sections[x][z][y] = CachedSection(
+                        palette, blockStatesBitArray)
 
 
     def getBlockCompoundAt(self, blockPos):
+        """**Returns block data.**"""
         # chunkID = relativeChunkPos[0] + relativeChunkPos[1] * self.chunkRect[2]
 
         # section = self.nbtfile['Chunks'][chunkID]['Level']['Sections'][(blockPos[1] >> 4)+1]
@@ -126,17 +125,53 @@ class WorldSlice:  # TODO wtf is this? It's called at the start of the generator
         cachedSection = self.sections[chunkX][chunkZ][chunkY]
 
         if cachedSection == None:
-            return None # TODO return air compound instead
+            return None  # TODO return air compound instead
 
         bitarray = cachedSection.blockStatesBitArray
         palette = cachedSection.palette
-        
-        blockIndex = (blockPos[1] % 16) * 16*16 + (blockPos[2] % 16) * 16 + blockPos[0] % 16
+
+        blockIndex = (blockPos[1] % 16) * 16 * 16 + \
+                     (blockPos[2] % 16) * 16 + blockPos[0] % 16
         return palette[bitarray.getAt(blockIndex)]
 
-    def getBlockAt(self, blockPos: object) -> object:
+
+    def getBlockAt(self, blockPos):
+        """**Returns the block's namespaced id at blockPos.**"""
         blockCompound = self.getBlockCompoundAt(blockPos)
         if blockCompound == None:
             return "minecraft:air"
         else:
             return blockCompound["Name"].value
+
+
+    ### Returns an array of the y-coordinates of the highest blocks, increased by 1.
+    def get_heightmap(self, heightmap_type):
+        return np.array(self.heightmaps[heightmap_type], dtype=np.uint8)
+
+
+    ## Returns an array of the Block Compounds on the surface of a given area (x_start, x_end, z_start, z_end), with optional heightmap
+    def get_surface_compounds_from(self, x1, z1, x2, z2, heightmap=None):  # Where None is an empty array
+        if(heightmap is None):  #
+            heightmap = self.get_heightmap("MOTION_BLOCKING_NO_LEAVES")
+        elif type(heightmap) is str:
+            heightmap = self.get_heightmap(str)
+        compounds = []
+        for x in range(x1, x2):
+            for z in range(z1, z2):
+                compound =self.getBlockCompoundAt((x, heightmap[x][z]-1, z))
+                compounds.append(compound)
+        return compounds
+
+
+    ## Returns an array of the Block Names on the surface of a given area (x_start, x_end, z_start, z_end), with optional heightmap
+    def get_surface_blocks_from(self, x1, z1, x2, z2, heightmap=None):
+        if (heightmap is None):  #
+            heightmap = self.get_heightmap("MOTION_BLOCKING_NO_LEAVES")
+        elif type(heightmap) is str:
+            heightmap = self.get_heightmap(str)
+        blocks = []
+        for x in range(x1, x2):
+            for z in range(z1, z2):
+                block = self.getBlockCompoundAt((x, heightmap[x][z] - 1, z))["Name"]
+                blocks.append(block)
+        return blocks

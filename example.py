@@ -1,8 +1,7 @@
 import random  # standard python lib for pseudo random
 
-import mapUtils
-import interfaceUtils
-from worldLoader import WorldSlice
+from src.http import mapUtils, interfaceUtils
+from src.http.worldLoader import WorldSlice
 
 # x position, z position, x size, z size
 area = (0, 0, 128, 128) # default build area

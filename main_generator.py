@@ -1,16 +1,12 @@
 # import random  # standard python lib for pseudo random
 
-from interfaceUtils import *
-from worldLoader import WorldSlice
-from my_utils import *
-from scheme_utils import *
-import numpy as np
+from src.http.worldLoader import WorldSlice
+from src.my_utils import *
+from src.scheme_utils import *
 import noise
 
 
-set_USE_BATCHING(True)
-
-area = [0, 0, 128, 128] # default build area
+areaFlex = [0, 0, 64, 64] # default build area
 
 # Do we send blocks in batches to speed up the generation process?
 
@@ -22,21 +18,15 @@ if buildArea != -1:
     z1 = buildArea["zFrom"]
     x2 = buildArea["xTo"]
     z2 = buildArea["zTo"]
-    # print(buildArea)
-    area = [x1, z1, x2-x1, z2-z1]
+    areaFlex = [x1, z1, x2-x1, z2-z1]
 
-# print("Build area is at position %s, %s with size %s, %s" % area)
-correct_area(area)
+area = correct_area(areaFlex)
 
 # load the world data
 # this uses the /chunks endpoint in the background
 worldSlice = WorldSlice(area)  #_so area is chunks?
 
-arr = []
-
-area = [92, -114, 150, -160] # default build area
-correct_area(area)
-
+area = (0,0,128,128)
 def noise_place(area):
     # a = "minecraft:oak_log"
     a = "minecraft:gold_block"
@@ -44,16 +34,28 @@ def noise_place(area):
     for x in range(area[0], area[2]):
         for z in range(area[1], area[3]):
             n = noise.snoise2(x, z)
-            print(n)
             block = a
             if(n > 0): block = b
-            setBlock(x, 100, z, block)
-            # print(blockBuffer)
+            setBlock(x, 100, z, block, 200)
     sendBlocks()
 
+# noise_place(area)'
 
 # noise_place(area)
 # download_schematic(143, 101, -143, 5, 5, 5, -1, 1, 1, "nethercube.txt")
-download_schematic(116, 101, -150, 1, 4, 3, 1, 1, 1, "test.txt")
-place_schematic("test.txt", 112, 101, -143)
+# download_schematic(116, 101, -150, 1, 4, 3, 1, 1, 1, "nethercude.txt")
+# place_schematic("nethercube.txt", 143, 101, -128)
+
+# print(worldSlice.getBlockAt((0,101,0)))  ## Get sign Properties. Here's how you access block data from client-downloaded data
+
+
+
+# visualizeMap.visualize_topography(area)
+a = worldSlice.get_surface_blocks_from(*(0, 0, 2, 2))
+
+print(a)
+
+download_schematic(10, 101, 9, 13, 103, 12, "test.txt")
+place_schematic('test.txt',10, 101, 29)
+
 print("done")
