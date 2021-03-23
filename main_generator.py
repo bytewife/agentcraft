@@ -3,6 +3,7 @@
 from src.http.worldLoader import WorldSlice
 from src.my_utils import *
 from src.scheme_utils import *
+from src.save_states import *
 import noise
 
 
@@ -53,9 +54,11 @@ def noise_place(area):
 # visualizeMap.visualize_topography(area)
 a = worldSlice.get_surface_blocks_from(*(0, 0, 2, 2))
 
-print(a)
 
-download_schematic(13, 101, 9, 10, 103, 12, "test.txt")
-place_schematic('test.txt',10, 101, 29)
+# download_schematic(13, 101, 9, 10, 103, 12, "test.txt")
+# place_schematic('test.txt',10, 101, 29)
+state, start_y = get_state(worldSlice)
+# save_state(state, start_y)
+load_state("save_1.txt", area[0], area[1])
 
 print("done")

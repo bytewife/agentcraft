@@ -71,6 +71,8 @@ class WorldSlice:
                 hms = self.nbtfile['Chunks'][chunkID]['Level']['Heightmaps']
                 for hmName in self.heightmapTypes:
                     # hmRaw = hms['MOTION_BLOCKING']
+
+
                     hmRaw = hms[hmName]
                     heightmapBitArray = BitArray(9, 16 * 16, hmRaw)
                     heightmap = self.heightmaps[hmName]
