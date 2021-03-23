@@ -3,11 +3,11 @@
 from src.http.worldLoader import WorldSlice
 from src.my_utils import *
 from src.scheme_utils import *
-from src.save_states import *
+from src.states import *
 import noise
 
 
-areaFlex = [0, 0, 64, 64] # default build area
+areaFlex = [0, 0, 10, 10] # default build area
 
 # Do we send blocks in batches to speed up the generation process?
 
@@ -57,8 +57,15 @@ a = worldSlice.get_surface_blocks_from(*(0, 0, 2, 2))
 
 # download_schematic(13, 101, 9, 10, 103, 12, "test.txt")
 # place_schematic('test.txt',10, 101, 29)
-state, start_y = get_state(worldSlice)
-# save_state(state, start_y)
-load_state("save_1.txt", area[0], area[1])
+state, start_y = get_state(worldSlice, 10)
+print(start_y)
+# load_state("ve_1.txt", area[0], area[1])
+# place_schematic_in_world('test.txt', 0, 63, 47)
+# heightmap = worldSlice.get_heightmap()
+# placement_y = heightmap[0][0]
+print("going")
+place_schematic_in_state(state, "test.txt", 0,4,5, dir_y=1)
+save_state(state, start_y, "hope.txt")
+load_state("hope.txt", area[0], area[1])
 
 print("done")

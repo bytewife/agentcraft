@@ -3,7 +3,7 @@ from src.http.interfaceUtils import *
 
 tallest_building_height = 30
 
-def get_state(world_slice:WorldSlice, add_talling_building_height=True):
+def get_state(world_slice:WorldSlice, max_y_offset=tallest_building_height):
     x1, z1, x2, z2 = world_slice.rect
     heightmap = world_slice.heightmaps["MOTION_BLOCKING_NO_LEAVES"]
     def get_y_bounds(_heightmap):  ## Get the y range that we'll save tha state in?
@@ -17,8 +17,7 @@ def get_state(world_slice:WorldSlice, add_talling_building_height=True):
                     highest = block_y
         return lowest, highest
     y1, y2  = get_y_bounds(heightmap)  # keep range not too large
-    if add_talling_building_height:
-        y2 += tallest_building_height
+    y2 += max_y_offset
 
     len_z = abs(z2 - z1)
     len_y = abs(y2 - y1)
@@ -37,15 +36,16 @@ def get_state(world_slice:WorldSlice, add_talling_building_height=True):
                 zi += 1
             yi += 1
         xi += 1
-    start_y = y1
-    return state, start_y  # this start_y is for load_state
+    state_y = y1
+    return state, state_y  # this start_y is for load_state
 
-def save_state(state, start_y):
-    f = open("save_1.txt", 'w')
+
+def save_state(state, state_y, file_name):
+    f = open(file_name, 'w')
     len_x = len(state)
     len_y = len(state[0])
     len_z = len(state[0][0])
-    f.write('{}, {}, {}, {}\n'.format(len_x, start_y, len_y, len_z))
+    f.write('{}, {}, {}, {}\n'.format(len_x, state_y, len_y, len_z))
     i = 0
     for y in range(0, len_y):
         for x in range(0, len_x):
@@ -56,20 +56,18 @@ def save_state(state, start_y):
     f.close()
 
 
-def load_state(save_file, start_x, start_z):
+def load_state(save_file, world_x, world_z):
     f = open(save_file, "r")
     lines = f.readlines()
     size = lines[0]
     blocks = lines[1:]
-    # print(blocks)
-    count = len(blocks)
-    len_x, start_y, len_y, len_z = [int(i) for i in size.split(",")]
+    len_x, state_y, len_y, len_z = [int(i) for i in size.split(",")]
 
     i = 0
     for y in range(len_y):
         for x in range(len_x):
             for z in range(len_z):
                 block = blocks[i]
-                placeBlockBatched(start_x + x, start_y + y, start_z + z, block, count)
+                placeBlockBatched(world_x + x, state_y + y, world_z + z, block)
                 i += 1
     print("done loading state")

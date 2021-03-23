@@ -145,18 +145,19 @@ class WorldSlice:
         else:
             return blockCompound["Name"].value
 
+########################################
 
     ### Returns an array of the y-coordinates of the highest blocks, increased by 1.
-    def get_heightmap(self, heightmap_type):
+    def get_heightmap(self, heightmap_type="MOTION_BLOCKING_NO_LEAVES"):
         return np.array(self.heightmaps[heightmap_type], dtype=np.uint8)
 
 
     ## Returns an array of the Block Compounds on the surface of a given area (x_start, x_end, z_start, z_end), with optional heightmap
     def get_surface_compounds_from(self, x1, z1, x2, z2, heightmap=None):  # Where None is an empty array
         if(heightmap is None):  #
-            heightmap = self.get_heightmap("MOTION_BLOCKING_NO_LEAVES")
+            heightmap = self.get_heightmap()
         elif type(heightmap) is str:
-            heightmap = self.get_heightmap(str)
+            heightmap = self.get_heightmap(heightmap)
         compounds = []
         for x in range(x1, x2):
             for z in range(z1, z2):
@@ -165,12 +166,13 @@ class WorldSlice:
         return compounds
 
 
-    ## Returns an array of the Block Names on the surface of a given area (x_start, x_end, z_start, z_end), with optional heightmap
+    ## TODO convert to 2d
+    ## Returns an flat array of the Block Names on the surface of a given area (x_start, x_end, z_start, z_end), with optional heightmap
     def get_surface_blocks_from(self, x1, z1, x2, z2, heightmap=None):
         if (heightmap is None):  #
-            heightmap = self.get_heightmap("MOTION_BLOCKING_NO_LEAVES")
+            heightmap = self.get_heightmap()
         elif type(heightmap) is str:
-            heightmap = self.get_heightmap(str)
+            heightmap = self.get_heightmap(heightmap)
         blocks = []
         for x in range(x1, x2):
             for z in range(z1, z2):
