@@ -1,16 +1,23 @@
 from src.http_framework.worldLoader import *
 from src.http_framework.interfaceUtils import *
+from my_utils import *
 
 class State:
 
     tallest_building_height = 30
     changed_blocks = {}
-    blocks = []
+    blocks = []  # 3D Array of all the blocks in the state
+    top_heightmap = []
+    walkable_heightmap = [] # TODO create function for this. Agents will be armor stands, and they can be updated in real time
     world_y = 0
-    heightmap = []
 
     ## Create surface grid
     def __init__(self, world_slice:WorldSlice, max_y_offset=tallest_building_height):
+        self.blocks, self.world_y, self.top_heightmap = self.create_blocks_array(world_slice)
+        self.walkable_blocks = self.blocks  # eventually path find to find these
+        self.types = self.create_types_array(self.blocks, self.top_heightmap)
+
+    def create_blocks_array(self, world_slice:WorldSlice, max_y_offset=tallest_building_height):
         x1, z1, x2, z2 = world_slice.rect
         state_heightmap = world_slice.get_heightmap("MOTION_BLOCKING_NO_LEAVES", -1) # inclusive of ground
         def get_y_bounds(_heightmap):  ## Get the y range that we'll save tha state in?
@@ -44,9 +51,28 @@ class State:
                 yi += 1
             xi += 1
         state_y = y1
-        self.blocks = blocks
-        self.world_y = state_y
-        self.heightmap = state_heightmap  # this start_y is for load_state
+        return blocks, state_y, state_heightmap
+
+
+    def create_types_array(self, blocks, heightmap):
+        types = []
+        for x in range(len(blocks)):
+            types.append([])
+            for z in range(len(blocks[0][0])):
+                block_y = heightmap[x][z] - self.world_y
+                block = blocks[x][block_y][z]
+                # print(block)
+                type = self.determine_types(block)
+                types[x].append(type)
+        print("done initializing types")
+
+
+    def determine_types(self, block):
+        for i in range(1, len(Type)+1):
+            if block in Type_Tiles.tile_sets[i]:
+                return Type(i).name
+        # print(block)
+        return Type.AIR.name
 
 
     def mark_changed_blocks(self, state_x, state_y, state_z, block_name):
