@@ -69,7 +69,7 @@ a = worldSlice.get_surface_blocks_from(*(0, 0, 2, 2))
 # download_schematic(13, 101, 9, 10, 103, 12, "test.txt")
 state, state_y, state_heightmap = get_state(worldSlice, 10)
 place_schematic_in_state(state, "./test.txt", 0, 4, 5, dir_y=1)
-save_state(state, state_y, "../hope.txt")
+# save_state(state, state_y, "../hope.txt")
 # load_state("../hope.txt", area[0], area[1])
 # visualize_topography(area, state, state_heightmap, state_y)
 
@@ -77,7 +77,14 @@ save_state(state, state_y, "../hope.txt")
 check_x = 5
 check_z = 7
 tree_y = get_state_surface_y(*global_to_state_coords( check_x, check_z, area), state_y=state_y, state_heightmap=state_heightmap)
-print(check_if_tree(state, check_x, tree_y, check_z))
+if is_log(state, check_x, tree_y, check_z):
+    print("is tree")
+    cut_log_at(state, check_x, tree_y, check_z)
+    # trim_leaves(state, check_x, tree_y, check_z-1)
+
+save_state(state, state_y, "../hope.txt")
+
+load_state("../hope.txt", area[0], area[1])
 
 
 print("done")
