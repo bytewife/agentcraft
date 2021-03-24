@@ -1,4 +1,5 @@
 from src.http_framework.interfaceUtils import *
+from src.states import mark_changed_blocks
 
 ### Returns a string containing the block names.
 def download_area(origin_x, origin_y, origin_z, end_x, end_y, end_z):
@@ -99,6 +100,7 @@ def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, dir
     YI = max(length_y-1, 0)
     ZI = 0
     yi = YI
+    i = 0
     for y in range(origin_y, end_y+1, -dir_y):
         zi = ZI
         for z in range(origin_z, end_z+1, dir_z):
@@ -107,9 +109,12 @@ def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, dir
                 index = yi*(length_z)*(length_x) + zi*(length_x) + xi
                 block = "minecraft:"+blocks[index]
                 state[x][y][z] = block
+                mark_changed_blocks(x, y, z, block)
+                i+=1
                 xi += 1
             zi += 1
         yi -= 1
+    print(str(i)+" schematic blocks placed")
     print("done placing schematic")
 
 

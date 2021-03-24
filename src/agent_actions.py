@@ -7,13 +7,14 @@ def is_log(state, x, y, z):
     return False
 
 ## assumes there's a tree at the location
-def cut_log_at(state, x, y, z):
-    log_type = get_log_type(state[x][y][z])
-    state[x][y][z] = "minecraft:air"
-    if is_leaf(get_adjacent_block(state, x, y, z, 0, 1, 0)) or is_leaf(get_adjacent_block(state, x, y, z, 1, 0, 0)):
-        trim_leaves(state, x, y+1, z)
-    if not is_log(state, x, y-1, z):  # place sapling
-        state[x][y][z] = "minecraft:"+log_type+"_sapling"
+def cut_tree_at(state, x, y, z, times):
+    for i in range(times):
+        log_type = get_log_type(state[x][y][z])
+        state[x][y][z] = "minecraft:air"
+        if is_leaf(get_adjacent_block(state, x, y, z, 0, 1, 0)) or is_leaf(get_adjacent_block(state, x, y, z, 1, 0, 0)):
+            trim_leaves(state, x, y+1, z)
+        if not is_log(state, x, y-1, z):  # place sapling
+            state[x][y][z] = "minecraft:"+log_type+"_sapling"
 
 ##
 def get_adjacent_block(state, x_origin, y_origin, z_origin, x_off, y_off, z_off):

@@ -3,6 +3,13 @@ from src.http_framework.interfaceUtils import *
 
 tallest_building_height = 30
 
+changed_blocks = {}
+
+def mark_changed_blocks(state_x, state_y, state_z, block_name):
+    key = str(state_x)+','+str(state_y)+','+str(state_z)
+    changed_blocks[key] = block_name
+
+
 def get_state(world_slice:WorldSlice, max_y_offset=tallest_building_height):
     x1, z1, x2, z2 = world_slice.rect
     state_heightmap = world_slice.get_heightmap("MOTION_BLOCKING_NO_LEAVES", -1) # inclusive of ground
@@ -47,12 +54,12 @@ def save_state(state, state_y, file_name):
     len_z = len(state[0][0])
     f.write('{}, {}, {}, {}\n'.format(len_x, state_y, len_y, len_z))
     i = 0
-    for y in range(0, len_y):
-        for x in range(0, len_x):
-            for z in range(0, len_z):
-                f.write(state[x][y][z]+"\n")
-                i+=1
+    for position,block in changed_blocks.items():
+        to_write = position+';'+block+"\n"
+        f.write(to_write)
+        i += 1
     f.close()
+    print(str(i)+" blocks saved")
 
 
 def load_state(save_file, world_x, world_z):
@@ -60,13 +67,18 @@ def load_state(save_file, world_x, world_z):
     lines = f.readlines()
     size = lines[0]
     blocks = lines[1:]
-    len_x, state_y, len_y, len_z = [int(i) for i in size.split(",")]
-
+    n_blocks = len(blocks)
+    len_x, state_starting_y, len_y, len_z = [int(i) for i in size.split(",")]
     i = 0
-    for y in range(len_y):
-        for x in range(len_x):
-            for z in range(len_z):
-                block = blocks[i]
-                placeBlockBatched(world_x + x, state_y + y, world_z + z, block)
-                i += 1
+    for line in blocks:
+        position_raw, block = line.split(';')
+        print("position is "+position_raw)
+        state_x, state_y, state_z = [int(coord) for coord in position_raw.split(',')]
+        placeBlockBatched(world_x + state_x, int(state_starting_y) + state_y, world_z + state_z, block, n_blocks)
+        print("placing at ")
+        print(str(world_x + state_z), str(int(state_starting_y) + state_y), str(world_z + state_z))
+        i += 1
+    f.close()
+    changed_blocks.clear()
+    print(str(i)+" blocks loaded")
     print("done loading state")
