@@ -10,12 +10,21 @@ class State:
     top_heightmap = []
     walkable_heightmap = [] # TODO create function for this. Agents will be armor stands, and they can be updated in real time
     world_y = 0
+    world_x = 0
+    world_z = 0
+    len_x = 0
+    len_y = 0
+    len_z = 0
 
     ## Create surface grid
     def __init__(self, world_slice:WorldSlice, max_y_offset=tallest_building_height):
-        self.blocks, self.world_y, self.top_heightmap = self.create_blocks_array(world_slice)
+        self.blocks, self.world_y, self.len_y, self.top_heightmap = self.create_blocks_array(world_slice)
         self.walkable_blocks = self.blocks  # eventually path find to find these
         self.types = self.create_types_array(self.blocks, self.top_heightmap)
+        self.world_x = world_slice.rect[0]
+        self.world_z = world_slice.rect[1]
+        self.len_x = world_slice.rect[2] - world_slice.rect[0]
+        self.len_z = world_slice.rect[3] - world_slice.rect[1]
 
     def create_blocks_array(self, world_slice:WorldSlice, max_y_offset=tallest_building_height):
         x1, z1, x2, z2 = world_slice.rect
@@ -51,7 +60,8 @@ class State:
                 yi += 1
             xi += 1
         state_y = y1
-        return blocks, state_y, state_heightmap
+        len_y = y2 - y1
+        return blocks, state_y, len_y, state_heightmap
 
 
     def create_types_array(self, blocks, heightmap):
@@ -61,10 +71,10 @@ class State:
             for z in range(len(blocks[0][0])):
                 block_y = heightmap[x][z] - self.world_y
                 block = blocks[x][block_y][z]
-                # print(block)
                 type = self.determine_types(block)
                 types[x].append(type)
         print("done initializing types")
+        return types
 
 
     def determine_types(self, block):
@@ -75,8 +85,9 @@ class State:
         return Type.AIR.name
 
 
+
     def mark_changed_blocks(self, state_x, state_y, state_z, block_name):
-        key = str(state_x)+','+str(state_y)+','+str(state_z)
+        key = convert_coords_to_key(state_x, state_y, state_z)
         self.changed_blocks[key] = block_name
 
 
@@ -95,22 +106,33 @@ class State:
         print(str(i)+" blocks saved")
 
 
-    def load_state(self, save_file, world_x, world_z):
+    def load_state(self, save_file):
         f = open(save_file, "r")
         lines = f.readlines()
         size = lines[0]
         blocks = lines[1:]
         n_blocks = len(blocks)
-        len_x, state_starting_y, len_y, len_z = [int(i) for i in size.split(",")]
         i = 0
         for line in blocks:
             position_raw, block = line.split(';')
-            state_x, state_y, state_z = [int(coord) for coord in position_raw.split(',')]
-            placeBlockBatched(world_x + state_x, int(state_starting_y) + state_y, world_z + state_z, block, n_blocks)
+            state_x, state_y, state_z = convert_key_to_coords(position_raw)
+            placeBlockBatched(self.world_x + state_x, self.world_y + state_y, self.world_z + state_z, block, n_blocks)
             i += 1
         f.close()
         self.changed_blocks.clear()
         print(str(i)+" blocks loaded")
+
+
+    def render(self):
+        i = 0
+        n_blocks = len(self.changed_blocks)
+        for position, block in self.changed_blocks.items():
+            state_x, state_y, state_z = convert_key_to_coords(position)
+            block = block
+            placeBlockBatched(self.world_x + state_x, self.world_y + state_y, self.world_z + state_z, block, n_blocks)
+            i += 1
+        self.changed_blocks.clear()
+        print(str(i)+" blocks rendered")
 
 
     ## do we wanna cache tree locations? I don't want them to cut down buildings lol
@@ -124,19 +146,20 @@ class State:
     ## assumes there's a tree at the location
     def cut_tree_at(self, x, y, z, times=1):
         for i in range(times):
-            print("ince")
             log_type = self.get_log_type(self.blocks[x][y][z])
             replacement = "minecraft:air"
             self.blocks[x][y][z] = replacement
             self.mark_changed_blocks(x, y, z, replacement)
-            if self.is_leaf(self.get_adjacent_block(x, y, z, 0, 1, 0)) or \
-                    self.is_leaf(self.get_adjacent_block(x, y, z, 1, 0, 0)
+            if \
+            self.is_leaf(self.get_adjacent_block(x, y, z, 0, 1, 0)) or \
+            self.is_leaf(self.get_adjacent_block(x, y, z, 1, 0, 0)
             ):
                 self.trim_leaves(x, y+1, z)
             if not self.is_log(x, y-1, z):  # place sapling
                 sapling = "minecraft:"+log_type+"_sapling"
                 self.blocks[x][y][z] = sapling
                 self.mark_changed_blocks(x, y, z, sapling)
+            y-=1
 
 
     def get_adjacent_block(self, x_origin, y_origin, z_origin, x_off, y_off, z_off):
@@ -165,7 +188,6 @@ class State:
 
 
     def perform_on_adj_recursively(self, x, y, z, target_block_checker, recur_func, forward_call):
-        # recur_args = (state, x, y, z, target_block_checker, recur_func, callback)
         forward_call(self.blocks, x, y, z)
         adj_blocks = self.get_all_adjacent_blocks(x, y, z)
         for block in adj_blocks:

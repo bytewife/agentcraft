@@ -72,6 +72,7 @@ class Type_Tiles:
 		}
 	}
 
+
 def correct_area(area):
     if area[0] > area[2]:
         swap_array_elements(area, 0, 2)
@@ -84,4 +85,13 @@ def swap_array_elements(arr, a, b):
     temp = arr[a]
     arr[a] = arr[b]
     arr[b] = temp
+
+
+def convert_coords_to_key(x, y, z):
+    return str(x)+','+str(y)+','+str(z)
+
+
+def convert_key_to_coords(key):
+	x, y, z = [int(coord) for coord in key.split(',')]
+	return x, y, z
 

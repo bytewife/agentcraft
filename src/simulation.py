@@ -12,4 +12,3 @@ class Simulation:
 
     def add_agent(self, agent : Agent):
         self.agents[agent.name] = agent
-
