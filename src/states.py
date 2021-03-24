@@ -19,7 +19,7 @@ class State:
     ## Create surface grid
     def __init__(self, world_slice:WorldSlice, max_y_offset=tallest_building_height):
         self.blocks, self.world_y, self.len_y, self.top_heightmap = self.create_blocks_array(world_slice)
-        self.walkable_blocks = self.blocks  # eventually path find to find these
+        self.walkable_heightmap = self.create_walkable_heightmap(self.top_heightmap)  # a heightmap based on the state's y values
         self.types = self.create_types_array(self.blocks, self.top_heightmap)
         self.world_x = world_slice.rect[0]
         self.world_z = world_slice.rect[1]
@@ -62,6 +62,16 @@ class State:
         state_y = y1
         len_y = y2 - y1
         return blocks, state_y, len_y, state_heightmap
+
+
+    def create_walkable_heightmap(self, heightmap, y_offset=1):
+        result = []
+        for x in range(len(heightmap)):
+            result.append([])
+            for z in range(len(heightmap[0])):
+                state_adjusted_y = heightmap[x][z] - self.world_y + y_offset
+                result[x].append(state_adjusted_y)
+        return result
 
 
     def create_types_array(self, blocks, heightmap):

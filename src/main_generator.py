@@ -16,6 +16,7 @@ def global_to_state_coords(world_x, world_z, build_area):
     z = world_z - build_area[1]
     return (x, z)
 
+
 def get_state_surface_y(state_x, state_z, state_heightmap, state_y):
     return state_heightmap[state_x][state_z] - state_y
 ##############
@@ -44,6 +45,12 @@ check_z = 7
 tree_y = get_state_surface_y(*global_to_state_coords( check_x, check_z, area), state_y=sim.state.world_y, state_heightmap=sim.state.top_heightmap)
 if sim.state.is_log(check_x, tree_y, check_z):
     sim.state.cut_tree_at(check_x, tree_y, check_z, times=3)
+
+sim.add_agent(Agent(0, 0, sim.state.walkable_heightmap, "JJ"))
+for agent in sim.agents.values():
+    agent.move(0,0, sim.state,sim.state.walkable_heightmap)
+
+sim.update_agents()
 
 sim.state.render()
 # sim.state.save_state(sim.state, "hope.txt")
