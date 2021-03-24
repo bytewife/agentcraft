@@ -86,3 +86,79 @@ class State:
         self.changed_blocks.clear()
         print(str(i)+" blocks loaded")
 
+
+    ## do we wanna cache tree locations? I don't want them to cut down buildings lol
+    def is_log(self, x, y, z):
+        block = self.blocks[x][y][z]
+        if block[-3:] == 'log':
+            return True
+        return False
+
+
+    ## assumes there's a tree at the location
+    def cut_tree_at(self, x, y, z, times=1):
+        for i in range(times):
+            print("ince")
+            log_type = self.get_log_type(self.blocks[x][y][z])
+            replacement = "minecraft:air"
+            self.blocks[x][y][z] = replacement
+            self.mark_changed_blocks(x, y, z, replacement)
+            if self.is_leaf(self.get_adjacent_block(x, y, z, 0, 1, 0)) or \
+                    self.is_leaf(self.get_adjacent_block(x, y, z, 1, 0, 0)
+            ):
+                self.trim_leaves(x, y+1, z)
+            if not self.is_log(x, y-1, z):  # place sapling
+                sapling = "minecraft:"+log_type+"_sapling"
+                self.blocks[x][y][z] = sapling
+                self.mark_changed_blocks(x, y, z, sapling)
+
+
+    def get_adjacent_block(self, x_origin, y_origin, z_origin, x_off, y_off, z_off):
+        x_target = x_origin + x_off
+        y_target = y_origin + y_off
+        z_target = z_origin + z_off
+        if x_target >= len(self.blocks) or y_target >= len(self.blocks[0]) or z_target >= len(self.blocks[0][0]):
+            #TODO this might lead to clipping
+            print("Cannot check for block out of state bounds")
+            return None
+        return self.blocks[x_target][y_target][z_target]
+
+
+    def get_all_adjacent_blocks(self, x_origin, y_origin, z_origin):
+        adj_blocks = []
+        for x_off in range(-1, 2):
+            for y_off in range(-1, 2):
+                for z_off in range(-1, 2):
+                    if x_off == 0 and y_off == 0 and z_off == 0:
+                        continue
+                    block = self.get_adjacent_block(x_origin, y_origin, z_origin, x_off, y_off, z_off)
+                    if block is None:
+                        continue
+                    adj_blocks.append((block, x_origin+x_off, y_origin+y_off, z_origin+z_off))
+        return adj_blocks
+
+
+    def perform_on_adj_recursively(self, x, y, z, target_block_checker, recur_func, forward_call):
+        # recur_args = (state, x, y, z, target_block_checker, recur_func, callback)
+        forward_call(self.blocks, x, y, z)
+        adj_blocks = self.get_all_adjacent_blocks(x, y, z)
+        for block in adj_blocks:
+            if target_block_checker(block[0]):
+                recur_func(block[1], block[2], block[3], target_block_checker, recur_func, forward_call)
+
+
+    def trim_leaves(self, leaf_x, leaf_y, leaf_z):
+        def leaf_to_air(blocks, x, y, z):
+            blocks[x][y][z] = 'minecraft:air'
+            self.mark_changed_blocks(x, y, z, 'minecraft:air')
+        self.perform_on_adj_recursively(leaf_x, leaf_y, leaf_z,self.is_leaf,self.perform_on_adj_recursively,leaf_to_air)
+
+
+    def is_leaf(self, block_name):
+        if block_name[-6:] == 'leaves':
+            return True
+        return False
+
+
+    def get_log_type(self, block_name):
+        return block_name[10:-4]

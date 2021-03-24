@@ -80,8 +80,9 @@ place_schematic_in_state(sim.state, "./test.txt", 0, 25, 0, dir_y=1)
 check_x = 5
 check_z = 7
 tree_y = get_state_surface_y(*global_to_state_coords( check_x, check_z, area), state_y=sim.state.world_y, state_heightmap=sim.state.heightmap)
-if is_log(sim.state, check_x, tree_y, check_z):
-    cut_tree_at(sim.state, check_x, tree_y, check_z)
+if sim.state.is_log(check_x, tree_y, check_z):
+    print("hi")
+    sim.state.cut_tree_at(check_x, tree_y, check_z)
     # trim_leaves(state, check_x, tree_y, check_z-1)
 
 sim.state.save_state(sim.state, "hope.txt")
