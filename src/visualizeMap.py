@@ -2,12 +2,12 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 
-from src.http import blockColors, interfaceUtils
-from src.http.worldLoader import WorldSlice
+from src.http_framework import blockColors, interfaceUtils
+from src.http_framework.worldLoader import WorldSlice
 
 # rect = (108, -119, 128, 128)
 
-def visualize_topography(rect):
+def visualize_topography(rect, state, state_heightmap, state_y):
     buildArea = interfaceUtils.requestBuildArea()
     if buildArea != -1:
         x1 = buildArea["xFrom"]
@@ -41,16 +41,30 @@ def visualize_topography(rect):
 
     unknownBlocks = set()
 
-    for dx in range(rect[2]):
-        for dz in range(rect[3]):
+    print(rect[3])
+    print('must equal')
+    print(len(state[0][0]))
+    for x in range(rect[2]):
+        for z in range(rect[3]):
+            for dy in range(3):
             # check up to 5 blocks below the heightmap
-            for dy in range(5):
                 # calculate absolute coordinates
-                x = rect[0] + dx
-                z = rect[1] + dz
-                y = int(heightmap1[(dx, dz)]) - dy
+                # dx = rect[0] + dx
+                # dz = rect[1] + dz
+                upper_y = state_heightmap[x][z] + 1
+                # if x == 0 and z == 0:
+                    # print(upper_y)
+                    # print(upper_y-state_y)
+                    # print(state[0][upper_y-state_y][0])
+                y = upper_y - state_y - dy
+                if (y < 0): break
 
-                blockID = slice.getBlockAt((x, y, z))
+            #####
+                blockID = state[x][y][z]
+                # print(blockID)
+                # blockID = chunk_data.getBlockAt((x, y, z))
+                #####
+
                 if blockID in blockColors.TRANSPARENT:
                     # transparent blocks are ignored
                     continue
@@ -59,7 +73,7 @@ def visualize_topography(rect):
                         # unknown blocks remembered for debug purposes
                         unknownBlocks.add(blockID)
                     else:
-                        topcolor[(dx, dz)] = palette[blockID]
+                        topcolor[(x, z)] = palette[blockID]
                     break
 
     if len(unknownBlocks) > 0:

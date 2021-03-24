@@ -1,12 +1,4 @@
-from src.http.interfaceUtils import *
-
-
-# def download_area(origin_x, origin_y, origin_z, length_x, length_y, length_z, dir_x, dir_y, dir_z):
-#     print("downloading area")
-#     result = ""
-#     end_x = origin_x + (dir_x * length_x)
-#     end_y = origin_y + (dir_y * length_y)
-#     end_z = origin_z + (dir_z * length_z)
+from src.http_framework.interfaceUtils import *
 
 ### Returns a string containing the block names.
 def download_area(origin_x, origin_y, origin_z, end_x, end_y, end_z):

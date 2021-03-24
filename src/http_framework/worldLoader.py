@@ -1,5 +1,5 @@
 from math import ceil, log2
-from src.http.bitarray import BitArray
+from src.http_framework.bitarray import BitArray
 from io import BytesIO
 import requests
 import nbt
@@ -145,11 +145,16 @@ class WorldSlice:
         else:
             return blockCompound["Name"].value
 
-########################################
 
     ### Returns an array of the y-coordinates of the highest blocks, increased by 1.
-    def get_heightmap(self, heightmap_type="MOTION_BLOCKING_NO_LEAVES"):
-        return np.array(self.heightmaps[heightmap_type], dtype=np.uint8)
+    ### To get the ground, set y_offset to -1
+    def get_heightmap(self, heightmap_type="MOTION_BLOCKING_NO_LEAVES", y_offset=0):
+        heightmap = self.heightmaps[heightmap_type]
+        if y_offset != 0:
+            for x in range(len(heightmap)):
+                for z in range(len(heightmap[x])):
+                    heightmap[x][z] += y_offset
+        return np.array(heightmap, dtype=np.uint8)
 
 
     ## Returns an array of the Block Compounds on the surface of a given area (x_start, x_end, z_start, z_end), with optional heightmap

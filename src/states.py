@@ -1,11 +1,11 @@
-from src.http.worldLoader import *
-from src.http.interfaceUtils import *
+from src.http_framework.worldLoader import *
+from src.http_framework.interfaceUtils import *
 
 tallest_building_height = 30
 
 def get_state(world_slice:WorldSlice, max_y_offset=tallest_building_height):
     x1, z1, x2, z2 = world_slice.rect
-    heightmap = world_slice.heightmaps["MOTION_BLOCKING_NO_LEAVES"]
+    state_heightmap = world_slice.get_heightmap("MOTION_BLOCKING_NO_LEAVES", -1) # inclusive of ground
     def get_y_bounds(_heightmap):  ## Get the y range that we'll save tha state in?
         lowest = 99
         highest = 0
@@ -16,7 +16,7 @@ def get_state(world_slice:WorldSlice, max_y_offset=tallest_building_height):
                 elif (block_y > highest):
                     highest = block_y
         return lowest, highest
-    y1, y2  = get_y_bounds(heightmap)  # keep range not too large
+    y1, y2  = get_y_bounds(state_heightmap)  # keep range not too large
     y2 += max_y_offset
 
     len_z = abs(z2 - z1)
@@ -37,7 +37,7 @@ def get_state(world_slice:WorldSlice, max_y_offset=tallest_building_height):
             yi += 1
         xi += 1
     state_y = y1
-    return state, state_y  # this start_y is for load_state
+    return state, state_y, state_heightmap  # this start_y is for load_state
 
 
 def save_state(state, state_y, file_name):
@@ -52,7 +52,6 @@ def save_state(state, state_y, file_name):
             for z in range(0, len_z):
                 f.write(state[x][y][z]+"\n")
                 i+=1
-    print(i)
     f.close()
 
 
