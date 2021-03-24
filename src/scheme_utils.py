@@ -1,5 +1,4 @@
 from src.http_framework.interfaceUtils import *
-from src.states import mark_changed_blocks
 
 ### Returns a string containing the block names.
 def download_area(origin_x, origin_y, origin_z, end_x, end_y, end_z):
@@ -79,9 +78,9 @@ def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, dir
     size, blocks = get_schematic_parts(file_name)
     length_x, length_y, length_z = size
 
-    if (abs(origin_x + length_x) > abs(len(state)) or
-            abs(origin_y + length_y) > abs(len(state[0])) or
-            abs(origin_z + length_z) > abs(len(state[0][0]))):
+    if (abs(origin_x + length_x) > abs(len(state.blocks)) or
+            abs(origin_y + length_y) > abs(len(state.blocks[0])) or
+            abs(origin_z + length_z) > abs(len(state.blocks[0][0]))):
         print("Tried to place schematic that didn't fit in the state!")
         return
 
@@ -95,7 +94,6 @@ def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, dir
     origin_x, origin_y, origin_z, end_x, end_y, end_z = handle_dir(
         origin_x, origin_y, origin_z, end_x, end_y, end_z, dir_x, dir_y, dir_z
     )
-
     XI = 0
     YI = max(length_y-1, 0)
     ZI = 0
@@ -108,15 +106,14 @@ def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, dir
             for x in range(origin_x, end_x+1, dir_x):
                 index = yi*(length_z)*(length_x) + zi*(length_x) + xi
                 block = "minecraft:"+blocks[index]
-                state[x][y][z] = block
-                mark_changed_blocks(x, y, z, block)
+                state.blocks[x][y][z] = block
+                state.mark_changed_blocks(x, y, z, block)
                 i+=1
                 xi += 1
             zi += 1
         yi -= 1
     print(str(i)+" schematic blocks placed")
     print("done placing schematic")
-
 
 
 def get_schematic_parts(file_name):

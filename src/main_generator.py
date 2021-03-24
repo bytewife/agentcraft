@@ -5,7 +5,8 @@ from src.my_utils import *
 from src.scheme_utils import *
 from src.states import *
 from visualizeMap import *
-from agent_actions import *
+from block_manipulation import *
+from simulation import *
 import noise
 
 ############## debug
@@ -67,8 +68,10 @@ a = worldSlice.get_surface_blocks_from(*(0, 0, 2, 2))
 
 
 # download_schematic(13, 101, 9, 10, 103, 12, "test.txt")
-state, state_y, state_heightmap = get_state(worldSlice, 30)
-place_schematic_in_state(state, "./test.txt", 0, 25, 0, dir_y=1)
+sim = Simulation(area)
+
+place_schematic_in_state(sim.state, "./test.txt", 0, 25, 0, dir_y=1)
+# print(changed_blocks)
 # save_state(state, state_y, "../hope.txt")
 # load_state("../hope.txt", area[0], area[1])
 # visualize_topography(area, state, state_heightmap, state_y)
@@ -76,13 +79,13 @@ place_schematic_in_state(state, "./test.txt", 0, 25, 0, dir_y=1)
 ## tree tests
 check_x = 5
 check_z = 7
-tree_y = get_state_surface_y(*global_to_state_coords( check_x, check_z, area), state_y=state_y, state_heightmap=state_heightmap)
-if is_log(state, check_x, tree_y, check_z):
-    cut_tree_at(state, check_x, tree_y, check_z)
+tree_y = get_state_surface_y(*global_to_state_coords( check_x, check_z, area), state_y=sim.state.world_y, state_heightmap=sim.state.heightmap)
+if is_log(sim.state, check_x, tree_y, check_z):
+    cut_tree_at(sim.state, check_x, tree_y, check_z)
     # trim_leaves(state, check_x, tree_y, check_z-1)
 
-# save_state(state, state_y, "hope.txt")
-# load_state("hope.txt", area[0], area[1])
+sim.state.save_state(sim.state, "hope.txt")
+sim.state.load_state("hope.txt", area[0], area[1])
 
 
 print("done")
