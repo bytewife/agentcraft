@@ -14,6 +14,7 @@ class Directions(Enum):
 cardinals = ([1,0],[0,1], [-1,0], [0,-1])
             # NE   ES     SW      WN
 diagonals = ([1,1],[-1,1],[-1,-1],[1,-1])
+directions = cardinals + diagonals
 ## stored as N  E  S  W  NE ES SW WN
 ##           0  1  2  3  4  5  6  7
 
