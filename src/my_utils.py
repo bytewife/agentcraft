@@ -4,7 +4,7 @@ from enum import Enum
 # https://stackoverflow.com/questions/34470597/is-there-a-dedicated-way-to-get-the-number-of-items-in-a-python-enum
 class Type(Enum):
 	WATER = 1
-	FOREST = 2
+	TREE = 2
 	GREEN = 3
 	BROWN = 4
 	BUILDING = 5
@@ -16,13 +16,19 @@ class Type(Enum):
 	AIR = 11
 
 
+class Heightmaps(Enum):
+	MOTION_BLOCKING = 1
+	MOTION_BLOCKING_NO_LEAVES = 2
+	OCEAN_FLOOR = 3
+	WORLD_SURFACE = 4
+
 class Type_Tiles:
 	tile_sets = {
 		Type.WATER.value: {  #WATER
 			"minecraft:water"
             "minecraft:lily_pad"
 		},
-		Type.FOREST.value: {  # FOREST
+		Type.TREE.value: {  # FOREST
 			"minecraft:log",
 			"minecraft:dark_oak_log",
 			"minecraft:stripped_dark_oak_log"

@@ -7,20 +7,23 @@ class State:
     tallest_building_height = 30
     changed_blocks = {}
     blocks = []  # 3D Array of all the blocks in the state
-    top_heightmap = []
+    surface_heightmap = []
     walkable_heightmap = [] # TODO create function for this. Agents will be armor stands, and they can be updated in real time
+    trees = []
     world_y = 0
     world_x = 0
     world_z = 0
     len_x = 0
     len_y = 0
     len_z = 0
+    heightmap_offset = -1
 
     ## Create surface grid
     def __init__(self, world_slice:WorldSlice, max_y_offset=tallest_building_height):
-        self.blocks, self.world_y, self.len_y, self.top_heightmap = self.create_blocks_array(world_slice)
-        self.walkable_heightmap = self.create_walkable_heightmap(self.top_heightmap)  # a heightmap based on the state's y values
-        self.types = self.create_types_array(self.blocks, self.top_heightmap)
+        self.blocks, self.world_y, self.len_y, self.surface_heightmap = self.create_blocks_array(world_slice)
+        self.walkable_heightmap = self.create_walkable_heightmap(self.surface_heightmap)  # a heightmap based on the state's y values. -1
+        self.heightmaps = world_slice.heightmaps
+        self.types = self.create_types_array("MOTION_BLOCKING")  # 2D array. Include leaves
         self.world_x = world_slice.rect[0]
         self.world_z = world_slice.rect[1]
         self.len_x = world_slice.rect[2] - world_slice.rect[0]
@@ -64,39 +67,63 @@ class State:
         return blocks, state_y, len_y, state_heightmap
 
 
-    def create_walkable_heightmap(self, heightmap, y_offset=1):
+    def create_walkable_heightmap(self, heightmap):
         result = []
         for x in range(len(heightmap)):
             result.append([])
             for z in range(len(heightmap[0])):
-                state_adjusted_y = heightmap[x][z] - self.world_y + y_offset
+                state_adjusted_y = heightmap[x][z] - self.world_y + self.heightmap_offset
                 result[x].append(state_adjusted_y)
         return result
 
 
-    def create_types_array(self, blocks, heightmap):
+    def update_node_type(self, x, z):
+        prev_type = self.types[x][z]
+        new_type = self.determine_type(x, z)
+        if prev_type == "TREE":
+            if new_type != "TREE":
+                self.trees.remove((x, z))
+        #     y = self.heightmaps["MOTION_BLOCKING_NO_LEAVES"][x][z]-self.world_y+self.heightmap_offset
+        #     if self.is_log(x, y, z):
+        #         new_type = "FOREST"
+        self.types[x][z] = new_type
+
+
+    ## hope this isn't too expensive. may need to limit area if it is
+    def update_heightmaps(self, x, z):
+        x_to = 1
+        z_to = 1
+        area = (x, z, x_to, z_to)
+        worldSlice = WorldSlice(area)
+        for index in range(1,len(worldSlice.heightmaps)+1):
+            name = Heightmaps(index).name
+            new_y = worldSlice.heightmaps[name][0][0] + self.heightmap_offset
+            self.heightmaps[name][x][z] = new_y
+
+
+    def create_types_array(self, heightmap_name):
         types = []
-        for x in range(len(blocks)):
+        for x in range(len(self.blocks)):
             types.append([])
-            for z in range(len(blocks[0][0])):
-                block_y = heightmap[x][z] - self.world_y
-                block = blocks[x][block_y][z]
-                type = self.determine_types(block)
+            for z in range(len(self.blocks[0][0])):
+                type = self.determine_type(x, z, heightmap_name)
+                if type == "TREE":
+                    self.trees.append((x, z))
                 types[x].append(type)
         print("done initializing types")
         return types
 
 
-    def determine_types(self, block):
+    def determine_type(self, x, z, heightmap_name="MOTION_BLOCKING_NO_LEAVES"):
+        block_y = self.heightmaps[heightmap_name][x][z] - self.world_y + self.heightmap_offset
+        block = self.blocks[x][block_y][z]
         for i in range(1, len(Type)+1):
             if block in Type_Tiles.tile_sets[i]:
                 return Type(i).name
-        # print(block)
         return Type.AIR.name
 
 
-
-    def mark_changed_blocks(self, state_x, state_y, state_z, block_name):
+    def update_block(self, state_x, state_y, state_z, block_name):
         key = convert_coords_to_key(state_x, state_y, state_z)
         self.changed_blocks[key] = block_name
 
@@ -159,7 +186,7 @@ class State:
             log_type = self.get_log_type(self.blocks[x][y][z])
             replacement = "minecraft:air"
             self.blocks[x][y][z] = replacement
-            self.mark_changed_blocks(x, y, z, replacement)
+            self.update_block(x, y, z, replacement)
             if \
             self.is_leaf(self.get_adjacent_block(x, y, z, 0, 1, 0)) or \
             self.is_leaf(self.get_adjacent_block(x, y, z, 1, 0, 0)
@@ -168,7 +195,7 @@ class State:
             if not self.is_log(x, y-1, z):  # place sapling
                 sapling = "minecraft:"+log_type+"_sapling"
                 self.blocks[x][y][z] = sapling
-                self.mark_changed_blocks(x, y, z, sapling)
+                self.update_block(x, y, z, sapling)
             y-=1
 
 
@@ -208,7 +235,7 @@ class State:
     def trim_leaves(self, leaf_x, leaf_y, leaf_z):
         def leaf_to_air(blocks, x, y, z):
             blocks[x][y][z] = 'minecraft:air'
-            self.mark_changed_blocks(x, y, z, 'minecraft:air')
+            self.update_block(x, y, z, 'minecraft:air')
         self.perform_on_adj_recursively(leaf_x, leaf_y, leaf_z,self.is_leaf,self.perform_on_adj_recursively,leaf_to_air)
 
 

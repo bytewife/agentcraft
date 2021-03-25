@@ -1,5 +1,6 @@
 import block_manipulation
 from states import *
+from scipy.spatial import KDTree
 
 
 
@@ -11,7 +12,7 @@ class Agent:
     rendered_y = 0
     rendered_z = 0
 
-    def __init__(self, state_x, state_z, walkable_heightmap, name, parent_1=None, parent_2=None, model="minecraft:carved_pumpkin"):
+    def __init__(self, state, state_x, state_z, walkable_heightmap, name, parent_1=None, parent_2=None, model="minecraft:carved_pumpkin"):
         self.x = state_x
         self.z = state_z
         self.y = walkable_heightmap[state_x][state_z]
@@ -19,6 +20,7 @@ class Agent:
         self.parent_1 = parent_1
         self.parent_2 = parent_2
         self.model = model
+        self.state = state
 
     # 3D movement is a stretch goal
     def move(self, x_off, z_off, state, walkable_heightmap):
@@ -34,12 +36,26 @@ class Agent:
 
     def update_pos_in_state(self, state : State):
         # remove from previous spot
-        state.mark_changed_blocks(self.rendered_x, self.rendered_y, self.rendered_z, "minecraft:air")
-        state.mark_changed_blocks(self.x, self.y, self.z, self.model)
+        state.update_block(self.rendered_x, self.rendered_y, self.rendered_z, "minecraft:air")
+        state.update_block(self.x, self.y, self.z, self.model)
         self.rendered_x = self.x
         self.rendered_y = self.y
         self.rendered_z = self.z
         print(self.name + " is now at y of " + str(self.y))
+
+
+    def get_nearest_trees(self, starting_search_radius,max_iterations, radius_inc=1):
+        T = KDTree(self.state.trees)
+        for iteration in range(max_iterations):
+            radius = starting_search_radius + iteration*radius_inc
+            idx = T.query_ball_point([self.x, self.z], r=radius)
+            if len(idx) > 0:
+                result = []
+                for i in idx:
+                    result.append(self.state.trees[i])
+                return result
+        return None
+
 
 
     # def set_model(self, block):
