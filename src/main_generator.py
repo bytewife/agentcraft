@@ -8,6 +8,7 @@ from visualizeMap import *
 from block_manipulation import *
 from random import choice
 from movement import *
+from pathfinding import *
 import numpy as np
 import scipy.spatial as spatial
 # https://stackoverflow.com/questions/65003877/understanding-leafsize-in-scipy-spatial-kdtree
@@ -57,20 +58,26 @@ if sim.state.is_log(check_x, tree_y, check_z):
     sim.state.cut_tree_at(check_x, tree_y, check_z, times=1)
 
 sim.state.update_heightmaps(5,7)
-agent = Agent(sim.state, 30, 8, sim.state.walkable_heightmap, "JJ")
-sim.add_agent(agent)
-nearest_trees = agent.get_nearest_trees(starting_search_radius=30, max_iterations=5, radius_inc= 10)
-if nearest_trees != None:
-    chosen_tree = choice(nearest_trees)
-    dest_x = chosen_tree[0]
-    dest_z = chosen_tree[1]
-    agent.teleport(dest_x, dest_z,sim.state.walkable_heightmap)
-# sim.step(50, is_rendering_each_step=True)
 
-state_coords = sim.state.world_to_state((9, 63, 18))
-legal_actions = get_all_legal_actions(sim.state.blocks, 2, sim.state.walkable_heightmap, 2, [])
-sim.update_agents()
+# agent = Agent(sim.state, 30, 8, sim.state.walkable_heightmap, "JJ")
+# sim.add_agent(agent)
+#
+# nearest_trees = agent.get_nearest_trees(starting_search_radius=30, max_iterations=5, radius_inc= 10)
+# if nearest_trees != None:
+#     chosen_tree = choice(nearest_trees)
+#     dest_x = chosen_tree[0]
+#     dest_z = chosen_tree[1]
+#     agent.teleport(dest_x, dest_z,sim.state.walkable_heightmap)
+
+# sim.step(50, is_rendering_each_step=True)
+###
+# state_coords = sim.state.world_to_state((9, 63, 18))
+# legal_actions = get_all_legal_actions(sim.state.blocks, 2, sim.state.walkable_heightmap, 2, [])
+# sim.update_agents()
 sim.state.render()
+# get_path(0, 0, 5, 5)
+pathfind = Pathfinding()
+print(pathfind.get_path((0,0),(5,5), 31, 31))
 
 # sim.state.save_state(sim.state, "hope.txt")
 # sim.state.load_state("hope.txt", area[0], area[1])
