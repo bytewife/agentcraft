@@ -72,7 +72,7 @@ class State:
         for x in range(len(heightmap)):
             result.append([])
             for z in range(len(heightmap[0])):
-                state_adjusted_y = heightmap[x][z] - self.world_y + self.heightmap_offset
+                state_adjusted_y = heightmap[x][z] - self.world_y + 1#+ self.heightmap_offset
                 result[x].append(state_adjusted_y)
         return result
 
@@ -247,3 +247,11 @@ class State:
 
     def get_log_type(self, block_name):
         return block_name[10:-4]
+
+
+    def world_to_state(self,coords):
+        x = coords[0] - self.world_x
+        z = coords[2] - self.world_z
+        y = self.walkable_heightmap[x][z]
+        result = (x,y,z)
+        return result

@@ -45,6 +45,7 @@ class Agent:
 
 
     def get_nearest_trees(self, starting_search_radius,max_iterations, radius_inc=1):
+        if len(self.state.trees) <= 0: return
         T = KDTree(self.state.trees)
         for iteration in range(max_iterations):
             radius = starting_search_radius + iteration*radius_inc
@@ -54,8 +55,18 @@ class Agent:
                 for i in idx:
                     result.append(self.state.trees[i])
                 return result
-        return None
+        return []
 
+
+    def teleport(self, target_x, target_z, walkable_heightmap):
+        if (target_x < 0 or target_z < 0 or target_x >= self.state.len_x or target_z >= self.state.len_z):
+            print(self.name + " tried to move out of bounds!")
+            return
+        self.x = target_x
+        self.z = target_z
+        target_y = walkable_heightmap[target_x][target_z]
+        self.y = target_y
+        print(self.name + " teleported to "+str(target_x)+" "+str(target_y)+" "+str(target_z))
 
 
     # def set_model(self, block):

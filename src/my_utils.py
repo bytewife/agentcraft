@@ -73,7 +73,7 @@ class Type_Tiles:
 
 		},
 		Type.AIR.value: {
-			"minecraft:air"
+			"minecraft:air",
 			"minecraft:cave_air"
 		}
 	}
@@ -100,4 +100,5 @@ def convert_coords_to_key(x, y, z):
 def convert_key_to_coords(key):
 	x, y, z = [int(coord) for coord in key.split(',')]
 	return x, y, z
+
 
