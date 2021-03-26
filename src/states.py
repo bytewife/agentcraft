@@ -177,7 +177,7 @@ class State:
             block = block
             placeBlockBatched(self.world_x + state_x, self.world_y + state_y, self.world_z + state_z, block, n_blocks)
             i += 1
-            self.update_block_info(state_x, state_y, state_z)  # need to run this for every changed block before each rneder
+            self.update_block_info(state_x, state_y, state_z)  # Must occur after new blocks have been placed
         self.changed_blocks.clear()
         print(str(i)+" blocks rendered")
 
@@ -222,6 +222,9 @@ class State:
                 self.legal_actions[bx][bz] = movement.get_legal_actions_from_block(self.blocks, bx, bz, self.agent_jump_ability,
                                                                                    self.walkable_heightmap, self.agent_height,
                                                                                    self.unwalkable_blocks)
+        self.pathfinder.update_sector_for_block(x, z, self.pathfinder.sectors,
+                                                sector_sizes=self.pathfinder.sector_sizes,
+                                                legal_actions=self.legal_actions)
 
 
     def get_adjacent_block(self, x_origin, y_origin, z_origin, x_off, y_off, z_off):
