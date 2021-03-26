@@ -98,7 +98,7 @@ sim.state.render()
 print("walkable is ")
 print(sim.state.walkable_heightmap[0][5])
 # recompute sector after cutting it down at 0, 5
-sim.state.pathfinder.compute_sector(0, 5, sim.state.pathfinder.sectors[0, 5], sim.state.pathfinder.sectors, sim.state.pathfinder.sector_sizes, legal_actions=sim.state.legal_actions, is_redoing=True)
+sim.state.pathfinder.update_sector_for_block(0, 5, sim.state.pathfinder.sectors, sim.state.pathfinder.sector_sizes, legal_actions=sim.state.legal_actions)
 aaaa = sim.state.pathfinder.sectors
 print(sim.state.pathfinder.sectors[0,5])
 aaaa = sim.state.pathfinder.sectors

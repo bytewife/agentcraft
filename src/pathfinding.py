@@ -111,6 +111,7 @@ class Pathfinding:
 
     def compute_sector(self,x,z, sector, sectors, sector_sizes, legal_actions, is_redoing=False):
         open = [(x, z)]
+        closed = set()
         while len(open) > 0:  # search all adjacent until you cant go anymore
             pos = open.pop(0)
             nx, nz = pos
@@ -129,4 +130,34 @@ class Pathfinding:
                         continue
                     childs_sector = sectors[cx][cz]
                     if childs_sector == -1 or childs_sector != sector:  # if the tile doesn't have a sector, add to list to expand
-                        open.append((cx, cz))  # the or allows re-sectoring
+                        child_pos = (cx,cz)
+                        if not child_pos in closed:
+                            open.append(child_pos)
+                        closed.add(child_pos)
+                    elif childs_sector != sector:
+                        sector_sizes[childs_sector] -= 1
+                        child_pos = (cx,cz)
+                        if not child_pos in closed:
+                            open.append(child_pos)  # the or allows re-sectoring
+                        closed.add(child_pos)
+
+
+    def update_sector_for_block(self,x,z, sectors, sector_sizes, legal_actions):
+        found_legal_action = False
+        for n in range(len(legal_actions[x][z])):
+            bit = legal_actions[x][z][n]
+            found_legal_action = True
+            if bit is True:
+                dir = movement.directions[n]
+                reachable_block = (x+dir[0], z+dir[1])
+                reachable_sector = sectors[reachable_block[0], reachable_block[1]]
+                if sectors[x][z] != reachable_sector:
+                    sector_sizes[sectors[x][z]] -= 1
+                    new_sector = reachable_sector
+                    sectors[x][z] = new_sector
+                    self.compute_sector(0, 5, sector=new_sector, sectors=sectors, sector_sizes=sector_sizes, legal_actions=legal_actions, is_redoing=True)
+        if not found_legal_action:
+            sector = len(sector_sizes)
+            self.sector_sizes[sector] = 0
+            self.compute_sector(x, z, sector, self.sectors, self.sector_sizes, legal_actions)
+
