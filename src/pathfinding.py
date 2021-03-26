@@ -118,7 +118,9 @@ class Pathfinding:
                 continue
             sectors[nx][nz] = sector
             sector_sizes[sector] += 1
+            legals = legal_actions[nx][nz]
             for n in range(len(legal_actions[nx][nz])):  # check tiles reachable from here
+                a = legal_actions[nx][nz][n]
                 if legal_actions[nx][nz][n] == True:
                     dir = movement.directions[n]
                     cx = nx + dir[0]

@@ -1,5 +1,6 @@
 from states import *
 import bitarray
+import numpy as np
 
 class Directions(Enum):
     N  = 0
@@ -52,7 +53,7 @@ def get_legal_actions_from_block(blocks, x, z, vertical_ability, heightmap, acto
     return result
 
 
-def check_if_legal_move(blocks, x, y, z, x_offset, z_offset, jump_limit, heightmap, actor_height, unwalkable_blocks):
+def check_if_legal_move(blocks, x, y, z, x_offset, z_offset, jump_ability, heightmap, actor_height, unwalkable_blocks):
     target_x = x + x_offset
     target_z = z + z_offset
     if (target_x < 0 or target_z < 0 or target_x >= len(blocks) or target_z >= len(blocks[0][0])):
@@ -61,10 +62,10 @@ def check_if_legal_move(blocks, x, y, z, x_offset, z_offset, jump_limit, heightm
     target_block = blocks[target_x][target_y - 1][target_z]
     if target_block in unwalkable_blocks: return False
     y_diff = abs(y - target_y)
-    if y_diff > jump_limit: return False
+    if y_diff > jump_ability: return False
     is_legal = True
     for i in range(0, actor_height):
-        target = blocks[x][target_y + 1 + i][z]
+        target = blocks[target_x][target_y + 1 + i][target_z]
         if not (target in Type_Tiles.tile_sets[Type.AIR.value]):
             is_legal = False
             break

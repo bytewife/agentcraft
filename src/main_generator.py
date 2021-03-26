@@ -87,11 +87,16 @@ sim.add_agent(agent)
 sim.state.pathfinder.get_sectors(sim.state.heightmaps["MOTION_BLOCKING_NO_LEAVES"],sim.state.legal_actions)
 aaaa = sim.state.pathfinder.sectors
 print("sector is ")
+print(sim.state.legal_actions[0][2])
 print(sim.state.pathfinder.sectors[0,5])
-yb = sim.state.surface_heightmap[0, 5] - sim.state.world_y
+yb = sim.state.state_heightmap[0, 5] - sim.state.world_y
 print(sim.state.blocks[0][yb][5])
+print("walkable is ")
+print(sim.state.walkable_heightmap[0][5])
 sim.state.cut_tree_at(0, yb, 5)
 sim.state.render()
+print("walkable is ")
+print(sim.state.walkable_heightmap[0][5])
 # recompute sector after cutting it down at 0, 5
 sim.state.pathfinder.compute_sector(0, 5, sim.state.pathfinder.sectors[0, 5], sim.state.pathfinder.sectors, sim.state.pathfinder.sector_sizes, legal_actions=sim.state.legal_actions, is_redoing=True)
 aaaa = sim.state.pathfinder.sectors

@@ -9,7 +9,7 @@ class State:
     tallest_building_height = 30
     changed_blocks = {}
     blocks = []  # 3D Array of all the blocks in the state
-    surface_heightmap = []
+    state_heightmap = []
     walkable_heightmap = [] # TODO create function for this. Agents will be armor stands, and they can be updated in real time
     trees = []
     world_y = 0
@@ -20,20 +20,20 @@ class State:
     len_z = 0
     unwalkable_blocks = []
     agent_height = 2
-    agent_vertical_ability = 3
+    agent_jump_ability = 2
     heightmap_offset = -1
 
     ## Create surface grid
     def __init__(self, world_slice:WorldSlice, max_y_offset=tallest_building_height):
-        self.blocks, self.world_y, self.len_y, self.surface_heightmap = self.create_blocks_array(world_slice)
-        self.walkable_heightmap = self.create_walkable_heightmap(self.surface_heightmap)  # a heightmap based on the state's y values. -1
+        self.blocks, self.world_y, self.len_y, self.state_heightmap = self.create_blocks_array(world_slice)
+        self.walkable_heightmap = self.create_walkable_heightmap(self.state_heightmap)  # a heightmap based on the state's y values. -1
         self.heightmaps = world_slice.heightmaps
         self.types = self.create_types_array("MOTION_BLOCKING")  # 2D array. Include leaves
         self.world_x = world_slice.rect[0]
         self.world_z = world_slice.rect[1]
         self.len_x = world_slice.rect[2] - world_slice.rect[0]
         self.len_z = world_slice.rect[3] - world_slice.rect[1]
-        self.legal_actions = movement.get_all_legal_actions(self.blocks, 2, self.walkable_heightmap, self.agent_vertical_ability, [])
+        self.legal_actions = movement.get_all_legal_actions(self.blocks, 2, self.walkable_heightmap, self.agent_jump_ability, [])
         self.pathfinder = Pathfinding()
 
     def create_blocks_array(self, world_slice:WorldSlice, max_y_offset=tallest_building_height):
@@ -104,9 +104,10 @@ class State:
         worldSlice = WorldSlice(area)
         for index in range(1,len(worldSlice.heightmaps)+1):
             name = Heightmaps(index).name
-            new_y = worldSlice.heightmaps[name][0][0] + self.heightmap_offset
+            new_y = worldSlice.heightmaps[name][0][0]
             self.heightmaps[name][x][z] = new_y
-        self.surface_heightmap[x][z] = self.heightmaps["MOTION_BLOCKING_NO_LEAVES"][x][z] - 1
+        self.state_heightmap[x][z] = self.heightmaps["MOTION_BLOCKING_NO_LEAVES"][x][z] - 1
+        self.walkable_heightmap = self.create_walkable_heightmap(self.state_heightmap)
 
 
     def create_types_array(self, heightmap_name):
@@ -176,6 +177,7 @@ class State:
             block = block
             placeBlockBatched(self.world_x + state_x, self.world_y + state_y, self.world_z + state_z, block, n_blocks)
             i += 1
+            self.update_block_info(state_x, state_y, state_z)  # need to run this for every changed block before each rneder
         self.changed_blocks.clear()
         print(str(i)+" blocks rendered")
 
@@ -205,9 +207,10 @@ class State:
                 self.blocks[x][y][z] = sapling
                 self.change_block(x, y, z, sapling)
             y-=1
-        self.update_block_info(x, y, z)
+        # self.update_block_info(x, y, z)
 
 
+    # is this state x
     def update_block_info(self, x, y, z):  # this might be expensive if you use this repeatedly in a group
         self.update_heightmaps(x, z)
         for xo in range(-1, 2):
@@ -216,9 +219,9 @@ class State:
                 bz = z + zo
                 if bx < 0 or bz < 0 or bx >= len(self.blocks) or bz >= len(self.blocks[0][0]):
                     continue
-                self.legal_actions[bx][bz] = movement.get_legal_actions_from_block(self.blocks, bx, bz, self.agent_vertical_ability,
-                                                                        self.walkable_heightmap, self.agent_height,
-                                                                        self.unwalkable_blocks)
+                self.legal_actions[bx][bz] = movement.get_legal_actions_from_block(self.blocks, bx, bz, self.agent_jump_ability,
+                                                                                   self.walkable_heightmap, self.agent_height,
+                                                                                   self.unwalkable_blocks)
 
 
     def get_adjacent_block(self, x_origin, y_origin, z_origin, x_off, y_off, z_off):

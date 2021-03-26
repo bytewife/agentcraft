@@ -114,7 +114,7 @@ class Agent:
             bz = self.z + zo
             if bx < 0 or bz < 0 or bx >= len(self.state.blocks) or bz >= len(self.state.blocks[0][0]):
                 continue
-            by = self.state.surface_heightmap[bx, bz] - self.state.world_y
+            by = self.state.state_heightmap[bx, bz] - self.state.world_y
             if self.state.is_log(bx, by, bz):
                 self.state.cut_tree_at(bx, by, bz)
 
