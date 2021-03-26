@@ -144,7 +144,7 @@ def handle_dir(origin_x, origin_y, origin_z, end_x, end_y, end_z, dir_x, dir_y, 
     return(origin_x, origin_y, origin_z, end_x, end_y, end_z)
 
 
-def array_to_schema(blocks, dx, dy, dz, file_out_name):
+def array_XYZ_to_schema(blocks, dx, dy, dz, file_out_name):
     out = open(file_out_name, "w")
     out.write(str(dx)+" "+str(dy)+" "+str(dz)+'\n')
     block_string = ''
@@ -152,11 +152,27 @@ def array_to_schema(blocks, dx, dy, dz, file_out_name):
         for z in range(dz):
             for x in range(dx):
                 inv_y = dy - 1 - y
-                block = blocks[x][inv_y][z][10:].ljust(34, ' ')  # polished_blackstone_brick_stairs
+                block = blocks[x][inv_y][z].ljust(34, ' ')  # polished_blackstone_brick_stairs
                 block_string = block_string + block + " "
             block_string+="\n"
         block_string+="\n"
     out.write(block_string)
 
+
+def arrayXZ_to_schema(blocks, dx, dz, file_out_name):
+    out = open(file_out_name, "w")
+    out.write(str(dx)+" "+str(dz)+'\n')
+    block_string = ''
+    for x in range(dx):
+        for z in range(dz):
+            block = str(blocks[x][z]).ljust(34, ' ')  # polished_blackstone_brick_stairs
+            block_string = block_string + block + " "
+        block_string+="\n"
+    out.write(block_string)
+
+
+def download_heightmap(heightmap, file_name):
+    f = open(file_name, "w")
+    f.write(heightmap)
 
 

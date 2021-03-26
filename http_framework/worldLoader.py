@@ -54,8 +54,9 @@ class WorldSlice:
         # heightmaps
         self.heightmaps = {}
         for hmName in self.heightmapTypes:
-            self.heightmaps[hmName] = np.zeros(
-                (rect[2], rect[3]), dtype=np.int)
+            len_x = abs(rect[2] - rect[0])
+            len_z = abs(rect[3] - rect[1])
+            self.heightmaps[hmName] = np.zeros( (len_x, len_z), dtype=np.int)
 
         # Sections are in x,z,y order!!! (reverse minecraft order :p)
         self.sections = [[[None for i in range(16)] for z in range(

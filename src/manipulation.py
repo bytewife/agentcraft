@@ -1,3 +1,5 @@
+import src.my_utils
+
 def is_log(state, x, y, z):
     block = state.blocks[x][y][z]
     if block[-3:] == 'log':
@@ -46,3 +48,9 @@ def is_leaf(block_name):
 
 def get_log_type(block_name):
     return block_name[10:-4]
+
+
+def set_state_block(state, x, y, z, block_name):
+    key = src.my_utils.convert_coords_to_key(x, y, z)
+    print("before is ")
+    state.changed_blocks[key] = block_name

@@ -150,12 +150,14 @@ class Pathfinding:
             if bit is True:
                 dir = src.movement.directions[n]
                 reachable_block = (x+dir[0], z+dir[1])
-                reachable_sector = sectors[reachable_block[0], reachable_block[1]]
+                reachable_sector = sectors[reachable_block[0]][ reachable_block[1]]
                 if sectors[x][z] != reachable_sector:
+                    b = sector_sizes[sectors[x][z]]
                     sector_sizes[sectors[x][z]] -= 1
                     new_sector = reachable_sector
+                    a = sectors[x][z]
                     sectors[x][z] = new_sector
-                    self.propagate_sector(0, 5, sector=new_sector, sectors=sectors, sector_sizes=sector_sizes, legal_actions=legal_actions, is_redoing=True)
+                    self.propagate_sector(x, z, sector=new_sector, sectors=sectors, sector_sizes=sector_sizes, legal_actions=legal_actions, is_redoing=True)
         if not found_legal_action:
             sector = len(sector_sizes)
             self.sector_sizes[sector] = 0

@@ -117,9 +117,10 @@ class State:
 
     ## hope this isn't too expensive. may need to limit area if it is
     def update_heightmaps(self, x, z):
-        x_to = 1
-        z_to = 1
-        area = (x, z, x_to, z_to)
+        x_to = x + 1
+        z_to = z + 1
+        area = [x + self.world_x, z + self.world_z, x_to + self.world_x, z_to + self.world_z]
+        area = src.my_utils.correct_area(area)
         worldSlice = http_framework.worldLoader.WorldSlice(area)
         for index in range(1,len(worldSlice.heightmaps)+1):
             name = src.my_utils.Heightmaps(index).name
@@ -151,9 +152,6 @@ class State:
         return src.my_utils.Type.AIR.name
 
 
-    def set_state_block(self, state_x, state_y, state_z, block_name):
-        key = src.my_utils.convert_coords_to_key(state_x, state_y, state_z)
-        self.changed_blocks[key] = block_name
 
 
     def save_state(self, state, file_name):
