@@ -1,8 +1,9 @@
 from scipy.spatial import KDTree
 from random import choice
-from src.states import *
+import src.states
 from src.pathfinding import *
-from src.manipulation import *
+import src.manipulation
+from enum import Enum
 
 class Agent:
     x = 0
@@ -39,7 +40,7 @@ class Agent:
         self.y = walkable_heightmap[new_x][new_z]
 
 
-    def move_in_state(self, state : State):
+    def move_in_state(self, state : src.states.State):
         # remove from previous spot
         state.set_state_block(self.rendered_x, self.rendered_y, self.rendered_z, "minecraft:air")
         state.set_state_block(self.x, self.y, self.z, self.model)
@@ -109,7 +110,7 @@ class Agent:
 
 
     def log_adjacent_tree(self):
-        for dir in movement.directions:
+        for dir in src.movement.directions:
             xo, zo = dir
             bx = self.x + xo
             bz = self.z + zo
@@ -117,7 +118,7 @@ class Agent:
                 continue
             by = self.state.abs_ground_hm[bx, bz] - self.state.world_y
             if self.state.is_log(bx, by, bz):
-                cut_tree_at(self.state, bx, by, bz)
+                src.manipulation.cut_tree_at(self.state, bx, by, bz)
 
 
 

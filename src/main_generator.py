@@ -1,9 +1,14 @@
 # import random  # standard python lib for pseudo random
 
-from src.scheme_utils import *
-from movement import *
+import src.scheme_utils
+import http_framework.interfaceUtils
+import http_framework.worldLoader
+import src.movement
+import src.my_utils
 # https://stackoverflow.com/questions/65003877/understanding-leafsize-in-scipy-spatial-kdtree
-from simulation import *
+import src.simulation
+import src.manipulation
+import src.agent
 
 
 ############## debug
@@ -19,18 +24,18 @@ def get_state_surface_y(state_x, state_z, state_heightmap, state_y):
 ##############
 areaFlex = [0, 0, 32, 32] # default build area
 # you can set a build area in minecraft using the /setbuildarea command
-buildArea = requestBuildArea()
+buildArea = http_framework.interfaceUtils.requestBuildArea()
 if buildArea != -1:
     x1 = buildArea["xFrom"]
     z1 = buildArea["zFrom"]
     x2 = buildArea["xTo"]
     z2 = buildArea["zTo"]
     areaFlex = [x1, z1, x2-x1, z2-z1]
-area = correct_area(areaFlex)
+area = src.my_utils.correct_area(areaFlex)
 # load the world data
 # this uses the /chunks endpoint in the background
-worldSlice = WorldSlice(area)  #_so area is chunks?
-sim = Simulation(area)
+worldSlice = http_framework.worldLoader.WorldSlice(area)  #_so area is chunks?
+sim = src.simulation.Simulation(area)
 
 # save_state(state, state_y, "../hope.txt")
 # load_state("../hope.txt", area[0], area[1])
@@ -49,7 +54,7 @@ check_z = 7
 #
 # sim.state.update_heightmaps(0,1)
 
-agent = Agent(sim.state, 30, 8, sim.state.rel_ground_hm, "JJ")
+agent = src.agent.Agent(sim.state, 30, 8, sim.state.rel_ground_hm, "JJ")
 sim.add_agent(agent)
 # nearest_trees = agent.get_nearest_trees(starting_search_radius=15, max_iterations=5, radius_inc= 10)
 # chosen_tree = choice(nearest_trees)
@@ -83,7 +88,7 @@ yb = sim.state.abs_ground_hm[0, 5] - sim.state.world_y
 print(sim.state.blocks[0][yb][5])
 print("walkable is ")
 print(sim.state.rel_ground_hm[0][5])
-cut_tree_at(sim.state, 0, yb, 5)
+src.manipulation.cut_tree_at(sim.state, 0, yb, 5)
 sim.state.render()
 print("walkable is ")
 print(sim.state.rel_ground_hm[0][5])

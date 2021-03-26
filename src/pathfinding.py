@@ -123,7 +123,7 @@ class Pathfinding:
             for n in range(len(legal_actions[nx][nz])):  # check tiles reachable from here
                 a = legal_actions[nx][nz][n]
                 if legal_actions[nx][nz][n] == True:
-                    dir = movement.directions[n]
+                    dir = src.movement.directions[n]
                     cx = nx + dir[0]
                     cz = nz + dir[1]
                     if cx < 0 or cx >= len(legal_actions) or cz < 0 or cz >= len(legal_actions[0]):
@@ -148,7 +148,7 @@ class Pathfinding:
             bit = legal_actions[x][z][n]
             found_legal_action = True
             if bit is True:
-                dir = movement.directions[n]
+                dir = src.movement.directions[n]
                 reachable_block = (x+dir[0], z+dir[1])
                 reachable_sector = sectors[reachable_block[0], reachable_block[1]]
                 if sectors[x][z] != reachable_sector:
