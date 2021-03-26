@@ -9,6 +9,7 @@ from block_manipulation import *
 from random import choice
 from movement import *
 from pathfinding import *
+from manipulation import *
 import numpy as np
 import scipy.spatial as spatial
 # https://stackoverflow.com/questions/65003877/understanding-leafsize-in-scipy-spatial-kdtree
@@ -59,7 +60,7 @@ check_z = 7
 #
 # sim.state.update_heightmaps(0,1)
 
-agent = Agent(sim.state, 30, 8, sim.state.walkable_heightmap, "JJ")
+agent = Agent(sim.state, 30, 8, sim.state.rel_ground_hm, "JJ")
 sim.add_agent(agent)
 # nearest_trees = agent.get_nearest_trees(starting_search_radius=15, max_iterations=5, radius_inc= 10)
 # chosen_tree = choice(nearest_trees)
@@ -84,19 +85,19 @@ sim.add_agent(agent)
 # sim.step(50, is_rendering_each_step=True)
 
 # print(sim.state.legal_actions)
-sim.state.pathfinder.get_sectors(sim.state.heightmaps["MOTION_BLOCKING_NO_LEAVES"],sim.state.legal_actions)
+sim.state.pathfinder.create_sectors(sim.state.heightmaps["MOTION_BLOCKING_NO_LEAVES"], sim.state.legal_actions)
 aaaa = sim.state.pathfinder.sectors
 print("sector is ")
 print(sim.state.legal_actions[0][2])
 print(sim.state.pathfinder.sectors[0,5])
-yb = sim.state.state_heightmap[0, 5] - sim.state.world_y
+yb = sim.state.abs_ground_hm[0, 5] - sim.state.world_y
 print(sim.state.blocks[0][yb][5])
 print("walkable is ")
-print(sim.state.walkable_heightmap[0][5])
-sim.state.cut_tree_at(0, yb, 5)
+print(sim.state.rel_ground_hm[0][5])
+cut_tree_at(sim.state, 0, yb, 5)
 sim.state.render()
 print("walkable is ")
-print(sim.state.walkable_heightmap[0][5])
+print(sim.state.rel_ground_hm[0][5])
 # recompute sector after cutting it down at 0, 5
 # sim.state.pathfinder.update_sector_for_block(0, 5, sim.state.pathfinder.sectors, sim.state.pathfinder.sector_sizes, legal_actions=sim.state.legal_actions)
 aaaa = sim.state.pathfinder.sectors

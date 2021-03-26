@@ -3,6 +3,7 @@ from states import *
 from scipy.spatial import KDTree
 from pathfinding import *
 from random import choice
+from manipulation import *
 
 class Agent:
     x = 0
@@ -41,8 +42,8 @@ class Agent:
 
     def move_in_state(self, state : State):
         # remove from previous spot
-        state.change_block(self.rendered_x, self.rendered_y, self.rendered_z, "minecraft:air")
-        state.change_block(self.x, self.y, self.z, self.model)
+        state.set_state_block(self.rendered_x, self.rendered_y, self.rendered_z, "minecraft:air")
+        state.set_state_block(self.x, self.y, self.z, self.model)
         self.rendered_x = self.x
         self.rendered_y = self.y
         self.rendered_z = self.z
@@ -114,9 +115,9 @@ class Agent:
             bz = self.z + zo
             if bx < 0 or bz < 0 or bx >= len(self.state.blocks) or bz >= len(self.state.blocks[0][0]):
                 continue
-            by = self.state.state_heightmap[bx, bz] - self.state.world_y
+            by = self.state.abs_ground_hm[bx, bz] - self.state.world_y
             if self.state.is_log(bx, by, bz):
-                self.state.cut_tree_at(bx, by, bz)
+                cut_tree_at(self.state, bx, by, bz)
 
 
 

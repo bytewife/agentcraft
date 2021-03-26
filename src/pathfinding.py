@@ -94,7 +94,7 @@ class Pathfinding:
         return round(sqrt((x1 - x2) ** 2 + (z1 - z2) ** 2) * cardinal_cost)
 
 
-    def get_sectors(self, heightmap, legal_actions):
+    def create_sectors(self, heightmap, legal_actions):
         self.sectors = full_like(heightmap, -1, int)
         # self.sector_sizes = {}
         sector = 0
@@ -103,13 +103,13 @@ class Pathfinding:
                 if self.sectors[x][z] == -1:
                     sector += 1
                     self.sector_sizes[sector] = 0
-                    self.compute_sector(x, z, sector, self.sectors, self.sector_sizes, legal_actions)
+                    self.propagate_sector(x, z, sector, self.sectors, self.sector_sizes, legal_actions)
                 z += 1
             x += 1
         return self.sectors
 
 
-    def compute_sector(self,x,z, sector, sectors, sector_sizes, legal_actions, is_redoing=False):
+    def propagate_sector(self, x, z, sector, sectors, sector_sizes, legal_actions, is_redoing=False):
         open = [(x, z)]
         closed = set()
         while len(open) > 0:  # search all adjacent until you cant go anymore
@@ -155,9 +155,9 @@ class Pathfinding:
                     sector_sizes[sectors[x][z]] -= 1
                     new_sector = reachable_sector
                     sectors[x][z] = new_sector
-                    self.compute_sector(0, 5, sector=new_sector, sectors=sectors, sector_sizes=sector_sizes, legal_actions=legal_actions, is_redoing=True)
+                    self.propagate_sector(0, 5, sector=new_sector, sectors=sectors, sector_sizes=sector_sizes, legal_actions=legal_actions, is_redoing=True)
         if not found_legal_action:
             sector = len(sector_sizes)
             self.sector_sizes[sector] = 0
-            self.compute_sector(x, z, sector, self.sectors, self.sector_sizes, legal_actions)
+            self.propagate_sector(x, z, sector, self.sectors, self.sector_sizes, legal_actions)
 

@@ -9,8 +9,8 @@ class State:
     tallest_building_height = 30
     changed_blocks = {}
     blocks = []  # 3D Array of all the blocks in the state
-    state_heightmap = []
-    walkable_heightmap = [] # TODO create function for this. Agents will be armor stands, and they can be updated in real time
+    abs_ground_hm = []
+    rel_ground_hm = [] # TODO create function for this. Agents will be armor stands, and they can be updated in real time
     trees = []
     world_y = 0
     world_x = 0
@@ -25,20 +25,20 @@ class State:
 
     ## Create surface grid
     def __init__(self, world_slice:WorldSlice, max_y_offset=tallest_building_height):
-        self.blocks, self.world_y, self.len_y, self.state_heightmap = self.create_blocks_array(world_slice)
-        self.walkable_heightmap = self.create_walkable_heightmap(self.state_heightmap)  # a heightmap based on the state's y values. -1
+        self.blocks, self.world_y, self.len_y, self.abs_ground_hm = self.gen_blocks_array(world_slice)
+        self.rel_ground_hm = self.gen_rel_ground_hm(self.abs_ground_hm)  # a heightmap based on the state's y values. -1
         self.heightmaps = world_slice.heightmaps
-        self.types = self.create_types_array("MOTION_BLOCKING")  # 2D array. Include leaves
+        self.types = self.gen_types("MOTION_BLOCKING")  # 2D array. Include leaves
         self.world_x = world_slice.rect[0]
         self.world_z = world_slice.rect[1]
         self.len_x = world_slice.rect[2] - world_slice.rect[0]
         self.len_z = world_slice.rect[3] - world_slice.rect[1]
-        self.legal_actions = movement.get_all_legal_actions(self.blocks, 2, self.walkable_heightmap, self.agent_jump_ability, [])
+        self.legal_actions = movement.gen_all_legal_actions(self.blocks, 2, self.rel_ground_hm, self.agent_jump_ability, [])
         self.pathfinder = Pathfinding()
 
-    def create_blocks_array(self, world_slice:WorldSlice, max_y_offset=tallest_building_height):
+    def gen_blocks_array(self, world_slice:WorldSlice, max_y_offset=tallest_building_height):
         x1, z1, x2, z2 = world_slice.rect
-        state_heightmap = world_slice.get_heightmap("MOTION_BLOCKING_NO_LEAVES", -1) # inclusive of ground
+        abs_ground_hm = world_slice.get_heightmap("MOTION_BLOCKING_NO_LEAVES", -1) # inclusive of ground
         def get_y_bounds(_heightmap):  ## Get the y range that we'll save tha state in?
             lowest = 99
             highest = 0
@@ -49,7 +49,7 @@ class State:
                     elif (block_y > highest):
                         highest = block_y
             return lowest, highest
-        y1, y2  = get_y_bounds(state_heightmap)  # keep range not too large
+        y1, y2  = get_y_bounds(abs_ground_hm)  # keep range not too large
         y2 += max_y_offset
 
         len_z = abs(z2 - z1)
@@ -69,12 +69,12 @@ class State:
                     zi += 1
                 yi += 1
             xi += 1
-        state_y = y1
+        world_y = y1
         len_y = y2 - y1
-        return blocks, state_y, len_y, state_heightmap
+        return blocks, world_y, len_y, abs_ground_hm
 
 
-    def create_walkable_heightmap(self, heightmap):
+    def gen_rel_ground_hm(self, heightmap):
         result = []
         for x in range(len(heightmap)):
             result.append([])
@@ -106,11 +106,11 @@ class State:
             name = Heightmaps(index).name
             new_y = worldSlice.heightmaps[name][0][0]
             self.heightmaps[name][x][z] = new_y
-        self.state_heightmap[x][z] = self.heightmaps["MOTION_BLOCKING_NO_LEAVES"][x][z] - 1
-        self.walkable_heightmap = self.create_walkable_heightmap(self.state_heightmap)
+        self.abs_ground_hm[x][z] = self.heightmaps["MOTION_BLOCKING_NO_LEAVES"][x][z] - 1
+        self.rel_ground_hm = self.gen_rel_ground_hm(self.abs_ground_hm)
 
 
-    def create_types_array(self, heightmap_name):
+    def gen_types(self, heightmap_name):
         types = []
         for x in range(len(self.blocks)):
             types.append([])
@@ -132,7 +132,7 @@ class State:
         return Type.AIR.name
 
 
-    def change_block(self, state_x, state_y, state_z, block_name):
+    def set_state_block(self, state_x, state_y, state_z, block_name):
         key = convert_coords_to_key(state_x, state_y, state_z)
         self.changed_blocks[key] = block_name
 
@@ -183,31 +183,6 @@ class State:
 
 
     ## do we wanna cache tree locations? I don't want them to cut down buildings lol
-    def is_log(self, x, y, z):
-        block = self.blocks[x][y][z]
-        if block[-3:] == 'log':
-            return True
-        return False
-
-
-    ## assumes there's a tree at the location
-    def cut_tree_at(self, x, y, z, times=1):
-        for i in range(times):
-            log_type = self.get_log_type(self.blocks[x][y][z])
-            replacement = "minecraft:air"
-            self.blocks[x][y][z] = replacement
-            self.change_block(x, y, z, replacement)
-            if \
-            self.is_leaf(self.get_adjacent_block(x, y, z, 0, 1, 0)) or \
-            self.is_leaf(self.get_adjacent_block(x, y, z, 1, 0, 0)
-            ):
-                self.trim_leaves(x, y+1, z)
-            if not self.is_log(x, y-1, z):  # place sapling
-                sapling = "minecraft:"+log_type+"_sapling"
-                self.blocks[x][y][z] = sapling
-                self.change_block(x, y, z, sapling)
-            y-=1
-        # self.update_block_info(x, y, z)
 
 
     # is this state x
@@ -220,7 +195,7 @@ class State:
                 if bx < 0 or bz < 0 or bx >= len(self.blocks) or bz >= len(self.blocks[0][0]):
                     continue
                 self.legal_actions[bx][bz] = movement.get_legal_actions_from_block(self.blocks, bx, bz, self.agent_jump_ability,
-                                                                                   self.walkable_heightmap, self.agent_height,
+                                                                                   self.rel_ground_hm, self.agent_height,
                                                                                    self.unwalkable_blocks)
         self.pathfinder.update_sector_for_block(x, z, self.pathfinder.sectors,
                                                 sector_sizes=self.pathfinder.sector_sizes,
@@ -252,34 +227,11 @@ class State:
         return adj_blocks
 
 
-    def perform_on_adj_recursively(self, x, y, z, target_block_checker, recur_func, forward_call):
-        forward_call(self.blocks, x, y, z)
-        adj_blocks = self.get_all_adjacent_blocks(x, y, z)
-        for block in adj_blocks:
-            if target_block_checker(block[0]):
-                recur_func(block[1], block[2], block[3], target_block_checker, recur_func, forward_call)
-
-
-    def trim_leaves(self, leaf_x, leaf_y, leaf_z):
-        def leaf_to_air(blocks, x, y, z):
-            blocks[x][y][z] = 'minecraft:air'
-            self.change_block(x, y, z, 'minecraft:air')
-        self.perform_on_adj_recursively(leaf_x, leaf_y, leaf_z,self.is_leaf,self.perform_on_adj_recursively,leaf_to_air)
-
-
-    def is_leaf(self, block_name):
-        if block_name[-6:] == 'leaves':
-            return True
-        return False
-
-
-    def get_log_type(self, block_name):
-        return block_name[10:-4]
 
 
     def world_to_state(self,coords):
         x = coords[0] - self.world_x
         z = coords[2] - self.world_z
-        y = self.walkable_heightmap[x][z]
+        y = self.rel_ground_hm[x][z]
         result = (x,y,z)
         return result

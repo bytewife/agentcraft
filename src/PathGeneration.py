@@ -30,7 +30,7 @@ class LegalPrecomp:
         self.diagonal_actions = [[1, 1], [1, -1], [-1, 1], [-1, -1]]
         self.actions = self.lateral_actions + self.diagonal_actions
         self.legal_actions = [[[] for z in range(self.depth)] for x in range(self.width)]
-        self.sectors = np.full_like(level.state_heightmap, -1, int)
+        self.sectors = np.full_like(level.abs_ground_hm, -1, int)
         self.sector_sizes = {}
         self.precomputeActions()
         self.precomputeSectors()
@@ -128,7 +128,7 @@ class PathGenerator:
         self.maxx = self.minx + self.width
         self.maxy = self.miny + self.height
         self.maxz = self.minz + self.depth
-        self.grid = level.state_heightmap
+        self.grid = level.abs_ground_hm
 
 
         self.level = level

@@ -107,7 +107,7 @@ def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, dir
                 index = yi*(length_z)*(length_x) + zi*(length_x) + xi
                 block = "minecraft:"+blocks[index]
                 state.blocks[x][y][z] = block
-                state.change_block(x, y, z, block)
+                state.set_state_block(x, y, z, block)
                 i+=1
                 xi += 1
             zi += 1
