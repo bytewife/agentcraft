@@ -1,8 +1,8 @@
 import block_manipulation
 from states import *
 from scipy.spatial import KDTree
-
-
+from pathfinding import *
+from random import choice
 
 class Agent:
     x = 0
@@ -12,7 +12,12 @@ class Agent:
     rendered_y = 0
     rendered_z = 0
 
-    def __init__(self, state, state_x, state_z, walkable_heightmap, name, parent_1=None, parent_2=None, model="minecraft:carved_pumpkin"):
+    class Motive(Enum):
+        LOGGING = 0
+        BUILD = 1
+
+    def __init__(self, state, state_x, state_z, walkable_heightmap, name,
+                 parent_1=None, parent_2=None, model="minecraft:carved_pumpkin", motive=Motive.LOGGING.name):
         self.x = state_x
         self.z = state_z
         self.y = walkable_heightmap[state_x][state_z]
@@ -21,35 +26,36 @@ class Agent:
         self.parent_2 = parent_2
         self.model = model
         self.state = state
+        self.path = []
+        self.motive = motive
 
     # 3D movement is a stretch goal
-    def move(self, x_off, z_off, state, walkable_heightmap):
-        target_x = self.x + x_off
-        target_z = self.z + z_off
-        if (target_x < 0 or target_z < 0 or target_x >= state.len_x or target_z >= state.len_z):
+    def move_self(self, new_x, new_z, state, walkable_heightmap):
+        if new_x < 0 or new_z < 0 or new_x >= state.len_x or new_z >= state.len_z:
             print(self.name + " tried to move out of bounds!")
             return
-        self.x = target_x
-        self.z = target_z
-        self.y = walkable_heightmap[target_x][target_x]
+        self.x = new_x
+        self.z = new_z
+        self.y = walkable_heightmap[new_x][new_z]
 
 
-    def update_pos_in_state(self, state : State):
+    def move_in_state(self, state : State):
         # remove from previous spot
-        state.update_block(self.rendered_x, self.rendered_y, self.rendered_z, "minecraft:air")
-        state.update_block(self.x, self.y, self.z, self.model)
+        state.change_block(self.rendered_x, self.rendered_y, self.rendered_z, "minecraft:air")
+        state.change_block(self.x, self.y, self.z, self.model)
         self.rendered_x = self.x
         self.rendered_y = self.y
         self.rendered_z = self.z
         print(self.name + " is now at y of " + str(self.y))
 
 
-    def get_nearest_trees(self, starting_search_radius,max_iterations, radius_inc=1):
+    def get_nearest_trees(self, starting_search_radius, max_iterations, radius_inc=1):
         if len(self.state.trees) <= 0: return
-        T = KDTree(self.state.trees)
+        kdtree = KDTree(self.state.trees)
+        print(kdtree)
         for iteration in range(max_iterations):
             radius = starting_search_radius + iteration*radius_inc
-            idx = T.query_ball_point([self.x, self.z], r=radius)
+            idx = kdtree.query_ball_point([self.x, self.z], r=radius)
             if len(idx) > 0:
                 result = []
                 for i in idx:
@@ -67,6 +73,51 @@ class Agent:
         target_y = walkable_heightmap[target_x][target_z]
         self.y = target_y
         print(self.name + " teleported to "+str(target_x)+" "+str(target_y)+" "+str(target_z))
+
+
+    def set_path(self, path):
+        self.path = path
+
+
+    def follow_path(self, state, walkable_heightmap):
+        if len(self.path) <= 0:
+            print(self.name + " has finished their path.")
+            return
+        new_pos = self.path.pop()
+        self.move_self(*new_pos, state=state, walkable_heightmap=walkable_heightmap)
+
+
+    def set_motive(self, new_motive : Enum):
+        tree_search_radius = 20
+        radius_increase = 10
+        radius_increase_increments = 5
+        self.motive = new_motive.name
+        if new_motive.name == self.Motive.LOGGING.name:
+            print('here')
+            trees = self.get_nearest_trees(starting_search_radius=tree_search_radius,
+                                   radius_inc=radius_increase,
+                                   max_iterations=radius_increase_increments)
+            if len(trees) <= 0:
+                print(self.name + " cannot find any more trees!")
+                ## handle no trees
+                pass
+            else:
+                chosen_tree = choice(trees)
+                path = self.state.pathfinder.get_path((0,0),chosen_tree, 31, 31, self.state.legal_actions)
+                print(path)
+                self.set_path(path)
+
+    def log_adjacent_tree(self):
+        for dir in movement.directions:
+            xo, zo = dir
+            bx = self.x + xo
+            bz = self.z + zo
+            if bx < 0 or bz < 0 or bx >= len(self.state.blocks) or bz >= len(self.state.blocks[0][0]):
+                continue
+            by = self.state.surface_heightmap[bx, bz] - self.state.world_y
+            if self.state.is_log(bx, by, bz):
+                self.state.cut_tree_at(bx, by, bz)
+
 
 
     # def set_model(self, block):

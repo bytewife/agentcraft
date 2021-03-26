@@ -37,6 +37,8 @@ def get_all_legal_actions(blocks, vertical_ability, heightmap, actor_height, unw
 def get_legal_actions_from_block(blocks, x, z, vertical_ability, heightmap, actor_height, unwalkable_blocks):
     result = bitarray.bitarray('00000000')
     # the choice of heightmap here is important. It should be the on the ground, not 1 block above imo
+    letx = x
+    letz = z
     y = heightmap[x][z]
     for n in range(len(cardinals)):
         cardinal = cardinals[n]
@@ -50,19 +52,19 @@ def get_legal_actions_from_block(blocks, x, z, vertical_ability, heightmap, acto
     return result
 
 
-def check_if_legal_move(blocks, x, y, z, x_offset, z_offset, vertical_ability, heightmap, actor_height, unwalkable_blocks):
+def check_if_legal_move(blocks, x, y, z, x_offset, z_offset, jump_limit, heightmap, actor_height, unwalkable_blocks):
     target_x = x + x_offset
     target_z = z + z_offset
     if (target_x < 0 or target_z < 0 or target_x >= len(blocks) or target_z >= len(blocks[0][0])):
         return False
-    target_y = heightmap[target_x][target_z]  # make sure that the heightmap starts from the ground
-    target_block = blocks[target_x][target_y][target_z]
+    target_y = heightmap[target_x][target_z]# make sure that the heightmap starts from the ground
+    target_block = blocks[target_x][target_y - 1][target_z]
     if target_block in unwalkable_blocks: return False
     y_diff = abs(y - target_y)
-    if y_diff > vertical_ability: return False
+    if y_diff > jump_limit: return False
     is_legal = True
-    for i in range(actor_height):
-        target = blocks[x][target_y + 1 + i][z]  # the +1 to move to tile above groudn
+    for i in range(0, actor_height):
+        target = blocks[x][target_y + 1 + i][z]
         if not (target in Type_Tiles.tile_sets[Type.AIR.value]):
             is_legal = False
             break

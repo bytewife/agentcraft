@@ -1,5 +1,6 @@
 from heapq import heappop, heappush, heappushpop
 from math import sqrt
+from numpy import full_like
 import movement
 
 cardinal_cost = 100
@@ -10,9 +11,11 @@ class Pathfinding:
     def __init__(self):
         pass
 
+    sectors = []
+    sector_sizes = {}
 
     class Node:
-        def __init__(self, pos, g, h, parent, action_to_here, action_cost, legal_actions):
+        def __init__(self, pos, g=0, h=0, parent=None, action_to_here=0, action_cost=0, legal_actions=0):
             self.pos = pos
             self.g = g
             self.parent = parent
@@ -31,11 +34,12 @@ class Pathfinding:
         return g_lookup[parent] + p_to_c_cost
 
 
-    def expand(self, parent : Node, goal, max_x, max_z, legal_actions):  # TODO integtrate legal actions here
+    def expand(self, parent : Node, goal, max_x, max_z, all_legal_actions):  # TODO integtrate legal actions here
         children = []
         x, z = parent.pos
-        for n in range(len(legal_actions[x][z])):
-            if legal_actions[x][z][n] == False: continue
+        curr_legal_actions = all_legal_actions[x][z]
+        for n in range(len(curr_legal_actions)):
+            if curr_legal_actions[n] == False: continue
             dx = movement.directions[n][0]
             dz = movement.directions[n][1]
             tx = parent.pos[0] + dx
@@ -50,7 +54,7 @@ class Pathfinding:
                 g += diagonal_cost
             child = self.Node(
                 pos, g, self.heuristic(*pos, *goal), parent,
-                action_to_here=(-dx, -dz), action_cost=cardinal_cost, legal_actions=legal_actions[tx][tz]
+                action_to_here=(-dx, -dz), action_cost=cardinal_cost, legal_actions=all_legal_actions[tx][tz]
             )
             children.append(child)
         return children
@@ -82,9 +86,45 @@ class Pathfinding:
         while curr.pos != end:
             path.append(curr.pos)
             curr = curr.parent
-        path.append(curr.pos)
+        # path.append(curr.pos)
         return path
 
 
     def heuristic(self, x1, z1, x2, z2):
         return round(sqrt((x1 - x2) ** 2 + (z1 - z2) ** 2) * cardinal_cost)
+
+
+    def get_sectors(self, heightmap, legal_actions):
+        self.sectors = full_like(heightmap, -1, int)
+        # self.sector_sizes = {}
+        sector = 0
+        for x in range(len(legal_actions)):
+            for z in range(len(legal_actions[0])):
+                if self.sectors[x][z] == -1:
+                    sector += 1
+                    self.sector_sizes[sector] = 0
+                    self.compute_sector(x, z, sector, self.sectors, self.sector_sizes, legal_actions)
+                z += 1
+            x += 1
+        return self.sectors
+
+
+    def compute_sector(self,x,z, sector, sectors, sector_sizes, legal_actions, is_redoing=False):
+        open = [(x, z)]
+        while len(open) > 0:  # search all adjacent until you cant go anymore
+            pos = open.pop(0)
+            nx, nz = pos
+            if not is_redoing and sectors[nx][nz] != -1:
+                continue
+            sectors[nx][nz] = sector
+            sector_sizes[sector] += 1
+            for n in range(len(legal_actions[nx][nz])):  # check tiles reachable from here
+                if legal_actions[nx][nz][n] == True:
+                    dir = movement.directions[n]
+                    cx = nx + dir[0]
+                    cz = nz + dir[1]
+                    if cx < 0 or cx >= len(legal_actions) or cz < 0 or cz >= len(legal_actions[0]):
+                        continue
+                    childs_sector = sectors[cx][cz]
+                    if childs_sector == -1 or childs_sector != sector:  # if the tile doesn't have a sector, add to list to expand
+                        open.append((cx, cz))  # the or allows re-sectoring

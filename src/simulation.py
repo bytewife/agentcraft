@@ -18,7 +18,11 @@ class Simulation:
 
             ## DEBUG
             for agent in self.agents:
-                agent.move(1, 1, self.state, self.state.walkable_heightmap)
+                if len(agent.path) != 1:
+                    agent.follow_path(state=self.state, walkable_heightmap=self.state.walkable_heightmap)
+                else:
+                    agent.log_adjacent_tree()
+                # agent.move_self(1, 1, self.state, self.state.walkable_heightmap)
 
             self.update_agents()
             if is_rendering_each_step:
@@ -32,5 +36,5 @@ class Simulation:
 
     def update_agents(self):
         for agent in self.agents:
-            agent.update_pos_in_state(self.state)
+            agent.move_in_state(self.state)
         pass

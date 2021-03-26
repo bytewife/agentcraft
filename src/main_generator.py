@@ -53,31 +53,51 @@ check_x = 5
 check_z = 7
 
 
-tree_y = get_state_surface_y(*global_to_state_coords( check_x, check_z, area), state_y=sim.state.world_y, state_heightmap=sim.state.surface_heightmap)
-if sim.state.is_log(check_x, tree_y, check_z):
-    sim.state.cut_tree_at(check_x, tree_y, check_z, times=1)
-
-sim.state.update_heightmaps(5,7)
-
-# agent = Agent(sim.state, 30, 8, sim.state.walkable_heightmap, "JJ")
-# sim.add_agent(agent)
+# tree_y = get_state_surface_y(*global_to_state_coords( check_x, check_z, area), state_y=sim.state.world_y, state_heightmap=sim.state.surface_heightmap)
+# if sim.state.is_log(check_x, tree_y, check_z):
+#     sim.state.cut_tree_at(check_x, tree_y, check_z, times=1)
 #
-# nearest_trees = agent.get_nearest_trees(starting_search_radius=30, max_iterations=5, radius_inc= 10)
+# sim.state.update_heightmaps(0,1)
+
+agent = Agent(sim.state, 30, 8, sim.state.walkable_heightmap, "JJ")
+sim.add_agent(agent)
+# nearest_trees = agent.get_nearest_trees(starting_search_radius=15, max_iterations=5, radius_inc= 10)
+# chosen_tree = choice(nearest_trees)
+# print("chosen tree is ")
+# print(chosen_tree)
 # if nearest_trees != None:
 #     chosen_tree = choice(nearest_trees)
 #     dest_x = chosen_tree[0]
 #     dest_z = chosen_tree[1]
 #     agent.teleport(dest_x, dest_z,sim.state.walkable_heightmap)
 
-# sim.step(50, is_rendering_each_step=True)
 ###
 # state_coords = sim.state.world_to_state((9, 63, 18))
-legal_actions = get_all_legal_actions(sim.state.blocks, 2, sim.state.walkable_heightmap, 2, [])
+# legal_actions = get_all_legal_actions(sim.state.blocks, 2, sim.state.walkable_heightmap, 2, [])
 # sim.update_agents()
-sim.state.render()
+# sim.state.render()
 # get_path(0, 0, 5, 5)
-pathfind = Pathfinding()
-print(pathfind.get_path((0,0),(5,5), 31, 31, legal_actions))
+
+# agent.set_motive(Agent.Motive.LOGGING)
+
+# agent.follow_path(state=sim.state, walkable_heightmap=sim.state.walkable_heightmap)
+# sim.step(50, is_rendering_each_step=True)
+
+# print(sim.state.legal_actions)
+sim.state.pathfinder.get_sectors(sim.state.heightmaps["MOTION_BLOCKING_NO_LEAVES"],sim.state.legal_actions)
+aaaa = sim.state.pathfinder.sectors
+print("sector is ")
+print(sim.state.pathfinder.sectors[0,5])
+yb = sim.state.surface_heightmap[0, 5] - sim.state.world_y
+print(sim.state.blocks[0][yb][5])
+sim.state.cut_tree_at(0, yb, 5)
+sim.state.render()
+# recompute sector after cutting it down at 0, 5
+sim.state.pathfinder.compute_sector(0, 5, sim.state.pathfinder.sectors[0, 5], sim.state.pathfinder.sectors, sim.state.pathfinder.sector_sizes, legal_actions=sim.state.legal_actions, is_redoing=True)
+aaaa = sim.state.pathfinder.sectors
+print(sim.state.pathfinder.sectors[0,5])
+aaaa = sim.state.pathfinder.sectors
+
 
 # sim.state.save_state(sim.state, "hope.txt")
 # sim.state.load_state("hope.txt", area[0], area[1])

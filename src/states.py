@@ -1,6 +1,8 @@
 from src.http_framework.worldLoader import *
 from src.http_framework.interfaceUtils import *
 from my_utils import *
+from movement import *
+from pathfinding import *
 
 class State:
 
@@ -16,6 +18,9 @@ class State:
     len_x = 0
     len_y = 0
     len_z = 0
+    unwalkable_blocks = []
+    agent_height = 2
+    agent_vertical_ability = 3
     heightmap_offset = -1
 
     ## Create surface grid
@@ -28,6 +33,8 @@ class State:
         self.world_z = world_slice.rect[1]
         self.len_x = world_slice.rect[2] - world_slice.rect[0]
         self.len_z = world_slice.rect[3] - world_slice.rect[1]
+        self.legal_actions = movement.get_all_legal_actions(self.blocks, 2, self.walkable_heightmap, self.agent_vertical_ability, [])
+        self.pathfinder = Pathfinding()
 
     def create_blocks_array(self, world_slice:WorldSlice, max_y_offset=tallest_building_height):
         x1, z1, x2, z2 = world_slice.rect
@@ -99,6 +106,7 @@ class State:
             name = Heightmaps(index).name
             new_y = worldSlice.heightmaps[name][0][0] + self.heightmap_offset
             self.heightmaps[name][x][z] = new_y
+        self.surface_heightmap[x][z] = self.heightmaps["MOTION_BLOCKING_NO_LEAVES"][x][z] - 1
 
 
     def create_types_array(self, heightmap_name):
@@ -123,7 +131,7 @@ class State:
         return Type.AIR.name
 
 
-    def update_block(self, state_x, state_y, state_z, block_name):
+    def change_block(self, state_x, state_y, state_z, block_name):
         key = convert_coords_to_key(state_x, state_y, state_z)
         self.changed_blocks[key] = block_name
 
@@ -186,7 +194,7 @@ class State:
             log_type = self.get_log_type(self.blocks[x][y][z])
             replacement = "minecraft:air"
             self.blocks[x][y][z] = replacement
-            self.update_block(x, y, z, replacement)
+            self.change_block(x, y, z, replacement)
             if \
             self.is_leaf(self.get_adjacent_block(x, y, z, 0, 1, 0)) or \
             self.is_leaf(self.get_adjacent_block(x, y, z, 1, 0, 0)
@@ -195,8 +203,22 @@ class State:
             if not self.is_log(x, y-1, z):  # place sapling
                 sapling = "minecraft:"+log_type+"_sapling"
                 self.blocks[x][y][z] = sapling
-                self.update_block(x, y, z, sapling)
+                self.change_block(x, y, z, sapling)
             y-=1
+        self.update_block_info(x, y, z)
+
+
+    def update_block_info(self, x, y, z):  # this might be expensive if you use this repeatedly in a group
+        self.update_heightmaps(x, z)
+        for xo in range(-1, 2):
+            for zo in range(-1, 2):
+                bx = x + xo
+                bz = z + zo
+                if bx < 0 or bz < 0 or bx >= len(self.blocks) or bz >= len(self.blocks[0][0]):
+                    continue
+                self.legal_actions[bx][bz] = movement.get_legal_actions_from_block(self.blocks, bx, bz, self.agent_vertical_ability,
+                                                                        self.walkable_heightmap, self.agent_height,
+                                                                        self.unwalkable_blocks)
 
 
     def get_adjacent_block(self, x_origin, y_origin, z_origin, x_off, y_off, z_off):
@@ -235,7 +257,7 @@ class State:
     def trim_leaves(self, leaf_x, leaf_y, leaf_z):
         def leaf_to_air(blocks, x, y, z):
             blocks[x][y][z] = 'minecraft:air'
-            self.update_block(x, y, z, 'minecraft:air')
+            self.change_block(x, y, z, 'minecraft:air')
         self.perform_on_adj_recursively(leaf_x, leaf_y, leaf_z,self.is_leaf,self.perform_on_adj_recursively,leaf_to_air)
 
 
