@@ -1,9 +1,10 @@
 from scipy.spatial import KDTree
 from random import choice
-import src.states
-from src.pathfinding import *
-import src.manipulation
 from enum import Enum
+import src.pathfinding
+import src.states
+import src.manipulation
+import src.movement
 
 class Agent:
     x = 0
@@ -51,18 +52,7 @@ class Agent:
 
 
     def get_nearest_trees(self, starting_search_radius, max_iterations, radius_inc=1):
-        if len(self.state.trees) <= 0: return
-        kdtree = KDTree(self.state.trees)
-        print(kdtree)
-        for iteration in range(max_iterations):
-            radius = starting_search_radius + iteration*radius_inc
-            idx = kdtree.query_ball_point([self.x, self.z], r=radius)
-            if len(idx) > 0:
-                result = []
-                for i in idx:
-                    result.append(self.state.trees[i])
-                return result
-        return []
+        return src.movement.sort_by_distance(self.x, self.z, self.state.trees, starting_search_radius, max_iterations, radius_inc)
 
 
     def teleport(self, target_x, target_z, walkable_heightmap):

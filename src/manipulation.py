@@ -14,14 +14,15 @@ def cut_tree_at(state, x, y, z, times=1):
         state.blocks[x][y][z] = replacement
         state.set_state_block(x, y, z, replacement)
         if \
-                is_leaf(state.get_adjacent_block(x, y, z, 0, 1, 0)) or \
-                        is_leaf(state.get_adjacent_block(x, y, z, 1, 0, 0)
-                                     ):
+        is_leaf(state.get_adjacent_block(x, y, z, 0, 1, 0)) or \
+        is_leaf(state.get_adjacent_block(x, y, z, 1, 0, 0)
+        ):
             flood_kill_leaves(state, x, y + 1, z)
         if not is_log(state, x, y - 1, z):  # place sapling
             sapling = "minecraft:" + log_type + "_sapling"
             state.blocks[x][y][z] = sapling
             state.set_state_block(x, y, z, sapling)
+            state.trees.remove((x,z))
         y -= 1
 
 

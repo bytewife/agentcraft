@@ -3,6 +3,9 @@ import bitarray
 import numpy as np
 from src.my_utils import *
 from enum import Enum
+from scipy.spatial import KDTree
+from math import dist
+
 
 class Directions(Enum):
     N  = 0
@@ -74,4 +77,60 @@ def check_if_legal_move(blocks, x, y, z, x_offset, z_offset, jump_ability, heigh
     if is_legal:
         return True
     return False
+
+
+def adjacents(state, x, z):
+    adjacents = []
+    for dir in directions:
+        ax, az = x+dir[0], z+dir[1]
+        if state.out_of_bounds_2D(ax, az):
+            continue
+        adjacents.append([ax, az])
+    return adjacents
+
+
+def find_nearest(x, z, block_coords, starting_search_radius, max_iterations=20, radius_inc=1): # can be used at a sort
+    if len(block_coords) <= 0: return
+    kdtree = KDTree(block_coords)
+    for iteration in range(max_iterations):
+        radius = starting_search_radius + iteration * radius_inc
+        idx = kdtree.query_ball_point([x, z], r=radius)
+        if len(idx) > 0:
+            result = []
+            for i in idx:
+                result.append(block_coords[i])
+            return result
+    return []
+
+
+def sort_by_distance(x, z, block_coords):
+    dists = np.full_like(np.arange(len(block_coords), dtype=float), 0)
+    dict = {}
+    # put dists as keys in dict, value as index
+    for n in range(len(block_coords)):
+        _dist = dist((x, z), block_coords[n])
+        dists[n] = _dist
+        if not _dist in dict:
+            dict[_dist] = [n]
+        else:
+            dict[_dist].append(n)
+    dists.sort()
+    # put indices in array in ascending
+    indices = []
+    for _dist in dists:
+        for i in range(len(dict[_dist])):
+            next = dict[_dist][i]
+            indices.append(next)
+    # get block coords
+    result = [0] * len(block_coords)
+    for n in indices:
+        print(n)
+        result[i] = ((block_coords[n]))
+        i+=1
+    return result
+
+
+
+
+
 
