@@ -1,5 +1,5 @@
 from math import ceil, log2
-from src.http_framework.bitarray import BitArray
+from http_framework.bitarray import BitArray
 from io import BytesIO
 import requests
 import nbt

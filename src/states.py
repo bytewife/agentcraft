@@ -1,8 +1,9 @@
-from src.http_framework.worldLoader import *
-from src.http_framework.interfaceUtils import *
-from my_utils import *
-from movement import *
-from pathfinding import *
+import http_framework.interfaceUtils
+import http_framework.worldLoader
+import src.my_utils
+import src.movement
+import src.pathfinding
+import src.scheme_utils
 
 class State:
 
@@ -24,19 +25,37 @@ class State:
     heightmap_offset = -1
 
     ## Create surface grid
-    def __init__(self, world_slice:WorldSlice, max_y_offset=tallest_building_height):
-        self.blocks, self.world_y, self.len_y, self.abs_ground_hm = self.gen_blocks_array(world_slice)
-        self.rel_ground_hm = self.gen_rel_ground_hm(self.abs_ground_hm)  # a heightmap based on the state's y values. -1
-        self.heightmaps = world_slice.heightmaps
-        self.types = self.gen_types("MOTION_BLOCKING")  # 2D array. Include leaves
-        self.world_x = world_slice.rect[0]
-        self.world_z = world_slice.rect[1]
-        self.len_x = world_slice.rect[2] - world_slice.rect[0]
-        self.len_z = world_slice.rect[3] - world_slice.rect[1]
-        self.legal_actions = movement.gen_all_legal_actions(self.blocks, 2, self.rel_ground_hm, self.agent_jump_ability, [])
-        self.pathfinder = Pathfinding()
+    def __init__(self, world_slice=None, blocks_file=None, max_y_offset=tallest_building_height):
+        if not world_slice is None:
+            self.blocks, self.world_y, self.len_y, self.abs_ground_hm = self.gen_blocks_array(world_slice)
+            self.rel_ground_hm = self.gen_rel_ground_hm(self.abs_ground_hm)  # a heightmap based on the state's y values. -1
+            self.heightmaps = world_slice.heightmaps
+            self.types = self.gen_types("MOTION_BLOCKING")  # 2D array. Include leaves
+            self.world_x = world_slice.rect[0]
+            self.world_z = world_slice.rect[1]
+            self.len_x = world_slice.rect[2] - world_slice.rect[0]
+            self.len_z = world_slice.rect[3] - world_slice.rect[1]
+            self.legal_actions = src.movement.gen_all_legal_actions(
+                self.blocks, 2, self.rel_ground_hm, self.agent_jump_ability, []
+            )
+            self.pathfinder = src.pathfinding.Pathfinding()
+        else:  # for testing
+            print("State instantiated for testing!")
+            def parse_blocks_file(file_name):
+                size, blocks = src.scheme_utils.get_schematic_parts(file_name)
+                dx, dy, dz = size
+                blocks3D = [[[0 for z in range(dz)] for y in range(dy)] for x in range(dx)]
+                for x in range(dx):
+                    for y in range(dy):
+                        for z in range(dz):
+                            index = y*(dz)*(dx) + z*(dx) + x
+                            inv_y = dy - 1 - y
+                            blocks3D[x][inv_y][z] = "minecraft:"+blocks[index]
+                return dx, dy, dz, blocks3D
+            self.len_x, self.len_y, self.len_z, self.blocks = parse_blocks_file(blocks_file)
 
-    def gen_blocks_array(self, world_slice:WorldSlice, max_y_offset=tallest_building_height):
+
+    def gen_blocks_array(self, world_slice, max_y_offset=tallest_building_height):
         x1, z1, x2, z2 = world_slice.rect
         abs_ground_hm = world_slice.get_heightmap("MOTION_BLOCKING_NO_LEAVES", -1) # inclusive of ground
         def get_y_bounds(_heightmap):  ## Get the y range that we'll save tha state in?
@@ -74,12 +93,12 @@ class State:
         return blocks, world_y, len_y, abs_ground_hm
 
 
-    def gen_rel_ground_hm(self, heightmap):
+    def gen_rel_ground_hm(self, abs_ground_hm):
         result = []
-        for x in range(len(heightmap)):
+        for x in range(len(abs_ground_hm)):
             result.append([])
-            for z in range(len(heightmap[0])):
-                state_adjusted_y = heightmap[x][z] - self.world_y + 1#+ self.heightmap_offset
+            for z in range(len(abs_ground_hm[0])):
+                state_adjusted_y = abs_ground_hm[x][z] - self.world_y + 1#+ self.heightmap_offset
                 result[x].append(state_adjusted_y)
         return result
 
@@ -101,9 +120,9 @@ class State:
         x_to = 1
         z_to = 1
         area = (x, z, x_to, z_to)
-        worldSlice = WorldSlice(area)
+        worldSlice = http_framework.worldLoader.WorldSlice(area)
         for index in range(1,len(worldSlice.heightmaps)+1):
-            name = Heightmaps(index).name
+            name = src.my_utils.Heightmaps(index).name
             new_y = worldSlice.heightmaps[name][0][0]
             self.heightmaps[name][x][z] = new_y
         self.abs_ground_hm[x][z] = self.heightmaps["MOTION_BLOCKING_NO_LEAVES"][x][z] - 1
@@ -126,14 +145,14 @@ class State:
     def determine_type(self, x, z, heightmap_name="MOTION_BLOCKING_NO_LEAVES"):
         block_y = self.heightmaps[heightmap_name][x][z] - self.world_y + self.heightmap_offset
         block = self.blocks[x][block_y][z]
-        for i in range(1, len(Type)+1):
-            if block in Type_Tiles.tile_sets[i]:
-                return Type(i).name
-        return Type.AIR.name
+        for i in range(1, len(src.my_utils.Type)+1):
+            if block in src.my_utils.Type_Tiles.tile_sets[i]:
+                return src.my_utils.Type(i).name
+        return src.my_utils.Type.AIR.name
 
 
     def set_state_block(self, state_x, state_y, state_z, block_name):
-        key = convert_coords_to_key(state_x, state_y, state_z)
+        key = src.my_utils.convert_coords_to_key(state_x, state_y, state_z)
         self.changed_blocks[key] = block_name
 
 
@@ -161,8 +180,10 @@ class State:
         i = 0
         for line in blocks:
             position_raw, block = line.split(';')
-            state_x, state_y, state_z = convert_key_to_coords(position_raw)
-            placeBlockBatched(self.world_x + state_x, self.world_y + state_y, self.world_z + state_z, block, n_blocks)
+            state_x, state_y, state_z = src.my_utils.convert_key_to_coords(position_raw)
+            http_framework.interfaceUtils.placeBlockBatched(
+                self.world_x + state_x, self.world_y + state_y, self.world_z + state_z, block, n_blocks
+            )
             i += 1
         f.close()
         self.changed_blocks.clear()
@@ -173,9 +194,9 @@ class State:
         i = 0
         n_blocks = len(self.changed_blocks)
         for position, block in self.changed_blocks.items():
-            state_x, state_y, state_z = convert_key_to_coords(position)
+            state_x, state_y, state_z = src.my_utils.convert_key_to_coords(position)
             block = block
-            placeBlockBatched(self.world_x + state_x, self.world_y + state_y, self.world_z + state_z, block, n_blocks)
+            http_framework.interfaceUtils.placeBlockBatched(self.world_x + state_x, self.world_y + state_y, self.world_z + state_z, block, n_blocks)
             i += 1
             self.update_block_info(state_x, state_y, state_z)  # Must occur after new blocks have been placed
         self.changed_blocks.clear()
@@ -192,9 +213,9 @@ class State:
             for zo in range(-1, 2):
                 bx = x + xo
                 bz = z + zo
-                if bx < 0 or bz < 0 or bx >= len(self.blocks) or bz >= len(self.blocks[0][0]):
+                if self.out_of_bounds_2D(bx, bz):
                     continue
-                self.legal_actions[bx][bz] = movement.get_legal_actions_from_block(self.blocks, bx, bz, self.agent_jump_ability,
+                self.legal_actions[bx][bz] = src.movement.get_legal_actions_from_block(self.blocks, bx, bz, self.agent_jump_ability,
                                                                                    self.rel_ground_hm, self.agent_height,
                                                                                    self.unwalkable_blocks)
         self.pathfinder.update_sector_for_block(x, z, self.pathfinder.sectors,
@@ -206,9 +227,7 @@ class State:
         x_target = x_origin + x_off
         y_target = y_origin + y_off
         z_target = z_origin + z_off
-        if x_target >= len(self.blocks) or y_target >= len(self.blocks[0]) or z_target >= len(self.blocks[0][0]):
-            #TODO this might lead to clipping
-            print("Cannot check for block out of state bounds")
+        if self.out_of_bounds_3D(x_target, y_target, z_target):
             return None
         return self.blocks[x_target][y_target][z_target]
 
@@ -227,11 +246,22 @@ class State:
         return adj_blocks
 
 
-
-
     def world_to_state(self,coords):
         x = coords[0] - self.world_x
         z = coords[2] - self.world_z
         y = self.rel_ground_hm[x][z]
         result = (x,y,z)
         return result
+
+
+    def out_of_bounds_3D(self, x, y, z):
+        return True if \
+            x >= len(self.blocks) \
+            or y >= len(self.blocks[0]) \
+            or z >= len(self.blocks[0][0]) \
+            else False
+
+
+    def out_of_bounds_2D(self, x, z):
+        return True if x < 0 or z < 0 or x >= len(self.blocks) or z >= len(self.blocks[0][0]) \
+            else False

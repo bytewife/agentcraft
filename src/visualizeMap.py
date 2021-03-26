@@ -2,8 +2,8 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 
-from src.http_framework import blockColors, interfaceUtils
-from src.http_framework.worldLoader import WorldSlice
+from http_framework import blockColors, interfaceUtils
+from http_framework.worldLoader import WorldSlice
 
 # rect = (108, -119, 128, 128)
 

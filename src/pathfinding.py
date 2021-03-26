@@ -1,7 +1,7 @@
 from heapq import heappop, heappush, heappushpop
 from math import sqrt
 from numpy import full_like
-import movement
+import src.movement
 
 cardinal_cost = 100
 diagonal_cost = 141

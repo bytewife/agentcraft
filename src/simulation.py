@@ -1,7 +1,7 @@
 from agent import *
 from states import *
 import time
-from src.http_framework.worldLoader import *
+from http_framework.worldLoader import *
 
 class Simulation:
 

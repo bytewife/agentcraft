@@ -1,6 +1,8 @@
-from states import *
+# from states import *
 import bitarray
 import numpy as np
+from src.my_utils import *
+from enum import Enum
 
 class Directions(Enum):
     N  = 0

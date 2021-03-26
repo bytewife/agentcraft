@@ -1,9 +1,8 @@
-import block_manipulation
-from states import *
 from scipy.spatial import KDTree
-from pathfinding import *
 from random import choice
-from manipulation import *
+from src.states import *
+from src.pathfinding import *
+from src.manipulation import *
 
 class Agent:
     x = 0
@@ -107,6 +106,7 @@ class Agent:
                 path = self.state.pathfinder.get_path((0,0),chosen_tree, 31, 31, self.state.legal_actions)
                 print(path)
                 self.set_path(path)
+
 
     def log_adjacent_tree(self):
         for dir in movement.directions:

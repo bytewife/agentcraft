@@ -1,9 +1,9 @@
-from src.http_framework.interfaceUtils import *
+from http_framework.interfaceUtils import *
 
 ### Returns a string containing the block names.
 def download_area(origin_x, origin_y, origin_z, end_x, end_y, end_z):
     print("downloading area")
-    result = ""
+    block_string = ""
     dir_x = 1
     dir_y = 1
     dir_z = 1
@@ -20,11 +20,11 @@ def download_area(origin_x, origin_y, origin_z, end_x, end_y, end_z):
         for z in range(origin_z, end_z+dir_z, dir_z):
             for x in range(origin_x, end_x+dir_x, dir_x):
                 block = getBlock(x, y, z)[10:].ljust(34, ' ')  # polished_blackstone_brick_stairs
-                result = result + block + " "
-            result+="\n"
-        result+="\n"
+                block_string = block_string + block + " "
+            block_string+="\n"
+        block_string+="\n"
     print("finished downloading area")
-    return result
+    return block_string
 
 
 def download_schematic(origin_x, origin_y, origin_z, end_x, end_y, end_z, file_name):
@@ -121,7 +121,7 @@ def get_schematic_parts(file_name):
     raw = file.readlines()
 
     size_str = raw[0]
-    size_arr = (int(i) for i in size_str.split())
+    size_arr = [int(i) for i in size_str.split()]
 
     blocks_lines = raw[1:]
     blocks_str = ''
@@ -142,3 +142,21 @@ def handle_dir(origin_x, origin_y, origin_z, end_x, end_y, end_z, dir_x, dir_y, 
     if dir_z == -1:
         origin_z, end_z = end_z, origin_z - 2
     return(origin_x, origin_y, origin_z, end_x, end_y, end_z)
+
+
+def array_to_schema(blocks, dx, dy, dz, file_out_name):
+    out = open(file_out_name, "w")
+    out.write(str(dx)+" "+str(dy)+" "+str(dz)+'\n')
+    block_string = ''
+    for y in range(dy):
+        for z in range(dz):
+            for x in range(dx):
+                inv_y = dy - 1 - y
+                block = blocks[x][inv_y][z][10:].ljust(34, ' ')  # polished_blackstone_brick_stairs
+                block_string = block_string + block + " "
+            block_string+="\n"
+        block_string+="\n"
+    out.write(block_string)
+
+
+
