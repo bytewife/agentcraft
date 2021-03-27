@@ -109,7 +109,8 @@ def convert_key_to_coords(key):
 def get_player_head_block_id(name, SkullOwnerSet, rotation="1"):
 	prop = SkullOwnerSet[1:]
 	prop = prop.split(", x")[0]
-	command = """minecraft:player_head[rotation={0}]{{display:{{Name:"{{\\"text\\":\\"{1}\\"}}"}}, {2}}}"""\
+	prop = prop.replace(" ", "")
+	command = """player_head[rotation={0}]{{display:{{Name:"{{\\"text\\":\\"{1}\\"}}"}},{2}}}"""\
 		.format(rotation, name, prop)
 	return command
 

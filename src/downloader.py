@@ -12,19 +12,19 @@ areaFlex = [0, 0, 10, 10] # default build area
 #     z2 = buildArea["zTo"]
 #     areaFlex = [x1, z1, x2-x1, z2-z1]
 
-x1 = -5
-z1 = 25
-x2 = -7
-z2 = 27
-area = [x1,z1,x2,z2]
-area = src.my_utils.correct_area(area)
-worldSlice = http_framework.worldLoader.WorldSlice(area)  #_so area is chunks?
+# x1 = -5
+# z1 = 25
+# x2 = -7
+# z2 = 27
+# area = [x1,z1,x2,z2]
+# area = src.my_utils.correct_area(area)
+# worldSlice = http_framework.worldLoader.WorldSlice(area)  #_so area is chunks?
 
-file_name = "logtest"
-# download_schematic(293, 62, 844, 300, 65, 839, "market_tent_1")
-# place_schematic_in_world("market_tent_1", 293, 62, 855)
+file_name = "market_stall_1"
+src.scheme_utils.download_schematic(293, 62, 844, 300, 65, 839, file_name)
+src.scheme_utils.place_schematic_in_world(file_name, 293, 62, 855)
 
-src.scheme_utils.download_schematic(x1, 62, z1, -7, x2, z2, file_name + ".in")
-src.scheme_utils.download_heightmap(worldSlice, file_name +"hm")
+# src.scheme_utils.download_schematic(x1, 62, z1, -7, x2, z2, file_name + ".in")
+# src.scheme_utils.download_heightmap(worldSlice, file_name +"hm")
 
 # place_schematic_in_world("market_tent_1", 293, 62, 855)

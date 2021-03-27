@@ -1,4 +1,4 @@
-from http_framework.interfaceUtils import *
+import http_framework.interfaceUtils
 
 ### Returns a string containing the block names.
 def download_area(origin_x, origin_y, origin_z, end_x, end_y, end_z):
@@ -19,7 +19,8 @@ def download_area(origin_x, origin_y, origin_z, end_x, end_y, end_z):
     for y in range(end_y, origin_y-dir_y, -dir_y):
         for z in range(origin_z, end_z+dir_z, dir_z):
             for x in range(origin_x, end_x+dir_x, dir_x):
-                block = getBlock(x, y, z)[10:].ljust(34, ' ')  # polished_blackstone_brick_stairs
+                block = http_framework.interfaceUtils.getBlock(x, y, z)[10:].ljust(100, ' ')  # polished_blackstone_brick_stairs
+                print(block)
                 block_string = block_string + block + " "
             block_string+="\n"
         block_string+="\n"
@@ -63,10 +64,13 @@ def place_schematic_in_world(file_name, origin_x, origin_y, origin_z, dir_x=1, d
             xi = XI
             for x in range(origin_x, end_x+1, dir_x):
                 index =yi*length_z*length_x + zi*length_x + xi
-                print(index)
                 block = "minecraft:"+blocks[index]
-                print(block)
-                placeBlockBatched(x, y, z, block, n_blocks)#, n_blocks-1)
+                if block[-1] == '}':  # if it uses block data
+                    print("data block")
+                    http_framework.interfaceUtils.setBlockWithData(x, y, z, block)
+                    n_blocks -= 1  # just make sure the last block isn't a special case
+                else:
+                    http_framework.interfaceUtils.placeBlockBatched(x, y, z, block, n_blocks)#, n_blocks-1)
                 xi += 1
             zi += 1
         yi -= 1
@@ -152,7 +156,7 @@ def array_XYZ_to_schema(blocks, dx, dy, dz, file_out_name):
         for z in range(dz):
             for x in range(dx):
                 inv_y = dy - 1 - y
-                block = blocks[x][inv_y][z].ljust(34, ' ')  # polished_blackstone_brick_stairs
+                block = blocks[x][inv_y][z].ljust(100, ' ')  # polished_blackstone_brick_stairs
                 block_string = block_string + block + " "
             block_string+="\n"
         block_string+="\n"
@@ -165,7 +169,7 @@ def arrayXZ_to_schema(blocks, dx, dz, file_out_name):
     block_string = ''
     for x in range(dx):
         for z in range(dz):
-            block = str(blocks[x][z]).ljust(34, ' ')  # polished_blackstone_brick_stairs
+            block = str(blocks[x][z]).ljust(100, ' ')  # polished_blackstone_brick_stairs
             block_string = block_string + block + " "
         block_string+="\n"
     out.write(block_string)
