@@ -1,15 +1,15 @@
-from agent import *
-from states import *
+import src.agent
+import src.states
+import http_framework.worldLoader
 import time
-from http_framework.worldLoader import *
 
 class Simulation:
 
     # with names? Let's look after ensembles and other's data scructure for max flexibility
     def __init__(self, XZXZ):
         self.agents = set()
-        self.world_slice = WorldSlice(XZXZ)
-        self.state = State(self.world_slice)
+        self.world_slice = http_framework.worldLoader.WorldSlice(XZXZ)
+        self.state = src.states.State(self.world_slice)
 
 
     def step(self, times, is_rendering_each_step=False, rendering_step_duration=1.0):
@@ -30,7 +30,7 @@ class Simulation:
                 self.state.render()
 
 
-    def add_agent(self, agent : Agent):
+    def add_agent(self, agent : src.agent.Agent):
         self.agents.add(agent)
 
 

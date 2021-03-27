@@ -40,8 +40,8 @@ class Pathfinding:
         curr_legal_actions = all_legal_actions[x][z]
         for n in range(len(curr_legal_actions)):
             if curr_legal_actions[n] == False: continue
-            dx = movement.directions[n][0]
-            dz = movement.directions[n][1]
+            dx = src.movement.directions[n][0]
+            dz = src.movement.directions[n][1]
             tx = parent.pos[0] + dx
             tz = parent.pos[1] + dz
             if (tx < 0 or tz < 0 or tx > max_x or tz > max_z):

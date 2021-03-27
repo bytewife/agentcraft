@@ -55,6 +55,17 @@ class State:
             self.len_x, self.len_y, self.len_z, self.blocks = parse_blocks_file(blocks_file)
 
 
+    def gen_heightmaps(self, world_slice):
+        result = {}
+        for name, heightmap in world_slice.heightmaps.items():
+            result[name] = []
+            for x in range(len(heightmap)):
+                result[name].append([])
+                for z in range(len(heightmap[0])):
+                    state_adjusted_y = heightmap[x][z] # + self.heightmap_offset
+                    result[name][x].append(state_adjusted_y)
+        return result
+
     def gen_blocks_array(self, world_slice, max_y_offset=tallest_building_height):
         x1, z1, x2, z2 = world_slice.rect
         abs_ground_hm = world_slice.get_heightmap("MOTION_BLOCKING_NO_LEAVES", -1) # inclusive of ground
@@ -98,7 +109,7 @@ class State:
         for x in range(len(abs_ground_hm)):
             result.append([])
             for z in range(len(abs_ground_hm[0])):
-                state_adjusted_y = abs_ground_hm[x][z] - self.world_y + 1#+ self.heightmap_offset
+                state_adjusted_y = int(abs_ground_hm[x][z]) - self.world_y + 1#+ self.heightmap_offset
                 result[x].append(state_adjusted_y)
         return result
 
@@ -124,9 +135,9 @@ class State:
         worldSlice = http_framework.worldLoader.WorldSlice(area)
         for index in range(1,len(worldSlice.heightmaps)+1):
             name = src.my_utils.Heightmaps(index).name
-            new_y = worldSlice.heightmaps[name][0][0]
+            new_y = int(worldSlice.heightmaps[name][0][0]) - 1
             self.heightmaps[name][x][z] = new_y
-        self.abs_ground_hm[x][z] = self.heightmaps["MOTION_BLOCKING_NO_LEAVES"][x][z] - 1
+        self.abs_ground_hm[x][z] = self.heightmaps["MOTION_BLOCKING_NO_LEAVES"][x][z]
         self.rel_ground_hm = self.gen_rel_ground_hm(self.abs_ground_hm)
 
 

@@ -43,16 +43,16 @@ class Agent:
 
     def move_in_state(self, state : src.states.State):
         # remove from previous spot
-        state.set_state_block(self.rendered_x, self.rendered_y, self.rendered_z, "minecraft:air")
-        state.set_state_block(self.x, self.y, self.z, self.model)
+        src.manipulation.set_state_block(self.state, self.rendered_x, self.rendered_y, self.rendered_z, "minecraft:air")
+        src.manipulation.set_state_block(self.state, self.x, self.y, self.z, self.model)
         self.rendered_x = self.x
         self.rendered_y = self.y
         self.rendered_z = self.z
         print(self.name + " is now at y of " + str(self.y))
 
 
-    def get_nearest_trees(self, starting_search_radius, max_iterations, radius_inc=1):
-        return src.movement.sort_by_distance(self.x, self.z, self.state.trees, starting_search_radius, max_iterations, radius_inc)
+    def get_nearby_trees(self, starting_search_radius, max_iterations, radius_inc=1):
+        return src.movement.find_nearest(self.x, self.z, self.state.trees, starting_search_radius, max_iterations, radius_inc)
 
 
     def teleport(self, target_x, target_z, walkable_heightmap):
@@ -79,24 +79,29 @@ class Agent:
 
 
     def set_motive(self, new_motive : Enum):
-        tree_search_radius = 20
+        tree_search_radius = 10
         radius_increase = 10
-        radius_increase_increments = 5
+        radius_increase_increments = 10
         self.motive = new_motive.name
         if new_motive.name == self.Motive.LOGGING.name:
-            print('here')
-            trees = self.get_nearest_trees(starting_search_radius=tree_search_radius,
-                                   radius_inc=radius_increase,
-                                   max_iterations=radius_increase_increments)
-            if len(trees) <= 0:
-                print(self.name + " cannot find any more trees!")
-                ## handle no trees
-                pass
-            else:
-                chosen_tree = choice(trees)
-                path = self.state.pathfinder.get_path((0,0),chosen_tree, 31, 31, self.state.legal_actions)
-                print(path)
-                self.set_path(path)
+            closed = set()
+            for inc in range(radius_increase_increments):
+                trees = self.get_nearby_trees(starting_search_radius=tree_search_radius,
+                                              radius_inc=radius_increase,
+                                              max_iterations=1)
+                while len(trees) > 0:
+                    chosen_tree = trees.pop()
+                    if chosen_tree in closed:
+                        continue
+                    # see if theres a path to an adjacent tile
+                    for pos in src.movement.adjacents(self.state, *chosen_tree):
+                        if self.state.pathfinder.sectors[pos[0], pos[1]] ==   \
+                        self.state.pathfinder.sectors[self.x][self.z]:
+                            path = self.state.pathfinder.get_path((self.x, self.z),chosen_tree, 31, 31, self.state.legal_actions)
+                            self.set_path(path)
+                            return
+                    closed.add(chosen_tree)
+            print(self.name+" could not find a tree!")
 
 
     def log_adjacent_tree(self):
@@ -107,10 +112,8 @@ class Agent:
             if bx < 0 or bz < 0 or bx >= len(self.state.blocks) or bz >= len(self.state.blocks[0][0]):
                 continue
             by = self.state.abs_ground_hm[bx, bz] - self.state.world_y
-            if self.state.is_log(bx, by, bz):
+            if src.manipulation.is_log(self.state, bx, by, bz):
                 src.manipulation.cut_tree_at(self.state, bx, by, bz)
-
-
 
     # def set_model(self, block):
     #     self.model = block

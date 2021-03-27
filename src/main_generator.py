@@ -54,7 +54,7 @@ check_z = 7
 #
 # sim.state.update_heightmaps(0,1)
 
-agent = src.agent.Agent(sim.state, 30, 8, sim.state.rel_ground_hm, "JJ")
+agent = src.agent.Agent(sim.state, 0, 0, sim.state.rel_ground_hm, "JJ")
 sim.add_agent(agent)
 # nearest_trees = agent.get_nearest_trees(starting_search_radius=15, max_iterations=5, radius_inc= 10)
 # chosen_tree = choice(nearest_trees)
@@ -73,7 +73,7 @@ sim.add_agent(agent)
 # sim.state.render()
 # get_path(0, 0, 5, 5)
 
-# agent.set_motive(Agent.Motive.LOGGING)
+agent.set_motive(src.agent.Agent.Motive.LOGGING)
 
 # agent.follow_path(state=sim.state, walkable_heightmap=sim.state.walkable_heightmap)
 # sim.step(50, is_rendering_each_step=True)
