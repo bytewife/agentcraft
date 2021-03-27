@@ -85,7 +85,7 @@ def adjacents(state, x, z):
         ax, az = x+dir[0], z+dir[1]
         if state.out_of_bounds_2D(ax, az):
             continue
-        adjacents.append([ax, az])
+        adjacents.append((ax, az))
     return adjacents
 
 

@@ -39,6 +39,9 @@ class State:
                 self.blocks, 2, self.rel_ground_hm, self.agent_jump_ability, []
             )
             self.pathfinder = src.pathfinding.Pathfinding()
+            self.pathfinder.create_sectors(self.heightmaps["MOTION_BLOCKING_NO_LEAVES"],
+                                            self.legal_actions)  # add tihs into State
+
         else:  # for testing
             print("State instantiated for testing!")
             def parse_blocks_file(file_name):
@@ -62,9 +65,10 @@ class State:
             for x in range(len(heightmap)):
                 result[name].append([])
                 for z in range(len(heightmap[0])):
-                    state_adjusted_y = heightmap[x][z] # + self.heightmap_offset
+                    state_adjusted_y = heightmap[x][z]# + self.heightmap_offset
                     result[name][x].append(state_adjusted_y)
         return result
+
 
     def gen_blocks_array(self, world_slice, max_y_offset=tallest_building_height):
         x1, z1, x2, z2 = world_slice.rect
@@ -81,6 +85,8 @@ class State:
             return lowest, highest
         y1, y2  = get_y_bounds(abs_ground_hm)  # keep range not too large
         y2 += max_y_offset
+        if (y2 > 150):
+            print("warning: Y bound is really high!")
 
         len_z = abs(z2 - z1)
         len_y = abs(y2 - y1)
@@ -208,6 +214,7 @@ class State:
             http_framework.interfaceUtils.placeBlockBatched(self.world_x + state_x, self.world_y + state_y, self.world_z + state_z, block, n_blocks)
             i += 1
             self.update_block_info(state_x, state_y, state_z)  # Must occur after new blocks have been placed
+
         self.changed_blocks.clear()
         print(str(i)+" blocks rendered")
 
@@ -224,6 +231,7 @@ class State:
                 bz = z + zo
                 if self.out_of_bounds_2D(bx, bz):
                     continue
+                print(self.rel_ground_hm)
                 self.legal_actions[bx][bz] = src.movement.get_legal_actions_from_block(self.blocks, bx, bz, self.agent_jump_ability,
                                                                                    self.rel_ground_hm, self.agent_height,
                                                                                    self.unwalkable_blocks)

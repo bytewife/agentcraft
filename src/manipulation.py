@@ -1,14 +1,25 @@
 import src.my_utils
+from enum import Enum
+
+class TaskOutcome(Enum):
+    FAILURE = 0
+    SUCCESS = 1
+    IN_PROGRESS = 2
+    REDO = 3
+
 
 def is_log(state, x, y, z):
     block = state.blocks[x][y][z]
-    if block[-3:] == 'log':
+    if not block is None and block[-3:] == 'log':
         return True
     return False
 
 
 def cut_tree_at(state, x, y, z, times=1):
+
     for i in range(times):
+        if not is_log(state, x, y, z):
+            return TaskOutcome.IN_PROGRESS.name
         log_type = get_log_type(state.blocks[x][y][z])
         replacement = "minecraft:air"
         state.blocks[x][y][z] = replacement
@@ -21,9 +32,12 @@ def cut_tree_at(state, x, y, z, times=1):
         if not is_log(state, x, y - 1, z):  # place sapling
             sapling = "minecraft:" + log_type + "_sapling"
             state.blocks[x][y][z] = sapling
-            state.set_state_block(x, y, z, sapling)
+            src.manipulation.set_state_block(state, x, y, z, sapling)
             state.trees.remove((x,z))
+            return TaskOutcome.SUCCESS.name
         y -= 1
+    return TaskOutcome.IN_PROGRESS.name
+
 
 
 def do_recur_on_adjacent(state, x, y, z, target_block_checker, recur_func, forward_call):
@@ -42,7 +56,7 @@ def flood_kill_leaves(state, leaf_x, leaf_y, leaf_z):
 
 
 def is_leaf(block_name):
-    if block_name[-6:] == 'leaves':
+    if not block_name is None and block_name[-6:] == 'leaves':
         return True
     return False
 

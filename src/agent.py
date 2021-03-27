@@ -72,10 +72,16 @@ class Agent:
 
     def follow_path(self, state, walkable_heightmap):
         if len(self.path) <= 0:
-            print(self.name + " has finished their path.")
-            return
-        new_pos = self.path.pop()
-        self.move_self(*new_pos, state=state, walkable_heightmap=walkable_heightmap)
+            if self.motive == self.Motive.LOGGING.name:
+                print(self.name + " has finished their path and is now cutting.")
+                status = self.log_adjacent_tree()
+                if status == src.manipulation.TaskOutcome.SUCCESS:
+                    return
+                else:
+                    return
+        else:
+            new_pos = self.path.pop()
+            self.move_self(*new_pos, state=state, walkable_heightmap=walkable_heightmap)
 
 
     def set_motive(self, new_motive : Enum):
@@ -90,21 +96,26 @@ class Agent:
                                               radius_inc=radius_increase,
                                               max_iterations=1)
                 while len(trees) > 0:
-                    chosen_tree = trees.pop()
+                    chosen_tree = choice(trees)
+                    trees.remove(chosen_tree)
                     if chosen_tree in closed:
                         continue
                     # see if theres a path to an adjacent tile
                     for pos in src.movement.adjacents(self.state, *chosen_tree):
                         if self.state.pathfinder.sectors[pos[0], pos[1]] ==   \
                         self.state.pathfinder.sectors[self.x][self.z]:
-                            path = self.state.pathfinder.get_path((self.x, self.z),chosen_tree, 31, 31, self.state.legal_actions)
-                            self.set_path(path)
-                            return
+                            path = self.state.pathfinder.get_path((self.x, self.z), pos, 31, 31, self.state.legal_actions)
+                            if path == []:
+                                print(self.name + " could not find a tree!")
+                                self.set_motive(self.Motive.BUILD)
+                            else:
+                                self.set_path(path)
+                                return
                     closed.add(chosen_tree)
-            print(self.name+" could not find a tree!")
 
 
     def log_adjacent_tree(self):
+        status = src.manipulation.TaskOutcome.FAILURE.name
         for dir in src.movement.directions:
             xo, zo = dir
             bx = self.x + xo
@@ -113,7 +124,8 @@ class Agent:
                 continue
             by = self.state.abs_ground_hm[bx, bz] - self.state.world_y
             if src.manipulation.is_log(self.state, bx, by, bz):
-                src.manipulation.cut_tree_at(self.state, bx, by, bz)
+                status = src.manipulation.cut_tree_at(self.state, bx, by, bz)
+            return status  # someone sniped this tree.
 
     # def set_model(self, block):
     #     self.model = block

@@ -31,6 +31,7 @@ class Pathfinding:
 
 
     def calc_g(self, parent, g_lookup, p_to_c_cost):
+        a = g_lookup[parent] + p_to_c_cost
         return g_lookup[parent] + p_to_c_cost
 
 
@@ -60,24 +61,24 @@ class Pathfinding:
         return children
 
 
-    def get_path(self, start, end, max_x, max_z, legal_actions):
+    def get_path(self, start, end : list, max_x, max_z, legal_actions):
         first = self.Node(start, g=0, h=self.heuristic(*start, *end), parent=None, action_to_here=None, action_cost=0, legal_actions=legal_actions)
         open = [first]  # heap
-        closed = set()
-        path = []
+        closed = set() # change to a dict with coord-node
         g_lookup = {}
         while len(open) > 0:
             node = heappop(open)
-            if node.pos == end:
+            if node.pos[0] == end[0] and node.pos[1] == end[1]:  # to account for both tuples and lists
                 return self.backwards_traverse(node, start)
             closed.add(node.pos)
             for child in self.expand(node, end, max_x, max_z, legal_actions):
                 p_to_c_cost = child.action_cost
                 if child.pos in closed: continue
-                if child.pos in open and g_lookup[child] < self.calc_g(node, g_lookup, p_to_c_cost): continue # g is the action cost to get here, parent's g + parent to child g
+                # TODO fix the below to be "if child.pos in open" and the last if.
+                if not child.pos in closed and child.pos in g_lookup and g_lookup[child.pos] < self.calc_g(node.pos, g_lookup, p_to_c_cost): continue # g is the action cost to get here, parent's g + parent to child g
                 g_lookup[child.pos] = child.g
                 heappush(open, child)
-        return path
+        return []
 
 
     def backwards_traverse(self, node, end):

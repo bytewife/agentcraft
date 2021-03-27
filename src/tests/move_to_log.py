@@ -18,17 +18,12 @@ worldSlice = http_framework.worldLoader.WorldSlice(area)  #_so area is chunks?
 file_name = "move_to_log"
 
 sim = src.simulation.Simulation(area)
-print(sim.state.heightmaps["MOTION_BLOCKING_NO_LEAVES"])
-sim.state.update_heightmaps(0,0)
-print(sim.state.heightmaps["MOTION_BLOCKING_NO_LEAVES"])
-print(sim.state.abs_ground_hm)
-# print(sim.state.abs_ground_hm)
-# sim.state.pathfinder.create_sectors(sim.state.heightmaps["MOTION_BLOCKING_NO_LEAVES"],sim.state.legal_actions)  # add tihs into State
-# ag = src.agent.Agent(sim.state, 0, 0, sim.state.heightmaps["MOTION_BLOCKING"], "Jonah")
-# sim.add_agent(ag)
-# ag.set_motive(ag.Motive.LOGGING)
-# print(ag.path)
-# sim.step(10, True, 1.0)
+
+ag = src.agent.Agent(sim.state, 0, 0, sim.state.heightmaps["MOTION_BLOCKING"], "Jonah")
+sim.add_agent(ag)
+ag.set_motive(ag.Motive.LOGGING)
+print(ag.path)
+sim.step(10, True, 1.0)
 
 # state_x = -6 - area[0]
 # state_z = 31 - area[1]
