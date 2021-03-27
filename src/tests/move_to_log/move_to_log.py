@@ -15,7 +15,7 @@ area = [x1,z1,x2,z2]
 area = src.my_utils.correct_area(area)
 worldSlice = http_framework.worldLoader.WorldSlice(area)  #_so area is chunks?
 
-file_name = "move_to_log"
+file_name = ""
 
 sim = src.simulation.Simulation(area)
 

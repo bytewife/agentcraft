@@ -20,6 +20,10 @@ class Agent:
 
     def __init__(self, state, state_x, state_z, walkable_heightmap, name,
                  parent_1=None, parent_2=None, model="minecraft:carved_pumpkin", motive=Motive.LOGGING.name):
+
+        self.x = self.rendered_x = state_x
+        self.z = self.rendered_z = state_z
+        self.y = self.rendered_y = walkable_heightmap[state_x][state_z] + 1
         self.name = name
         self.parent_1 = parent_1
         self.parent_2 = parent_2
@@ -35,11 +39,10 @@ class Agent:
             return
         self.x = new_x
         self.z = new_z
-        self.y = walkable_heightmap[new_x][new_z] + 1
+        self.y = walkable_heightmap[new_x][new_z]
 
 
     def move_in_state(self, state : src.states.State):
-        # remove from previous spot
         src.manipulation.set_state_block(self.state, self.rendered_x, self.rendered_y, self.rendered_z, "minecraft:air")
         src.manipulation.set_state_block(self.state, self.x, self.y, self.z, self.model)
         self.rendered_x = self.x
