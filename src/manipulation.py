@@ -24,9 +24,10 @@ def cut_tree_at(state, x, y, z, times=1):
         #     return TaskOutcome.IN_PROGRESS.name
         log_type = get_log_type(state.blocks[x][y][z])
         replacement = "minecraft:air"
-        state.blocks[x][y][z] = replacement
+        # state.blocks[x][y][z] = replacement
         src.manipulation.set_state_block(state, x, y, z, replacement)
-        state.update_heightmaps(x, z)
+        print("changed blocks")
+        print(state.changed_blocks)
         if \
                 is_leaf(state.get_adjacent_block(x, y, z, 0, 1, 0)) or \
         is_leaf(state.get_adjacent_block(x, y, z, 1, 0, 0)
@@ -34,13 +35,12 @@ def cut_tree_at(state, x, y, z, times=1):
             flood_kill_leaves(state, x, y + 1, z)
         if not is_log(state, x, y - 1, z):  # place sapling
             sapling = "minecraft:" + log_type + "_sapling"
-            state.blocks[x][y][z] = sapling
+            # state.blocks[x][y][z] = sapling
             src.manipulation.set_state_block(state, x, y, z, sapling)
             print("TREES")
             print(state.trees)
             state.trees.remove((x,z))
             print(state.trees)
-            state.update_heightmaps(x, z)
             return TaskOutcome.SUCCESS.name
         y -= 1
     return TaskOutcome.IN_PROGRESS.name
@@ -72,11 +72,6 @@ def get_log_type(block_name):
 
 
 def set_state_block(state, x, y, z, block_name):
-    print("setting at")
-    print(x)
-    print(y)
-    print(z)
     state.blocks[x][y][z] = block_name
     key = src.my_utils.convert_coords_to_key(x, y, z)
     state.changed_blocks[key] = block_name
-    print(state.changed_blocks)

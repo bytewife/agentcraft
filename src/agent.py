@@ -74,7 +74,7 @@ class Agent:
         if len(self.path) < 1:
             if self.motive == self.Motive.LOGGING.name:
                 print(self.name + " has finished their path and is now cutting.")
-                status = self.log_adjacent_tree()
+                status = self.log_adjacent_tree(state)
                 if status == src.manipulation.TaskOutcome.SUCCESS:
                     print("done!")
                     return
@@ -114,7 +114,7 @@ class Agent:
             exit(1)
 
 
-    def log_adjacent_tree(self):
+    def log_adjacent_tree(self, state):
         status = src.manipulation.TaskOutcome.FAILURE.name
         for dir in src.movement.directions:
             xo, zo = dir
@@ -122,10 +122,11 @@ class Agent:
             bz = self.z + zo
             if bx < 0 or bz < 0 or bx >= len(self.state.blocks) or bz >= len(self.state.blocks[0][0]):
                 continue
-            by = self.state.abs_ground_hm[bx, bz] - self.state.world_y  # this isn't being updated in heightmap
+            by = state.abs_ground_hm[bx][bz] - self.state.world_y  # this isn't being updated in heightmap
+            print("BY_IS")
+            print(by)
             if src.manipulation.is_log(self.state, bx, by, bz):
                 status = src.manipulation.cut_tree_at(self.state, bx, by, bz)
-                self.state.update_heightmaps(bx, bz)
                 break  # cut one at a time
         return status  # someone sniped this tree.
 

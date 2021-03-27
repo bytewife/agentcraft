@@ -94,11 +94,13 @@ def swap_array_elements(arr, a, b):
 
 
 def convert_coords_to_key(x, y, z):
-    return str(x)+','+str(y)+','+str(z)
+    # return str(x)+','+str(y)+','+str(z)
+	return (x, y, z)
 
 
 def convert_key_to_coords(key):
-	x, y, z = [int(coord) for coord in key.split(',')]
-	return x, y, z
+	# x, y, z = [int(coord) for coord in key.split(',')]
+	# return x, y, z
+    return key
 
 

@@ -24,9 +24,8 @@ class Simulation:
                 # agent.move_self(1, 1, self.state, self.state.walkable_heightmap)
 
             self.update_agents()
-            if is_rendering_each_step:
-                time.sleep(rendering_step_duration)
-                self.state.render()
+            self.state.render()
+            time.sleep(rendering_step_duration)
 
 
     def add_agent(self, agent : src.agent.Agent):
