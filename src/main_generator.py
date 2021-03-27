@@ -80,10 +80,10 @@ agent.set_motive(src.agent.Agent.Motive.LOGGING)
 
 # print(sim.state.legal_actions)
 sim.state.pathfinder.create_sectors(sim.state.heightmaps["MOTION_BLOCKING_NO_LEAVES"], sim.state.legal_actions)
-aaaa = sim.state.pathfinder.sectors
+aaaa = sim.state.sectors
 print("sector is ")
 print(sim.state.legal_actions[0][2])
-print(sim.state.pathfinder.sectors[0,5])
+print(sim.state.sectors[0,5])
 yb = sim.state.abs_ground_hm[0, 5] - sim.state.world_y
 print(sim.state.blocks[0][yb][5])
 print("walkable is ")
@@ -93,9 +93,9 @@ sim.state.render()
 print("walkable is ")
 print(sim.state.rel_ground_hm[0][5])
 # recompute sector after cutting it down at 0, 5
-# sim.state.pathfinder.update_sector_for_block(0, 5, sim.state.pathfinder.sectors, sim.state.pathfinder.sector_sizes, legal_actions=sim.state.legal_actions)
-aaaa = sim.state.pathfinder.sectors
-aaaa = sim.state.pathfinder.sectors
+# sim.state.pathfinder.update_sector_for_block(0, 5, sim.state.sectors, sim.state.pathfinder.sector_sizes, legal_actions=sim.state.legal_actions)
+aaaa = sim.state.sectors
+aaaa = sim.state.sectors
 
 
 # sim.state.save_state(sim.state, "hope.txt")

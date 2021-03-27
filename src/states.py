@@ -20,7 +20,7 @@ class State:
     len_y = 0
     len_z = 0
     unwalkable_blocks = []
-    agent_height = 2
+    agent_height = 1
     agent_jump_ability = 2
     heightmap_offset = -1
 
@@ -36,10 +36,10 @@ class State:
             self.len_x = world_slice.rect[2] - world_slice.rect[0]
             self.len_z = world_slice.rect[3] - world_slice.rect[1]
             self.legal_actions = src.movement.gen_all_legal_actions(
-                self.blocks, 2, self.rel_ground_hm, self.agent_jump_ability, []
+                self.blocks, vertical_ability=self.agent_jump_ability, heightmap=self.rel_ground_hm, actor_height=self.agent_height, unwalkable_blocks=[]
             )
             self.pathfinder = src.pathfinding.Pathfinding()
-            self.pathfinder.create_sectors(self.heightmaps["MOTION_BLOCKING_NO_LEAVES"],
+            self.sectors = self.pathfinder.create_sectors(self.heightmaps["MOTION_BLOCKING_NO_LEAVES"],
                                             self.legal_actions)  # add tihs into State
 
         else:  # for testing
@@ -214,12 +214,12 @@ class State:
         n_blocks = len(self.changed_blocks)
         for position, block in self.changed_blocks.items():
             state_x, state_y, state_z = src.my_utils.convert_key_to_coords(position)
-            block = block
-            # http_framework.interfaceUtils.placeBlockBatched(self.world_x + state_x, self.world_y + state_y, self.world_z + state_z, block, n_blocks)
-            http_framework.interfaceUtils.setBlock(self.world_x + state_x, self.world_y + state_y, self.world_z + state_z, block)
+            http_framework.interfaceUtils.placeBlockBatched(self.world_x + state_x, self.world_y + state_y, self.world_z + state_z, block, n_blocks)
+            # http_framework.interfaceUtils.setBlock(self.world_x + state_x, self.world_y + state_y, self.world_z + state_z, block)
             i += 1
+        for position, block in self.changed_blocks.items():
+            state_x, state_y, state_z = src.my_utils.convert_key_to_coords(position)
             self.update_block_info(state_x, state_y, state_z)  # Must occur after new blocks have been placed
-
         self.changed_blocks.clear()
         print(str(i)+" blocks rendered")
 
@@ -239,7 +239,7 @@ class State:
                 self.legal_actions[bx][bz] = src.movement.get_legal_actions_from_block(self.blocks, bx, bz, self.agent_jump_ability,
                                                                                    self.rel_ground_hm, self.agent_height,
                                                                                    self.unwalkable_blocks)
-        self.pathfinder.update_sector_for_block(x, z, self.pathfinder.sectors,
+        self.pathfinder.update_sector_for_block(x, z, self.sectors,
                                                 sector_sizes=self.pathfinder.sector_sizes,
                                                 legal_actions=self.legal_actions)
 

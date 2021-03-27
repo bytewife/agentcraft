@@ -86,6 +86,7 @@ class Agent:
 
 
     def set_motive(self, new_motive : Enum):
+        print(self.state.sectors)
         tree_search_radius = 10
         radius_increase = 10
         radius_increase_increments = 10
@@ -104,8 +105,8 @@ class Agent:
                         continue
                     # see if theres a path to an adjacent tile
                     for pos in src.movement.adjacents(self.state, *chosen_tree):
-                        if self.state.pathfinder.sectors[pos[0], pos[1]] ==   \
-                        self.state.pathfinder.sectors[self.x][self.z]:
+                        if self.state.sectors[pos[0], pos[1]] ==   \
+                        self.state.sectors[self.x][self.z]:
                             path = self.state.pathfinder.get_path((self.x, self.z), pos, 31, 31, self.state.legal_actions)
                             self.set_path(path)
                             return

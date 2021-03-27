@@ -26,6 +26,7 @@ directions = cardinals + diagonals
 
 
 def gen_all_legal_actions(blocks, vertical_ability, heightmap, actor_height, unwalkable_blocks):
+    print(heightmap)
     rx = len(blocks)
     rz = len(blocks[0][0])
     # print(rx)
@@ -43,8 +44,6 @@ def gen_all_legal_actions(blocks, vertical_ability, heightmap, actor_height, unw
 def get_legal_actions_from_block(blocks, x, z, vertical_ability, heightmap, actor_height, unwalkable_blocks):
     result = bitarray.bitarray('00000000')
     # the choice of heightmap here is important. It should be the on the ground, not 1 block above imo
-    letx = x
-    letz = z
     y = heightmap[x][z]
     for n in range(len(cardinals)):
         cardinal = cardinals[n]
@@ -70,7 +69,7 @@ def check_if_legal_move(blocks, x, y, z, x_offset, z_offset, jump_ability, heigh
     if y_diff > jump_ability: return False
     is_legal = True
     for i in range(0, actor_height):
-        target = blocks[target_x][target_y + 1 + i][target_z]
+        target = blocks[target_x][target_y + i][target_z]
         if not (target in Type_Tiles.tile_sets[Type.AIR.value]):
             is_legal = False
             break

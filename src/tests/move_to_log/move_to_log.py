@@ -7,10 +7,10 @@ import src.my_utils
 import src.agent
 from enum import Enum
 
-x1 = -4
+x1 = -3
 z1 = 36
 x2 = -8
-z2 = 43
+z2 = 44
 area = [x1,z1,x2,z2]
 area = src.my_utils.correct_area(area)
 worldSlice = http_framework.worldLoader.WorldSlice(area)  #_so area is chunks?
@@ -21,6 +21,7 @@ sim = src.simulation.Simulation(area)
 
 ag = src.agent.Agent(sim.state, 1, 0, sim.state.rel_ground_hm, "Jonah")
 sim.add_agent(ag)
+la = sim.state.legal_actions
 ag.set_motive(ag.Motive.LOGGING)
 sim.step(10, True, 1.0)
 
@@ -29,7 +30,7 @@ sim.step(10, True, 1.0)
 # state_y = hm[state_x][state_z] - 1
 
 # store in file
-# src.scheme_utils.arrayXZ_to_schema(state.pathfinder.sectors, state.len_x, state.len_z, file_name + ".out")
+# src.scheme_utils.arrayXZ_to_schema(state.sectors, state.len_x, state.len_z, file_name + ".out")
 #
 # # put it back
 # src.manipulation.set_state_block(state, state_x, state_y, state_z, "minecraft:diorite")
