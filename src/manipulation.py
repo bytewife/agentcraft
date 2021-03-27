@@ -26,8 +26,9 @@ def cut_tree_at(state, x, y, z, times=1):
         replacement = "minecraft:air"
         state.blocks[x][y][z] = replacement
         src.manipulation.set_state_block(state, x, y, z, replacement)
+        state.update_heightmaps(x, z)
         if \
-        is_leaf(state.get_adjacent_block(x, y, z, 0, 1, 0)) or \
+                is_leaf(state.get_adjacent_block(x, y, z, 0, 1, 0)) or \
         is_leaf(state.get_adjacent_block(x, y, z, 1, 0, 0)
         ):
             flood_kill_leaves(state, x, y + 1, z)
@@ -35,11 +36,14 @@ def cut_tree_at(state, x, y, z, times=1):
             sapling = "minecraft:" + log_type + "_sapling"
             state.blocks[x][y][z] = sapling
             src.manipulation.set_state_block(state, x, y, z, sapling)
+            print("TREES")
+            print(state.trees)
             state.trees.remove((x,z))
+            print(state.trees)
+            state.update_heightmaps(x, z)
             return TaskOutcome.SUCCESS.name
         y -= 1
     return TaskOutcome.IN_PROGRESS.name
-
 
 
 def do_recur_on_adjacent(state, x, y, z, target_block_checker, recur_func, forward_call):
@@ -68,6 +72,11 @@ def get_log_type(block_name):
 
 
 def set_state_block(state, x, y, z, block_name):
+    print("setting at")
+    print(x)
+    print(y)
+    print(z)
+    state.blocks[x][y][z] = block_name
     key = src.my_utils.convert_coords_to_key(x, y, z)
-    print("before is ")
     state.changed_blocks[key] = block_name
+    print(state.changed_blocks)

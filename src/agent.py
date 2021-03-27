@@ -42,7 +42,7 @@ class Agent:
         self.y = walkable_heightmap[new_x][new_z]
 
 
-    def move_in_state(self, state : src.states.State):
+    def move_in_state(self):
         src.manipulation.set_state_block(self.state, self.rendered_x, self.rendered_y, self.rendered_z, "minecraft:air")
         src.manipulation.set_state_block(self.state, self.x, self.y, self.z, self.model)
         self.rendered_x = self.x
@@ -125,6 +125,7 @@ class Agent:
             by = self.state.abs_ground_hm[bx, bz] - self.state.world_y  # this isn't being updated in heightmap
             if src.manipulation.is_log(self.state, bx, by, bz):
                 status = src.manipulation.cut_tree_at(self.state, bx, by, bz)
+                self.state.update_heightmaps(bx, bz)
                 break  # cut one at a time
         return status  # someone sniped this tree.
 

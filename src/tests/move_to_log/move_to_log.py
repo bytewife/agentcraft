@@ -19,7 +19,7 @@ file_name = ""
 
 sim = src.simulation.Simulation(area)
 
-ag = src.agent.Agent(sim.state, 1, 0, sim.state.heightmaps["MOTION_BLOCKING"], "Jonah")
+ag = src.agent.Agent(sim.state, 1, 0, sim.state.rel_ground_hm, "Jonah")
 sim.add_agent(ag)
 ag.set_motive(ag.Motive.LOGGING)
 sim.step(10, True, 1.0)

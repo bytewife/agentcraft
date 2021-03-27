@@ -35,5 +35,5 @@ class Simulation:
 
     def update_agents(self):
         for agent in self.agents:
-            agent.move_in_state(self.state)
+            agent.move_in_state()
         pass
