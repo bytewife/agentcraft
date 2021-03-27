@@ -30,7 +30,7 @@ class State:
             self.blocks, self.world_y, self.len_y, self.abs_ground_hm = self.gen_blocks_array(world_slice)
             self.rel_ground_hm = self.gen_rel_ground_hm(self.abs_ground_hm)  # a heightmap based on the state's y values. -1
             self.heightmaps = world_slice.heightmaps
-            self.types = self.gen_types("MOTION_BLOCKING")  # 2D array. Include leaves
+            self.types = self.gen_types("MOTION_BLOCKING_NO_LEAVES")  # 2D array. Exclude leaves because it would be hard to determine tree positions
             self.world_x = world_slice.rect[0]
             self.world_z = world_slice.rect[1]
             self.len_x = world_slice.rect[2] - world_slice.rect[0]
@@ -248,6 +248,9 @@ class State:
         x_target = x_origin + x_off
         y_target = y_origin + y_off
         z_target = z_origin + z_off
+        print(x_target)
+        print(y_target)
+        print(z_target)
         if self.out_of_bounds_3D(x_target, y_target, z_target):
             return None
         return self.blocks[x_target][y_target][z_target]
@@ -280,6 +283,9 @@ class State:
             x >= len(self.blocks) \
             or y >= len(self.blocks[0]) \
             or z >= len(self.blocks[0][0]) \
+            or x < 0 \
+            or y < 0 \
+            or z < 0 \
             else False
 
 

@@ -57,7 +57,7 @@ def do_recur_on_adjacent(state, x, y, z, target_block_checker, recur_func, forwa
 def flood_kill_leaves(state, leaf_x, leaf_y, leaf_z):
     def leaf_to_air(blocks, x, y, z):
         blocks[x][y][z] = 'minecraft:air'
-        state.set_state_block(x, y, z, 'minecraft:air')
+        src.manipulation.set_state_block(state, x, y, z, 'minecraft:air')
     do_recur_on_adjacent(state, leaf_x, leaf_y, leaf_z, is_leaf, do_recur_on_adjacent, leaf_to_air)
 
 

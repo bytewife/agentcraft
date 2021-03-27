@@ -122,7 +122,7 @@ class Agent:
             bz = self.z + zo
             if bx < 0 or bz < 0 or bx >= len(self.state.blocks) or bz >= len(self.state.blocks[0][0]):
                 continue
-            by = state.abs_ground_hm[bx][bz] - self.state.world_y  # this isn't being updated in heightmap
+            by = int(state.abs_ground_hm[bx][bz]) - self.state.world_y  # this isn't being updated in heightmap
             print("BY_IS")
             print(by)
             if src.manipulation.is_log(self.state, bx, by, bz):
