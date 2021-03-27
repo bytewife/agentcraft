@@ -1,4 +1,5 @@
 import src.my_utils
+import src.states
 from enum import Enum
 
 class TaskOutcome(Enum):
@@ -8,7 +9,9 @@ class TaskOutcome(Enum):
     REDO = 3
 
 
-def is_log(state, x, y, z):
+def is_log(state : src.states.State, x, y, z):
+    if state.out_of_bounds_3D(x, y, z):
+        return False
     block = state.blocks[x][y][z]
     if not block is None and block[-3:] == 'log':
         return True
@@ -16,10 +19,9 @@ def is_log(state, x, y, z):
 
 
 def cut_tree_at(state, x, y, z, times=1):
-
     for i in range(times):
-        if not is_log(state, x, y, z):
-            return TaskOutcome.IN_PROGRESS.name
+        # if not is_log(state, x, y, z):
+        #     return TaskOutcome.IN_PROGRESS.name
         log_type = get_log_type(state.blocks[x][y][z])
         replacement = "minecraft:air"
         state.blocks[x][y][z] = replacement

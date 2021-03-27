@@ -18,7 +18,6 @@ class Simulation:
 
             ## DEBUG
             for agent in self.agents:
-                if len(agent.path) != 1:
                     agent.follow_path(state=self.state, walkable_heightmap=self.state.rel_ground_hm)
                 # else:
                 #     agent.log_adjacent_tree()

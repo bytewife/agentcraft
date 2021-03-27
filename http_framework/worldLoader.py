@@ -124,7 +124,6 @@ class WorldSlice:
         chunkX = (blockPos[0] >> 4) - self.chunkRect[0]
         chunkZ = (blockPos[2] >> 4) - self.chunkRect[1]
         chunkY = blockPos[1] >> 4
-        print(chunkY)
         # bitarray = BitArray(bitsPerEntry, 16*16*16, blockStates) # TODO this needs to be 'cached' somewhere
         cachedSection = self.sections[chunkX][chunkZ][chunkY]
 

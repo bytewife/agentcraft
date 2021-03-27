@@ -71,11 +71,12 @@ class Agent:
 
 
     def follow_path(self, state, walkable_heightmap):
-        if len(self.path) <= 0:
+        if len(self.path) < 1:
             if self.motive == self.Motive.LOGGING.name:
                 print(self.name + " has finished their path and is now cutting.")
                 status = self.log_adjacent_tree()
                 if status == src.manipulation.TaskOutcome.SUCCESS:
+                    print("done!")
                     return
                 else:
                     return
@@ -105,13 +106,12 @@ class Agent:
                         if self.state.pathfinder.sectors[pos[0], pos[1]] ==   \
                         self.state.pathfinder.sectors[self.x][self.z]:
                             path = self.state.pathfinder.get_path((self.x, self.z), pos, 31, 31, self.state.legal_actions)
-                            if path == []:
-                                print(self.name + " could not find a tree!")
-                                self.set_motive(self.Motive.BUILD)
-                            else:
-                                self.set_path(path)
-                                return
+                            self.set_path(path)
+                            return
                     closed.add(chosen_tree)
+
+            exit(1)
+
 
 
     def log_adjacent_tree(self):
@@ -122,10 +122,11 @@ class Agent:
             bz = self.z + zo
             if bx < 0 or bz < 0 or bx >= len(self.state.blocks) or bz >= len(self.state.blocks[0][0]):
                 continue
-            by = self.state.abs_ground_hm[bx, bz] - self.state.world_y
+            by = self.state.abs_ground_hm[bx, bz] - self.state.world_y  # this isn't being updated in heightmap
             if src.manipulation.is_log(self.state, bx, by, bz):
                 status = src.manipulation.cut_tree_at(self.state, bx, by, bz)
-            return status  # someone sniped this tree.
+                break  # cut one at a time
+        return status  # someone sniped this tree.
 
     # def set_model(self, block):
     #     self.model = block

@@ -141,7 +141,7 @@ class State:
         worldSlice = http_framework.worldLoader.WorldSlice(area)
         for index in range(1,len(worldSlice.heightmaps)+1):
             name = src.my_utils.Heightmaps(index).name
-            new_y = int(worldSlice.heightmaps[name][0][0]) - 1
+            new_y = int(worldSlice.heightmaps[name][0][0]) - 2
             self.heightmaps[name][x][z] = new_y
         self.abs_ground_hm[x][z] = self.heightmaps["MOTION_BLOCKING_NO_LEAVES"][x][z]
         self.rel_ground_hm = self.gen_rel_ground_hm(self.abs_ground_hm)

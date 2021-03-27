@@ -19,10 +19,9 @@ file_name = "move_to_log"
 
 sim = src.simulation.Simulation(area)
 
-ag = src.agent.Agent(sim.state, 0, 0, sim.state.heightmaps["MOTION_BLOCKING"], "Jonah")
+ag = src.agent.Agent(sim.state, 1, 0, sim.state.heightmaps["MOTION_BLOCKING"], "Jonah")
 sim.add_agent(ag)
 ag.set_motive(ag.Motive.LOGGING)
-print(ag.path)
 sim.step(10, True, 1.0)
 
 # state_x = -6 - area[0]
