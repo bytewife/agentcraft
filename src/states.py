@@ -141,9 +141,14 @@ class State:
         worldSlice = http_framework.worldLoader.WorldSlice(area)
         for index in range(1,len(worldSlice.heightmaps)+1):
             name = src.my_utils.Heightmaps(index).name
-            new_y = int(worldSlice.heightmaps[name][0][0]) - 2
+            new_y = int(worldSlice.heightmaps[name][0][0]) - 1
             self.heightmaps[name][x][z] = new_y
-        self.abs_ground_hm[x][z] = self.heightmaps["MOTION_BLOCKING_NO_LEAVES"][x][z]
+        hm_base = self.heightmaps["MOTION_BLOCKING_NO_LEAVES"]
+        for x in range(len(hm_base)):
+            for z in range(len(hm_base[0])):
+                state_adjusted_y = int(hm_base[x][z])
+                self.abs_ground_hm[x][z] = state_adjusted_y
+        # self.abs_ground_hm[x][z] = self.heightmaps["MOTION_BLOCKING_NO_LEAVES"][x][z]
         self.rel_ground_hm = self.gen_rel_ground_hm(self.abs_ground_hm)
 
 

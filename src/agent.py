@@ -20,9 +20,6 @@ class Agent:
 
     def __init__(self, state, state_x, state_z, walkable_heightmap, name,
                  parent_1=None, parent_2=None, model="minecraft:carved_pumpkin", motive=Motive.LOGGING.name):
-        self.x = state_x
-        self.z = state_z
-        self.y = walkable_heightmap[state_x][state_z]
         self.name = name
         self.parent_1 = parent_1
         self.parent_2 = parent_2
@@ -38,7 +35,7 @@ class Agent:
             return
         self.x = new_x
         self.z = new_z
-        self.y = walkable_heightmap[new_x][new_z]
+        self.y = walkable_heightmap[new_x][new_z] + 1
 
 
     def move_in_state(self, state : src.states.State):
@@ -96,6 +93,7 @@ class Agent:
                 trees = self.get_nearby_trees(starting_search_radius=tree_search_radius,
                                               radius_inc=radius_increase,
                                               max_iterations=1)
+                if trees is None: continue
                 while len(trees) > 0:
                     chosen_tree = choice(trees)
                     trees.remove(chosen_tree)
@@ -109,9 +107,8 @@ class Agent:
                             self.set_path(path)
                             return
                     closed.add(chosen_tree)
-
+            print("could not find trees!")
             exit(1)
-
 
 
     def log_adjacent_tree(self):
