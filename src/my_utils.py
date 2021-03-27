@@ -1,5 +1,6 @@
 ### returns a tuple of coordinates, with the lower x and z values first
 from enum import Enum
+import http_framework.interfaceUtils
 
 # https://stackoverflow.com/questions/34470597/is-there-a-dedicated-way-to-get-the-number-of-items-in-a-python-enum
 class Type(Enum):
@@ -102,5 +103,15 @@ def convert_key_to_coords(key):
 	# x, y, z = [int(coord) for coord in key.split(',')]
 	# return x, y, z
     return key
+
+
+# copy paste the text when you run /data get block, from {SkullOwner onwards
+def get_player_head_block_id(name, SkullOwnerSet, rotation="1"):
+	prop = SkullOwnerSet[1:]
+	prop = prop.split(", x")[0]
+	command = """minecraft:player_head[rotation={0}]{{display:{{Name:"{{\\"text\\":\\"{1}\\"}}"}}, {2}}}"""\
+		.format(rotation, name, prop)
+	return command
+
 
 

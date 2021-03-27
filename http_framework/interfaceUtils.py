@@ -8,7 +8,7 @@ This module contains functions to:
 """
 __all__ = ['requestBuildArea', 'runCommand',
            'setBlock', 'getBlock',
-           'placeBlockBatched', 'sendBlocks']
+           'placeBlockBatched', 'sendBlocks', 'setBlockWithData']
 # __version__
 
 import requests
@@ -38,9 +38,9 @@ def runCommand(command):
 # --------------------------------------------------------- get/set block
 
 
-def getBlock(x, y, z):
+def getBlock(x, y, z, includeState = "true"):
     """**Returns the namespaced id of a block in the world.**"""
-    url = 'http://localhost:9000/blocks?x={}&y={}&z={}'.format(x, y, z)
+    url = 'http://localhost:9000/blocks?x={}&y={}&z={}&includeState={}'.format(x, y, z, includeState)
     # print(url)
     try:
         response = requests.get(url)
@@ -50,9 +50,9 @@ def getBlock(x, y, z):
     # print("{}, {}, {}: {} - {}".format(x, y, z, response.status_code, response.text))
 
 
-def setBlock(x, y, z, str):
+def setBlock(x, y, z, str, includeState="true"):
     """**Places a block in the world.**"""
-    url = 'http://localhost:9000/blocks?x={}&y={}&z={}'.format(x, y, z)
+    url = 'http://localhost:9000/blocks?x={}&y={}&z={}&includeState={}'.format(x, y, z, includeState)
     # print('setting block {} at {} {} {}'.format(str, x, y, z))
     try:
         response = requests.put(url, str)
@@ -102,3 +102,11 @@ def clearBlockBuffer():
     """**Clears the block buffer.**"""
     global blockBuffer
     blockBuffer = []
+
+
+# use this if designated in file by {}
+def setBlockWithData(abs_x, abs_y, abs_z, data):
+    command = "setblock {} {} {} {}".format(abs_x, abs_y, abs_z, data)
+    print(command)
+    return runCommand(command)
+

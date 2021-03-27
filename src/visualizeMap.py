@@ -16,14 +16,16 @@ def visualize_topography(rect, state, state_heightmap, state_y):
         z2 = buildArea["zTo"]
         rect = (x1, z1, x2-x1, z2-z1)
 
-    chunk_data = WorldSlice(rect)
+    slice = WorldSlice(rect)
 
     # heightmap1 = np.array(chunk_data.heightmaps["MOTION_BLOCKING_NO_LEAVES"], dtype = np.uint8)  # Doesn't show leaves
+
     # heightmap2 = np.array(chunk_data.heightmaps["OCEAN_FLOOR"], dtype = np.uint8)
-    heightmap1 = chunk_data.get_heightmap("MOTION_BLOCKING_NO_LEAVES")
-    heightmap2 = chunk_data.get_heightmap("OCEAN_FLOOR")
-    heightmap = np.minimum(heightmap1, heightmap2)
-    watermap = heightmap - heightmap2 + 128
+    # heightmap1 = slice.get_heightmap("MOTION_BLOCKING_NO_LEAVES")
+    # heightmap2 = slice.get_heightmap("OCEAN_FLOOR")
+
+    heightmap = np.array(slice.heightmaps["OCEAN_FLOOR"], dtype=np.uint8)
+    # watermap = heightmap - heightmap2 + 128
 
     gradientX = cv2.Scharr(heightmap, cv2.CV_16S, 1, 0)
     gradientY = cv2.Scharr(heightmap, cv2.CV_16S, 0, 1)
