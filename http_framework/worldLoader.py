@@ -1,9 +1,11 @@
+import math
 from math import ceil, log2
 from http_framework.bitarray import BitArray
 from io import BytesIO
 import requests
 import nbt
 import numpy as np
+from math import floor
 
 
 def getChunks(x, z, dx, dz, rtype='text'):
@@ -40,21 +42,33 @@ class WorldSlice:
     def __init__(self, rect, heightmapTypes=["MOTION_BLOCKING", "MOTION_BLOCKING_NO_LEAVES", "OCEAN_FLOOR", "WORLD_SURFACE"], heightmapOnly = False, heightmapOnlyType="MOTION_BLOCKING_NO_LEAVES"):
         print("getting heightmap")
         self.rect = rect
-        self.chunkRect = (rect[0] >> 4, rect[1] >> 4, ((rect[0] + rect[2] - 1) >> 4) - (
-                rect[0] >> 4) + 1, ((rect[1] + rect[3] - 1) >> 4) - (rect[1] >> 4) + 1)
+        # -16
+        lowerMultOf16X = floor(rect[0]) >> 4
+        lowerMultOf16Z = floor(rect[1]) >> 4
+        upperMultOf16X = floor(rect[2]) >> 4
+        upperMultOf16Z = floor(rect[3]) >> 4
+        dx = upperMultOf16X - lowerMultOf16X + 1
+        dz = upperMultOf16Z - lowerMultOf16Z + 1
+
+        # upperMultOf16X =
+        # self.chunkRect = (rect[0] >> 4, rect[1] >> 4, ((rect[0] + rect[2] - 1) >> 4) - (
+        #         rect[0] >> 4) + 1, ((rect[1] + rect[3] - 1) >> 4) - (rect[1] >> 4) + 1)
+        self.chunkRect = (lowerMultOf16X, lowerMultOf16Z, dx, dz)
         self.heightmapTypes = heightmapTypes
 
+
         bytes = getChunks(*self.chunkRect, rtype='bytes')
+
         file_like = BytesIO(bytes)
 
         # print("parsing NBT")
         self.nbtfile = nbt.nbt.NBTFile(buffer=file_like)
 
+
         rectOffset = [rect[0] % 16, rect[1] % 16]
 
         # heightmaps
         self.heightmaps = {}
-        # if heightmapOnly == True:
         for hmName in self.heightmapTypes:
             len_x = abs(rect[2] - rect[0])
             len_z = abs(rect[3] - rect[1])
@@ -63,15 +77,16 @@ class WorldSlice:
         # Sections are in x,z,y order!!! (reverse minecraft order :p)
         self.sections = [[[None for i in range(16)] for z in range(
             self.chunkRect[3])] for x in range(self.chunkRect[2])]
-
+        # print(self.nbtfile['Chunks'])
         # heightmaps
         # print("extracting heightmaps")
 
-        for x in range(self.chunkRect[2]):
+        for x in range( self.chunkRect[2]):
             for z in range(self.chunkRect[3]):
                 chunkID = x + z * self.chunkRect[2]
 
                 hms = self.nbtfile['Chunks'][chunkID]['Level']['Heightmaps']
+                print(self.nbtfile['Chunks'])
                 for hmName in self.heightmapTypes:
                     # hmRaw = hms['MOTION_BLOCKING']
 
@@ -140,6 +155,7 @@ class WorldSlice:
 
         blockIndex = (blockPos[1] % 16) * 16 * 16 + \
                      (blockPos[2] % 16) * 16 + blockPos[0] % 16
+
         return palette[bitarray.getAt(blockIndex)]
 
 

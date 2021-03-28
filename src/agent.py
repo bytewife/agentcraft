@@ -10,7 +10,6 @@ import http_framework.interfaceUtils
 
 class Agent:
 
-
     class Motive(Enum):
         LOGGING = 0
         BUILD = 1

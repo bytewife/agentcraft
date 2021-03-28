@@ -1,3 +1,5 @@
+from math import floor
+
 import http_framework.interfaceUtils
 import http_framework.worldLoader
 import src.my_utils
@@ -41,6 +43,7 @@ class State:
             self.pathfinder = src.pathfinding.Pathfinding()
             self.sectors = self.pathfinder.create_sectors(self.heightmaps["MOTION_BLOCKING_NO_LEAVES"],
                                             self.legal_actions)  # add tihs into State
+            self.gen_nodes(self.len_x, self.len_z)
 
         else:  # for testing
             print("State instantiated for testing!")
@@ -56,6 +59,29 @@ class State:
                             blocks3D[x][inv_y][z] = "minecraft:"+blocks[index]
                 return dx, dy, dz, blocks3D
             self.len_x, self.len_y, self.len_z, self.blocks = parse_blocks_file(blocks_file)
+
+
+    def gen_nodes(self, len_x, len_z):
+        if len_x < 0 or len_z < 0:
+            print("Lengths cannot be <0")
+        node_size = 3  # in blocks
+        nodes_in_x = int(len_x / node_size)
+        nodes_in_z = int(len_z / node_size)
+        node_count = nodes_in_x * nodes_in_z
+        nodes = {}  # contains coord pointing to data struct
+        node_pointers = [[(0,0) * len_x] * len_z]
+        print(node_pointers)
+        # for x in range(nodes_in_x):
+        #     for z in range(nodes_in_z):
+        #         center = (1+x*node_size, 1+z*node_size)
+        #         node = Node(center=center)
+        #         nodes[(center)]
+
+
+    class Node:
+        def __init__(self, center):
+            self.center = center
+            self.size = 3
 
 
     def gen_heightmaps(self, world_slice):
@@ -74,8 +100,8 @@ class State:
         x1, z1, x2, z2 = world_slice.rect
         abs_ground_hm = world_slice.get_heightmap("MOTION_BLOCKING_NO_LEAVES", -1) # inclusive of ground
         def get_y_bounds(_heightmap):  ## Get the y range that we'll save tha state in?
-            lowest = 99
-            highest = 0
+            lowest = _heightmap[0][0]
+            highest = _heightmap[0][0]
             for col in _heightmap:
                 for block_y in col:
                     if (block_y < lowest):
@@ -96,9 +122,9 @@ class State:
         yi = 0
         zi = 0
         for x in range(x1, x2):
-            yi *= 0
+            yi = 0
             for y in range(y1, y2):
-                zi *= 0
+                zi = 0
                 for z in range(z1, z2):
                     block = world_slice.getBlockAt((x, y, z))
                     blocks[xi][yi][zi] = block
