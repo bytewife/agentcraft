@@ -37,7 +37,8 @@ class WorldSlice:
     """**Contains information on a slice of the world.**"""
     # TODO format this to blocks
 
-    def __init__(self, rect, heightmapTypes=["MOTION_BLOCKING", "MOTION_BLOCKING_NO_LEAVES", "OCEAN_FLOOR", "WORLD_SURFACE"]):
+    def __init__(self, rect, heightmapTypes=["MOTION_BLOCKING", "MOTION_BLOCKING_NO_LEAVES", "OCEAN_FLOOR", "WORLD_SURFACE"], heightmapOnly = True, heightmapOnlyType="MOTION_BLOCKING_NO_LEAVES"):
+        print("getting heightmap")
         self.rect = rect
         self.chunkRect = (rect[0] >> 4, rect[1] >> 4, ((rect[0] + rect[2] - 1) >> 4) - (
                 rect[0] >> 4) + 1, ((rect[1] + rect[3] - 1) >> 4) - (rect[1] >> 4) + 1)
@@ -53,10 +54,15 @@ class WorldSlice:
 
         # heightmaps
         self.heightmaps = {}
-        for hmName in self.heightmapTypes:
+        if heightmapOnly == True:
+            for hmName in self.heightmapTypes:
+                len_x = abs(rect[2] - rect[0])
+                len_z = abs(rect[3] - rect[1])
+                self.heightmaps[hmName] = np.zeros( (len_x, len_z), dtype=np.int)
+        else:
             len_x = abs(rect[2] - rect[0])
             len_z = abs(rect[3] - rect[1])
-            self.heightmaps[hmName] = np.zeros( (len_x, len_z), dtype=np.int)
+            self.heightmaps["MOTION_BLOCKING_NO_LEAVES"] = np.zeros((len_x, len_z), dtype=np.int)
 
         # Sections are in x,z,y order!!! (reverse minecraft order :p)
         self.sections = [[[None for i in range(16)] for z in range(
@@ -84,6 +90,9 @@ class WorldSlice:
                                           z * 16 + cz] = heightmapBitArray.getAt(cz * 16 + cx)
                             except IndexError:
                                 pass
+
+        if heightmapOnly == True:
+            return
 
         # sections
         print("extracting chunk sections")
