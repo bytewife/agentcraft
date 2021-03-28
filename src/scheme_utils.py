@@ -1,4 +1,5 @@
 import http_framework.interfaceUtils
+import src.manipulation
 from enum import Enum
 
 ### Returns a string containing the block names.
@@ -30,9 +31,9 @@ def download_area(origin_x, origin_y, origin_z, end_x, end_y, end_z):
 
 class Facing(Enum):
     north = 0
-    east = 1
+    west = 1
     south = 2
-    west = 3
+    east = 3
 
 
 def download_schematic(origin_x, origin_y, origin_z, end_x, end_y, end_z, file_name):
@@ -72,49 +73,59 @@ def place_schematic_in_world(file_name, origin_x, origin_y, origin_z, dir_x=1, d
             for x in range(origin_x, end_x+1, dir_x):
                 index =yi*length_z*length_x + zi*length_x + xi
                 block = "minecraft:"+blocks[index]
-                facing_i = block.find("facing=")
-                if facing_i != -1:
-                    # get facing dir string
-                    curr_dir = 0
-                    start_i = facing_i + 7
-                    facing_substr = block[start_i:start_i + 5]  # len of "facing="
-                    # find dir
-                    for dir in Facing:
-                        if dir.name in facing_substr:
-                            curr_dir = dir.value
-                    # change direction based on dir
-                    new_dir = Facing((curr_dir + dir_x + 2*dir_z) % 4).name
-                    # string maniup to add new dir
-                    first, second_old = block.split('facing=')
-                    second_old = second_old[4:]
-                    if second_old[0] == "h":
-                        second_old = second_old[1:]
-                    new_second = "facing=" + new_dir + second_old
-                    block = first + new_second
-                    print(block)
-
-                if block[-1] == '}':  # if it uses block data
-                    print("data block")
-                    http_framework.interfaceUtils.setBlockWithData(x, y, z, block)
-                    n_blocks -= 1  # just make sure the last block isn't a special case
-                else:
-                    http_framework.interfaceUtils.placeBlockBatched(x, y, z, block, n_blocks)#, n_blocks-1)
+                http_framework.interfaceUtils.placeBlockBatched(x, y, z, block, n_blocks)#, n_blocks-1)
                 xi += 1
             zi += 1
         yi -= 1
     print("done placing schematic")
 
 
+def adjust_property_by_rotation(block, property, longest_len, rot, rot_factor=1, shortest_len=1, use_num=False):
+    index = len(property)
+    facing_i = block.find(property)
+    if facing_i != -1:
+        # get facing dir string
+        curr_dir = 0
+        start_i = facing_i + index
+        facing_substr = block[start_i:start_i + longest_len]  # len of "facing="
+        # find dir
+        for dir in Facing:
+            if dir.name in facing_substr:
+                curr_dir = dir.value * rot_factor
+        # change direction based on dir
+        new_dir = Facing((curr_dir + rot + 2) % 4)
+        if use_num:
+            new_dir = str(new_dir.value* rot_factor)
+        else:
+            new_dir = new_dir.name
+        # string maniup to add new dir
+        first, second_old = block.split(property)
+        second_old = second_old[shortest_len:]
+        if second_old[0] == "h":
+            second_old = second_old[1:]
+        new_second = property + new_dir + second_old
+        block = first + new_second
+        print(block)
+    return block
+
+
 ## where the origin coords are the local coords within state
-def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, dir_x=1, dir_y=-1, dir_z=1):
+def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, dir_x=1, dir_y=-1, dir_z=1, rot=0):
     size, blocks = get_schematic_parts(file_name)
     length_x, length_y, length_z = size
 
-    if (abs(origin_x + length_x) > abs(len(state.blocks)) or
-            abs(origin_y + length_y) > abs(len(state.blocks[0])) or
-            abs(origin_z + length_z) > abs(len(state.blocks[0][0]))):
-        print("Tried to place schematic that didn't fit in the state!")
-        return
+    sx = sz = ex = ez = 0
+    end_x, end_y, end_z = origin_x+length_x, origin_y+length_y, origin_z+length_z
+    sx = origin_x
+    sz = origin_z
+    ex = end_x
+    ez = end_z
+    dx = length_x
+    dz = length_z
+
+    if state.out_of_bounds_3D(origin_x, origin_y, origin_z) or state.out_of_bounds_3D(end_x, end_y, end_z):
+        print("Tried to build out of bounds!")
+        return False
 
     length_x = int(length_x)
     length_y = int(length_y)
@@ -136,10 +147,23 @@ def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, dir
         for z in range(origin_z, end_z+1, dir_z):
             xi = XI
             for x in range(origin_x, end_x+1, dir_x):
-                index = yi*(length_z)*(length_x) + zi*(length_x) + xi
-                block = "minecraft:"+blocks[index]
-                state.blocks[x][y][z] = block
-                state.set_state_block(x, y, z, block)
+                index = yi * length_z * length_x + zi * length_x + xi
+                block = "minecraft:" + blocks[index]
+                block = adjust_property_by_rotation(block, property="facing=", longest_len=5, rot=rot, shortest_len=4, rot_factor=1)
+                # block = adjust_property_by_rotation(block, property="rotation=", longest_len=1, rot=rot, rot_factor=4, use_num=True)
+
+                if rot == 0:
+                    src.manipulation.set_state_block(state, sx+xi, y, sz+zi, block)
+                if rot == 1:
+                    src.manipulation.set_state_block(state, sx+zi, y, sz+xi, block)
+                if rot == 2:
+                    src.manipulation.set_state_block(state, ex-xi, y, ez-zi, block)
+                if rot == 3:
+                    src.manipulation.set_state_block(state, ex-zi, y, ez-xi, block)
+
+                # src.manipulation.set_state_block(state, x, y, z, block)
+                # else:
+                #     src.manipulation.set_state_block(state, sx+zi, y, sz+xi, block)
                 i+=1
                 xi += 1
             zi += 1
@@ -206,5 +230,3 @@ def arrayXZ_to_schema(blocks, dx, dz, file_out_name):
 def download_heightmap(heightmap, file_name):
     f = open(file_name, "w")
     f.write(heightmap)
-
-

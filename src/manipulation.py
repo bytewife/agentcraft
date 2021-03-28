@@ -9,7 +9,7 @@ class TaskOutcome(Enum):
     REDO = 3
 
 
-def is_log(state : src.states.State, x, y, z):
+def is_log(state, x, y, z):
     if state.out_of_bounds_3D(x, y, z):
         return False
     block = state.blocks[x][y][z]
