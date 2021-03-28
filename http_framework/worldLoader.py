@@ -8,14 +8,14 @@ import numpy as np
 
 def getChunks(x, z, dx, dz, rtype='text'):
     """**Get raw chunk data.**"""
-    print("getting chunks {} {} {} {} ".format(x, z, dx, dz))
+    # print("getting chunks {} {} {} {} ".format(x, z, dx, dz))
 
     url = 'http://localhost:9000/chunks?x={}&z={}&dx={}&dz={}'.format(
         x, z, dx, dz)
-    print("request url: {}".format(url))
+    # print("request url: {}".format(url))
     acceptType = 'application/octet-stream' if rtype == 'bytes' else 'text/raw'
     response = requests.get(url, headers={"Accept": acceptType})
-    print("result: {}".format(response.status_code))
+    # print("result: {}".format(response.status_code))
     if response.status_code >= 400:
         print("error: {}".format(response.text))
 
@@ -46,7 +46,7 @@ class WorldSlice:
         bytes = getChunks(*self.chunkRect, rtype='bytes')
         file_like = BytesIO(bytes)
 
-        print("parsing NBT")
+        # print("parsing NBT")
         self.nbtfile = nbt.nbt.NBTFile(buffer=file_like)
 
         rectOffset = [rect[0] % 16, rect[1] % 16]
@@ -63,7 +63,7 @@ class WorldSlice:
             self.chunkRect[3])] for x in range(self.chunkRect[2])]
 
         # heightmaps
-        print("extracting heightmaps")
+        # print("extracting heightmaps")
 
         for x in range(self.chunkRect[2]):
             for z in range(self.chunkRect[3]):

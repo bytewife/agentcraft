@@ -150,8 +150,6 @@ def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, dir
                 index = yi * length_z * length_x + zi * length_x + xi
                 block = "minecraft:" + blocks[index]
                 block = adjust_property_by_rotation(block, property="facing=", longest_len=5, rot=rot, shortest_len=4, rot_factor=1)
-                # block = adjust_property_by_rotation(block, property="rotation=", longest_len=1, rot=rot, rot_factor=4, use_num=True)
-
                 if rot == 0:
                     src.manipulation.set_state_block(state, sx+xi, y, sz+zi, block)
                 if rot == 1:
@@ -160,10 +158,6 @@ def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, dir
                     src.manipulation.set_state_block(state, ex-xi, y, ez-zi, block)
                 if rot == 3:
                     src.manipulation.set_state_block(state, ex-zi, y, ez-xi, block)
-
-                # src.manipulation.set_state_block(state, x, y, z, block)
-                # else:
-                #     src.manipulation.set_state_block(state, sx+zi, y, sz+xi, block)
                 i+=1
                 xi += 1
             zi += 1

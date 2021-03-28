@@ -5,6 +5,7 @@ import src.pathfinding
 import src.states
 import src.manipulation
 import src.movement
+import http_framework.interfaceUtils
 
 class Agent:
     x = 0
@@ -130,6 +131,20 @@ class Agent:
                 status = src.manipulation.cut_tree_at(self.state, bx, by, bz)
                 break  # cut one at a time
         return status  # someone sniped this tree.
+
+
+    def render(self):
+        # kill agent
+        # http_framework.interfaceUtils.runCommand(kill_cmd)
+        spawn_cmd = """summon minecraft:armor_stand 0 63 0 {{ShowArms:1, NoBasePlate:1, CustomNameVisible:1, Small:0, \
+        CustomName: '{{"text":"Ari", "color":"customcolor", "bold":false, "underlined":false, "strikethrough":false, \
+        "italic":false, "obscurated":false}}', \
+        ArmorItems:[{{id:"diamond_boots",Count:1b}},{{id:"diamond_leggings", Count:1b}}, \
+        {{id:"diamond_chestplate",Count:1b}}, \
+        {{id:"player_head",Count:1b,tag: \ 
+        {{SkullOwner:{{Id:"401c89f6-384e-473d-b448-1c73a342aed9",Properties:{{textures:[{{Value:"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvOTVhZWY4ZDczYzZiM2I5N2Q3YjU3MTZmY2EyMTVmNWViYTY3OTkyMTJkMTFlYjYzZTE1ODg5NDBkMWUyMWI3MyJ9fX0="}}]}}}}}}}}],HandItems:[{{}},{{}}],Pose:{{Head:[348f,10f,0f],LeftLeg:[3f,10f,0f],RightLeg:[348f,18f,0f],LeftArm:[348f,308f,0f],RightArm:[348f,67f,0f]}}}}}}\
+        """.format(x=0, y=63, z=0, name=self.name)
+        http_framework.interfaceUtils.runCommand(spawn_cmd)
 
     # def set_model(self, block):
     #     self.model = block
