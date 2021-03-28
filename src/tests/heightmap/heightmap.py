@@ -21,7 +21,7 @@ hm_abs = sim.state.abs_ground_hm.copy()
 print(hm_base)
 for x in range(len(hm_base)):
     for z in range(len(hm_base[0])):
-        sim.state.update_heightmaps(x, z)
+        sim.state.update_heightmaps()
 print("base original:")
 print(hm_base)
 print("base updated:")

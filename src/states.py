@@ -150,23 +150,19 @@ class State:
     #     # self.abs_ground_hm[x][z] = self.heightmaps["MOTION_BLOCKING_NO_LEAVES"][x][z]
     #     self.rel_ground_hm = self.gen_rel_ground_hm(self.abs_ground_hm)
 
-    def update_heightmaps(self, iterable):
+    def update_heightmaps(self):
         area = [self.world_x, self.world_z, self.world_x + self.len_x, self.world_z + self.len_z]
         area = src.my_utils.correct_area(area)
         worldSlice = http_framework.worldLoader.WorldSlice(area, heightmapOnly=True)
         hm_type = "MOTION_BLOCKING_NO_LEAVES"  # only update one for performance
-        # for index in range(1,len(worldSlice.heightmaps)+1):
-        for coord in self.changed_blocks:
-            x,y,z = coord
-            self.heightmaps[hm_type][x][z] = worldSlice.heightmaps[hm_type][x][z] - 1
-            # name = src.my_utils.Heightmaps(index).name
-            # new_y = int(worldSlice.heightmaps[hm_type][0][0]) - 1
-            # self.heightmaps[hm_type][][z] = new_y
-        # hm_base = self.heightmaps[hm_type]
-        # state_adjusted_y = int(hm_base[x][z])
+        for index in range(1,len(worldSlice.heightmaps)+1):
+            self.heightmaps[hm_type] = worldSlice.heightmaps[src.my_utils.Heightmaps(index).name]
+        for x in range(len(self.heightmaps[hm_type])):
+            for z in range(len(self.heightmaps[hm_type])):
+                self.heightmaps[hm_type][x][z] = worldSlice.heightmaps[hm_type][x][z] - 1
         self.abs_ground_hm = self.heightmaps[hm_type]
-        # self.abs_ground_hm[x][z] = self.heightmaps["MOTION_BLOCKING_NO_LEAVES"][x][z]
         self.rel_ground_hm = self.gen_rel_ground_hm(self.abs_ground_hm)
+        return worldSlice
 
 
     def gen_types(self, heightmap_name):
@@ -178,6 +174,7 @@ class State:
                 if type == "TREE":
                     self.trees.append((x, z))
                 types[x].append(type)
+        print(types)
         print("done initializing types")
         return types
 
@@ -236,7 +233,7 @@ class State:
             http_framework.interfaceUtils.placeBlockBatched(self.world_x + state_x, self.world_y + state_y, self.world_z + state_z, block, n_blocks)
             # http_framework.interfaceUtils.setBlock(self.world_x + state_x, self.world_y + state_y, self.world_z + state_z, block)
             i += 1
-        self.update_heightmaps(self.changed_blocks)
+        self.update_heightmaps()  # must wait until all blocks are placed
         for position, block in self.changed_blocks.items():
             state_x, state_y, state_z = src.my_utils.convert_key_to_coords(position)
             self.update_block_info(state_x, state_y, state_z)  # Must occur after new blocks have been placed
