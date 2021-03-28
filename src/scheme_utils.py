@@ -1,4 +1,5 @@
 import http_framework.interfaceUtils
+from enum import Enum
 
 ### Returns a string containing the block names.
 def download_area(origin_x, origin_y, origin_z, end_x, end_y, end_z):
@@ -20,12 +21,18 @@ def download_area(origin_x, origin_y, origin_z, end_x, end_y, end_z):
         for z in range(origin_z, end_z+dir_z, dir_z):
             for x in range(origin_x, end_x+dir_x, dir_x):
                 block = http_framework.interfaceUtils.getBlock(x, y, z)[10:].ljust(100, ' ')  # polished_blackstone_brick_stairs
-                print(block)
                 block_string = block_string + block + " "
             block_string+="\n"
         block_string+="\n"
     print("finished downloading area")
     return block_string
+
+
+class Facing(Enum):
+    north = 0
+    east = 1
+    south = 2
+    west = 3
 
 
 def download_schematic(origin_x, origin_y, origin_z, end_x, end_y, end_z, file_name):
@@ -65,6 +72,27 @@ def place_schematic_in_world(file_name, origin_x, origin_y, origin_z, dir_x=1, d
             for x in range(origin_x, end_x+1, dir_x):
                 index =yi*length_z*length_x + zi*length_x + xi
                 block = "minecraft:"+blocks[index]
+                facing_i = block.find("facing=")
+                if facing_i != -1:
+                    # get facing dir string
+                    curr_dir = 0
+                    start_i = facing_i + 7
+                    facing_substr = block[start_i:start_i + 5]  # len of "facing="
+                    # find dir
+                    for dir in Facing:
+                        if dir.name in facing_substr:
+                            curr_dir = dir.value
+                    # change direction based on dir
+                    new_dir = Facing((curr_dir + dir_x + 2*dir_z) % 4).name
+                    # string maniup to add new dir
+                    first, second_old = block.split('facing=')
+                    second_old = second_old[4:]
+                    if second_old[0] == "h":
+                        second_old = second_old[1:]
+                    new_second = "facing=" + new_dir + second_old
+                    block = first + new_second
+                    print(block)
+
                 if block[-1] == '}':  # if it uses block data
                     print("data block")
                     http_framework.interfaceUtils.setBlockWithData(x, y, z, block)

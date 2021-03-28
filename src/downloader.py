@@ -22,7 +22,7 @@ areaFlex = [0, 0, 10, 10] # default build area
 
 file_name = "market_stall_1"
 src.scheme_utils.download_schematic(293, 62, 844, 300, 65, 839, file_name)
-src.scheme_utils.place_schematic_in_world(file_name, 293, 62, 855)
+src.scheme_utils.place_schematic_in_world(file_name, 293, 62, 855, dir_z=-1)
 
 # src.scheme_utils.download_schematic(x1, 62, z1, -7, x2, z2, file_name + ".in")
 # src.scheme_utils.download_heightmap(worldSlice, file_name +"hm")
