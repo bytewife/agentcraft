@@ -20,7 +20,7 @@ class State:
     len_y = 0
     len_z = 0
     unwalkable_blocks = []
-    agent_height = 1
+    agent_height = 2
     agent_jump_ability = 2
     heightmap_offset = -1
 

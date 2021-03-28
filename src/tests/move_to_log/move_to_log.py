@@ -23,7 +23,7 @@ ag = src.agent.Agent(sim.state, 1, 0, sim.state.rel_ground_hm, "Jonah")
 sim.add_agent(ag)
 la = sim.state.legal_actions
 ag.set_motive(ag.Motive.LOGGING)
-sim.step(10, True, 1.0)
+sim.step(16, True, 1.0)
 
 # state_x = -6 - area[0]
 # state_z = 31 - area[1]

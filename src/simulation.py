@@ -15,14 +15,6 @@ class Simulation:
     def step(self, times, is_rendering_each_step=False, rendering_step_duration=1.0):
 
         for i in range(times):
-
-            ## DEBUG
-            for agent in self.agents:
-                    agent.follow_path(state=self.state, walkable_heightmap=self.state.rel_ground_hm)
-                # else:
-                #     agent.log_adjacent_tree()
-                # agent.move_self(1, 1, self.state, self.state.walkable_heightmap)
-
             self.update_agents()
             self.state.render()
             time.sleep(rendering_step_duration)
@@ -34,5 +26,6 @@ class Simulation:
 
     def update_agents(self):
         for agent in self.agents:
-            agent.move_in_state()
-        pass
+            agent.follow_path(state=self.state, walkable_heightmap=self.state.rel_ground_hm)
+            # agent.move_in_state()
+            agent.render()

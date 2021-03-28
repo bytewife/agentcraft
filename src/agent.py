@@ -5,15 +5,11 @@ import src.pathfinding
 import src.states
 import src.manipulation
 import src.movement
+import src.my_utils
 import http_framework.interfaceUtils
 
 class Agent:
-    x = 0
-    y = 0
-    z = 0
-    rendered_x = 0
-    rendered_y = 0
-    rendered_z = 0
+
 
     class Motive(Enum):
         LOGGING = 0
@@ -32,24 +28,26 @@ class Agent:
         self.state = state
         self.path = []
         self.motive = motive
+        self.x = 0
+        self.y = 0
+        self.z = 0
+        self.rendered_x = 0
+        self.rendered_y = 0
+        self.rendered_z = 0
+        self.current_action_item = ""
+        self.favorite_item = ""
+
 
     # 3D movement is a stretch goal
     def move_self(self, new_x, new_z, state, walkable_heightmap):
         if new_x < 0 or new_z < 0 or new_x >= state.len_x or new_z >= state.len_z:
             print(self.name + " tried to move out of bounds!")
             return
+        self.dx = new_x - self.x
+        self.dz = new_z - self.z
         self.x = new_x
         self.z = new_z
         self.y = walkable_heightmap[new_x][new_z]
-
-
-    def move_in_state(self):
-        src.manipulation.set_state_block(self.state, self.rendered_x, self.rendered_y, self.rendered_z, "minecraft:air")
-        src.manipulation.set_state_block(self.state, self.x, self.y, self.z, self.model)
-        self.rendered_x = self.x
-        self.rendered_y = self.y
-        self.rendered_z = self.z
-        print(self.name + " is now at y of " + str(self.y))
 
 
     def get_nearby_trees(self, starting_search_radius, max_iterations, radius_inc=1):
@@ -92,6 +90,7 @@ class Agent:
         radius_increase = 10
         radius_increase_increments = 10
         self.motive = new_motive.name
+        self.current_action_item = choice(src.my_utils.ACTION_ITEMS[self.motive])
         if new_motive.name == self.Motive.LOGGING.name:
             closed = set()
             for inc in range(radius_increase_increments):
@@ -135,16 +134,37 @@ class Agent:
 
     def render(self):
         # kill agent
-        # http_framework.interfaceUtils.runCommand(kill_cmd)
-        spawn_cmd = """summon minecraft:armor_stand 0 63 0 {{ShowArms:1, NoBasePlate:1, CustomNameVisible:1, Small:0, \
-        CustomName: '{{"text":"Ari", "color":"customcolor", "bold":false, "underlined":false, "strikethrough":false, \
-        "italic":false, "obscurated":false}}', \
-        ArmorItems:[{{id:"diamond_boots",Count:1b}},{{id:"diamond_leggings", Count:1b}}, \
-        {{id:"diamond_chestplate",Count:1b}}, \
-        {{id:"player_head",Count:1b,tag: \ 
-        {{SkullOwner:{{Id:"401c89f6-384e-473d-b448-1c73a342aed9",Properties:{{textures:[{{Value:"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvOTVhZWY4ZDczYzZiM2I5N2Q3YjU3MTZmY2EyMTVmNWViYTY3OTkyMTJkMTFlYjYzZTE1ODg5NDBkMWUyMWI3MyJ9fX0="}}]}}}}}}}}],HandItems:[{{}},{{}}],Pose:{{Head:[348f,10f,0f],LeftLeg:[3f,10f,0f],RightLeg:[348f,18f,0f],LeftArm:[348f,308f,0f],RightArm:[348f,67f,0f]}}}}}}\
-        """.format(x=0, y=63, z=0, name=self.name)
-        http_framework.interfaceUtils.runCommand(spawn_cmd)
+        kill_cmd = """kill @e[name={name}]""".format(name = self.name)
+        http_framework.interfaceUtils.runCommand(kill_cmd)
+        spawn_cmd = """\
+summon minecraft:armor_stand {x} {y} {z} {{ShowArms:1, NoBasePlate:1, CustomNameVisible:1, Rotation:[{rot}f,0f,0f], \
+Small:{is_small}, CustomName: '{{"text":"{name}", "color":"customcolor", "bold":false, "underlined":false, \
+"strikethrough":false, "italic":false, "obscurated":false}}', \
+ArmorItems:[{{id:"{boots}",Count:1b}},\
+{{id:"{lower_armor}",Count:1b}},\
+{{id:"{upper_armor}",Count:1b}},\
+{{id:"player_head",Count:1b,tag:{{SkullOwner:{{Id:"401c89f6-384e-473d-b448-1c73a342aed9",Properties:{{textures:[{{Value:"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvOTVhZWY4ZDczYzZiM2I5N2Q3YjU3MTZmY2EyMTVmNWViYTY3OTkyMTJkMTFlYjYzZTE1ODg5NDBkMWUyMWI3MyJ9fX0="}}]}}}}}}}}],\
+HandItems:[{{id:"{hand1}", Count:1b}},{{id:"{hand2}", Count:1b}}],\
+Pose:{{Head:[{head_tilt}f,10f,0f], \
+LeftLeg:[3f,10f,0f], \
+RightLeg:[348f,18f,0f], \
+LeftArm:[348f,308f,0f], \
+RightArm:[348f,67f,0f]}}\
+}}\
+""".format(
+            x=self.x+self.state.world_x,
+            y=self.y+self.state.world_y,
+            z=self.z+self.state.world_z,
+            rot=src.my_utils.ROTATION_LOOKUP[(self.dx, self.dz)],
+            name=self.name,
+            is_small="false",
+            boots="leather_boots",
+            upper_armor="leather_chestplate",
+            lower_armor="leather_leggings",
+            hand1=self.current_action_item,
+            hand2="apple",
+            head_tilt="350")  # this can be related to resources! 330 is high, 400 is low
+        print(http_framework.interfaceUtils.runCommand(spawn_cmd))
 
     # def set_model(self, block):
     #     self.model = block

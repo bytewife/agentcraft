@@ -1,8 +1,24 @@
 ### returns a tuple of coordinates, with the lower x and z values first
 from enum import Enum
 import http_framework.interfaceUtils
+import src.agent
 
 # https://stackoverflow.com/questions/34470597/is-there-a-dedicated-way-to-get-the-number-of-items-in-a-python-enum
+
+ROTATION_LOOKUP = {
+	(0, 1): "0",
+	(-1, 1): "45",
+	(-1, 0): "90",
+	(-1, -1): "135",
+	(0, -1): "180",
+	(1, -1): "225",
+	(1, 0): "270",
+	(1, 1): "315",
+}
+
+
+ACTION_ITEMS = { src.agent.Agent.Motive.LOGGING.name: ["iron_axe"], }
+
 class Type(Enum):
 	WATER = 1
 	TREE = 2

@@ -1,7 +1,7 @@
 # from states import *
 import bitarray
 import numpy as np
-from src.my_utils import *
+import src.my_utils
 from enum import Enum
 from scipy.spatial import KDTree
 from math import dist
@@ -70,7 +70,7 @@ def check_if_legal_move(blocks, x, y, z, x_offset, z_offset, jump_ability, heigh
     is_legal = True
     for i in range(0, actor_height):
         target = blocks[target_x][target_y + i][target_z]
-        if not (target in Type_Tiles.tile_sets[Type.AIR.value]):
+        if not (target in src.my_utils.Type_Tiles.tile_sets[src.my_utils.Type.AIR.value]):
             is_legal = False
             break
     if is_legal:
