@@ -23,12 +23,14 @@ sim.state.prosperities[0][0] = 1
 # print(sim.state.prosperities)
 for center in sim.state.nodes:
     pass
-a = get_line([0,1], [4,9])
+# a = get_line([0,1], [4,9])
 # print(a)
 # print(sim.state.node_pointers[0][0])
 # sim.state.roads.append((10, 10))
-sim.state.add_road_to((8,0), (10,10), "MAJOR_ROAD")
+sim.state.create_road((8,20), (15,2), src.my_utils.Type.MAJOR_ROAD.name)
+sim.state.get_closest_point(sim.state.nodes[sim.state.node_pointers[(0,8)]], [], sim.state.roads, src.my_utils.Type.MAJOR_ROAD.name, False)
+sim.state.create_road((0,8), (13,13), src.my_utils.Type.MAJOR_ROAD.name)
 
 sim.step()
-print(a)
+# print(a)
 # print(file_name+" complete")

@@ -1,3 +1,4 @@
+import math
 from math import floor
 
 import http_framework.interfaceUtils
@@ -106,6 +107,7 @@ class State:
             self.type = set()
             self.type.update(types)
             self.neighbors = set()
+            self.lot = None
 
         def add_type(self, type):
             self.type.add(type)
@@ -402,7 +404,7 @@ class State:
             self.roads.append(node)  # put node in roads array
 
     # might have to get point2 within the func, rather than pass it in
-    def add_road_to(self, point1, point2, road_type):
+    def create_road(self, point1, point2, road_type):
         # self.roads.append((point1))
         self.roads.append(self.nodes[self.node_pointers[point1]])
         block_path = src.linedrawing.get_line(point1, point2) # inclusive
@@ -420,8 +422,6 @@ class State:
             a = self.node_pointers
             end = self.node_pointers[block_path[len(block_path)-1]]
             node_path.append(self.node_pointers[block_path[len(block_path)-1]])  # end
-        print("node path is ")
-        print(node_path)
 
         # draw two more lines
         for card in src.movement.cardinals:
@@ -433,13 +433,131 @@ class State:
             block_path.extend(aux1)
         # render
         road_segment = RoadSegment(point1, point2, middle_nodes, road_type, self.road_segs)
-        print("road segment is ")
         for block in block_path:
             x = block[0]
             z = block[1]
             y = int(self.rel_ground_hm[x][z]) - 1
             set_state_block(self, x, y, z, "minecraft:blue_concrete")
         self.set_type_road(node_path, src.my_utils.Type.MAJOR_ROAD.name)
+
+        def create_road(self, point1, point2, road_type):
+            # self.roads.append((point1))
+            self.roads.append(self.nodes[self.node_pointers[point1]])
+            block_path = src.linedrawing.get_line(point1, point2)  # inclusive
+            # add road segnmets
+            middle_nodes = []
+            node_path = []
+            if len(block_path) > 0:
+                start = self.node_pointers[block_path[0]]
+                node_path.append(start)  # start
+                for n in range(1, len(block_path) - 1):
+                    node = self.node_pointers[block_path[n]]
+                    if not node in self.road_segs and node != None:
+                        middle_nodes.append(node)
+                        node_path.append(node)
+                a = self.node_pointers
+                end = self.node_pointers[block_path[len(block_path) - 1]]
+                node_path.append(self.node_pointers[block_path[len(block_path) - 1]])  # end
+
+            # draw two more lines
+            for card in src.movement.cardinals:
+                # offset1 = choice(src.movement.cardinals)
+                aux1 = src.linedrawing.get_line(
+                    (point1[0] + card[0], point1[1] + card[1]),
+                    (point2[0] + card[0], point2[1] + card[1]),
+                )
+                block_path.extend(aux1)
+            # render
+            road_segment = RoadSegment(point1, point2, middle_nodes, road_type, self.road_segs)
+            for block in block_path:
+                x = block[0]
+                z = block[1]
+                y = int(self.rel_ground_hm[x][z]) - 1
+                set_state_block(self, x, y, z, "minecraft:blue_concrete")
+            self.set_type_road(node_path, src.my_utils.Type.MAJOR_ROAD.name)
+
+
+    def append_road(self, point, road_type):
+        # self.roads.append((point1))
+        self.roads.append(self.nodes[self.node_pointers[point]])
+        block_path = src.linedrawing.get_line(point)  # inclusive
+        # add road segnmets
+        middle_nodes = []
+        node_path = []
+        if len(block_path) > 0:
+            start = self.node_pointers[block_path[0]]
+            node_path.append(start)  # start
+            for n in range(1, len(block_path) - 1):
+                node = self.node_pointers[block_path[n]]
+                if not node in self.road_segs and node != None:
+                    middle_nodes.append(node)
+                    node_path.append(node)
+            a = self.node_pointers
+            end = self.node_pointers[block_path[len(block_path) - 1]]
+            node_path.append(self.node_pointers[block_path[len(block_path) - 1]])  # end
+
+        # draw two more lines
+        for card in src.movement.cardinals:
+            # offset1 = choice(src.movement.cardinals)
+            aux1 = src.linedrawing.get_line(
+                (point[0] + card[0], point[1] + card[1]),
+                (point2[0] + card[0], point2[1] + card[1]),
+            )
+            block_path.extend(aux1)
+        # render
+        road_segment = RoadSegment(point, point2, middle_nodes, road_type, self.road_segs)
+        for block in block_path:
+            x = block[0]
+            z = block[1]
+            y = int(self.rel_ground_hm[x][z]) - 1
+            set_state_block(self, x, y, z, "minecraft:blue_concrete")
+        self.set_type_road(node_path, src.my_utils.Type.MAJOR_ROAD.name)
+
+
+    def get_closest_point(self, node, lots, possible_targets, road_type, leave_lot, correction=5):
+        x, z = node.center
+        nodes = possible_targets
+        nodes = [n for n in nodes if src.my_utils.Type.BRIDGE.name not in n.type]
+        if len(nodes) == 0:
+            print("leave_lot = {} no road segments".format(leave_lot))
+            return None, None
+        for i in nodes:
+            a = i
+        dists = [math.hypot(n.center[0] - x, n.center[1] - z) for n in nodes]
+        node2 = nodes[dists.index(min(dists))]
+        (x2, z2) = (node2.center[0], node2.center[1])
+        xthr = 2
+        zthr = 2
+        if node.lot is None:
+            if road_type is not src.my_utils.Type.MINOR_ROAD.name and abs(x2 - x) > xthr and abs(
+                    z2 - z) > zthr:
+                if node2.lot is not None:
+                    (cx2, cy2) = node2.lot.center
+                    (x, z) = (x + x - cx2, z + z - cy2)
+                    # clamp road endpoints
+                    if x >= self.len_x:
+                        x = self.len_x - 1
+                    if x < 0:
+                        x = 0
+                    if z >= self.len_z:
+                        z = self.len_z - 1
+                    if z < 0:
+                        z = 0
+                if abs(x2 - x) > 10 and abs(z2 - z) > 10:
+                    if not node.landscape.add_lot([(x2, z2), (x, z)]):
+                        print("leave_lot = {} add lot failed".format(leave_lot))
+                        return None, None
+            else:
+                return None, None
+        points = src.linedrawing.get_line((x, z), (node2.center[0], node2.center[1]))
+        if len(points) <= 2:
+            return None, None
+        if not leave_lot:
+            for (i, j) in points:
+                if src.my_utils.Type.WATER.name in self.nodes[self.node_pointers[(i, j)]].type:
+                    return None, None
+        closest_point = (node2.center[1], node2.center[1])
+        return closest_point, points
 
 
     def apply_local_prosperity(self, x, z, value):
@@ -460,6 +578,7 @@ class RoadSegment:
         self.shape = []
         self.nodes = nodes
 
+
     def merge(self, rs2, match, rs_list, roadnodes):
         if self.type != rs2.type:
             return
@@ -477,6 +596,7 @@ class RoadSegment:
         rs_list.discard(rs2)
         roadnodes.remove(match)
         roadnodes.remove(match)
+
 
     def split(self, node, rs_list, roadnodes):
         roadnodes.append(node)
