@@ -32,6 +32,7 @@ class State:
     road_nodes = {}
     roads = []
     road_segs = []
+    built = set()
 
     ## Create surface grid
     def __init__(self, world_slice=None, blocks_file=None, max_y_offset=tallest_building_height):
@@ -83,21 +84,43 @@ class State:
         node_pointers = np.full((len_x,len_z), None)
         for x in range(nodes_in_x):
             for z in range(nodes_in_z):
-                center = (1+x*node_size, 1+z*node_size)
-                node = self.Node(center=center)
-                nodes[center] = node
+                cx = x*node_size+1
+                cz = z*node_size+1
+                node = self.Node(center=(cx, cz), types=[src.my_utils.Type.BROWN.name])  # TODO change type
+                nodes[(cx, cz)] = node
+                node_pointers[cx][cz] = (cx, cz)
                 for dir in src.movement.directions:
-                    nx = x*node_size+1 + dir[0]
-                    nz = z*node_size+1 + dir[1]
-                    node_pointers[nx][nz] = center
+                    nx = cx + dir[0]
+                    nz = cz + dir[1]
+                    node_pointers[nx][nz] = (cx, cz)
+
         return nodes, node_pointers
 
 
     class Node:
-        def __init__(self, center):
+
+        def __init__(self, center, types):
             self.center = center
             self.size = 3
             self.local_prosperity = 0  # sum of all of its blocks
+            self.type = set()
+            self.type.update(types)
+            self.neighbors = set()
+
+        def add_type(self, type):
+            self.type.add(type)
+
+
+        def clear_type(self, built_arr):
+            if self in built_arr:
+                built_arr.discard(self)
+            # if src.my_utils.BUILDING.name
+            self.type.clear()
+
+
+        def add_neighbor(self, node):
+            self.neighbors.add(node)
+
 
 
     def calc_local_prosperity(self, node_center):
@@ -239,7 +262,6 @@ class State:
 
 
 
-
     def save_state(self, state, file_name):
         f = open(file_name, 'w')
         len_x = len(state.blocks)
@@ -364,17 +386,43 @@ class State:
         self.changed_blocks[key] = block_name
 
 
+    def set_type_road(self, node_points, road_type):
+        for point in node_points:
+            print(self.nodes)
+            node = self.nodes[point]
+            if src.my_utils.Type.WATER.name in node.type:
+                node.clear_type()
+                node.add_type(src.my_utils.Type.BRIDGE.name)
+            else:
+                node.clear_type(self.built)
+                node.add_type(road_type)
+            for road in self.roads:
+                node.add_neighbor(road)
+                road.add_neighbor(node)
+            self.roads.append(node)  # put node in roads array
+
     # might have to get point2 within the func, rather than pass it in
     def add_road_to(self, point1, point2, road_type):
-        self.roads.append((point1))
-        path = src.linedrawing.get_line(point1, point2) # inclusive
+        # self.roads.append((point1))
+        self.roads.append(self.nodes[self.node_pointers[point1]])
+        block_path = src.linedrawing.get_line(point1, point2) # inclusive
         # add road segnmets
         middle_nodes = []
-        if len(path) > 0:
-            for n in range(1, len(path)-1):
-                node = self.node_pointers[path[n]]
+        node_path = []
+        if len(block_path) > 0:
+            start = self.node_pointers[block_path[0]]
+            node_path.append(start) # start
+            for n in range(1, len(block_path)-1):
+                node = self.node_pointers[block_path[n]]
                 if not node in self.road_segs and node != None:
                     middle_nodes.append(node)
+                    node_path.append(node)
+            a = self.node_pointers
+            end = self.node_pointers[block_path[len(block_path)-1]]
+            node_path.append(self.node_pointers[block_path[len(block_path)-1]])  # end
+        print("node path is ")
+        print(node_path)
+
         # draw two more lines
         for card in src.movement.cardinals:
             # offset1 = choice(src.movement.cardinals)
@@ -382,15 +430,16 @@ class State:
                 (point1[0]+ card[0], point1[1] +card[1]),
                 (point2[0]+ card[0], point2[1] + card[1]),
             )
-            path.extend(aux1)
+            block_path.extend(aux1)
         # render
         road_segment = RoadSegment(point1, point2, middle_nodes, road_type, self.road_segs)
         print("road segment is ")
-        for block in path:
+        for block in block_path:
             x = block[0]
             z = block[1]
             y = int(self.rel_ground_hm[x][z]) - 1
             set_state_block(self, x, y, z, "minecraft:blue_concrete")
+        self.set_type_road(node_path, src.my_utils.Type.MAJOR_ROAD.name)
 
 
     def apply_local_prosperity(self, x, z, value):
