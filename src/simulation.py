@@ -12,7 +12,7 @@ class Simulation:
         self.state = src.states.State(self.world_slice)
 
 
-    def step(self, times, is_rendering_each_step=False, rendering_step_duration=1.0):
+    def step(self, times=1, is_rendering_each_step=False, rendering_step_duration=1.0):
 
         for i in range(times):
             self.update_agents()

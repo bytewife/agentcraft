@@ -26,7 +26,6 @@ directions = cardinals + diagonals
 
 
 def gen_all_legal_actions(blocks, vertical_ability, heightmap, actor_height, unwalkable_blocks):
-    print(heightmap)
     rx = len(blocks)
     rz = len(blocks[0][0])
     # print(rx)

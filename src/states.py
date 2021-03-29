@@ -6,6 +6,7 @@ import src.my_utils
 import src.movement
 import src.pathfinding
 import src.scheme_utils
+import numpy as np
 
 class State:
 
@@ -45,7 +46,8 @@ class State:
             self.sectors = self.pathfinder.create_sectors(self.heightmaps["MOTION_BLOCKING_NO_LEAVES"],
                                             self.legal_actions)  # add tihs into State
             self.nodes, self.node_pointers = self.gen_nodes(self.len_x, self.len_z, self.node_size)
-            self.prosperities = [[0] * self.len_z] * self.len_x
+            # self.prosperities = [[0] * self.len_z] * self.len_x
+            self.prosperities = np.zeros((self.len_x,self.len_z))
 
 
         else:  # for testing
@@ -73,16 +75,18 @@ class State:
         nodes_in_z = int(len_z / node_size)
         node_count = nodes_in_x * nodes_in_z
         nodes = {}  # contains coord pointing to data struct
-        node_pointers = [[None] * len_z] * len_x
+        node_pointers = np.full((len_x,len_z), None)
         for x in range(nodes_in_x):
             for z in range(nodes_in_z):
-                center = (1+x*node_size+self.world_x, 1+z*node_size+self.world_z)
+                center = (1+x*node_size, 1+z*node_size)
                 node = self.Node(center=center)
                 nodes[center] = node
                 for dir in src.movement.directions:
                     nx = x*node_size+1 + dir[0]
                     nz = z*node_size+1 + dir[1]
+                    # print(nz)
                     node_pointers[nx][nz] = center
+                    # print(node_pointers)
         return nodes, node_pointers
 
 
@@ -94,9 +98,11 @@ class State:
 
 
     def calc_local_prosperity(self, node_center):
-        local_p = self.prosperities[node_center[0]][node_center[1]]
+        x = node_center[0]
+        z = node_center[1]
+        local_p = self.prosperities[x][z]
         for dir in src.movement.directions:
-            local_p += self.prosperities[node_center+dir[0]][node_center+dir[1]]
+            local_p += self.prosperities[x+dir[0]][z+dir[1]]
         return local_p
 
 
@@ -349,5 +355,7 @@ class State:
             else False
 
 
-
-
+def set_state_block(state, x, y, z, block_name):
+    state.blocks[x][y][z] = block_name
+    key = src.my_utils.convert_coords_to_key(x, y, z)
+    state.changed_blocks[key] = block_name

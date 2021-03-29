@@ -84,7 +84,7 @@ class Agent:
 
 
     def set_motive(self, new_motive : Enum):
-        print(self.state.sectors)
+        # print(self.state.sectors)
         tree_search_radius = 10
         radius_increase = 10
         radius_increase_increments = 10

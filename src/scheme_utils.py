@@ -3,6 +3,9 @@ import src.manipulation
 from enum import Enum
 
 ### Returns a string containing the block names.
+import src.states
+
+
 def download_area(origin_x, origin_y, origin_z, end_x, end_y, end_z):
     print("downloading area")
     block_string = ""
@@ -151,13 +154,13 @@ def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, dir
                 block = "minecraft:" + blocks[index]
                 block = adjust_property_by_rotation(block, property="facing=", longest_len=5, rot=rot, shortest_len=4, rot_factor=1)
                 if rot == 0:
-                    src.manipulation.set_state_block(state, sx+xi, y, sz+zi, block)
+                    src.states.set_state_block(state, sx + xi, y, sz + zi, block)
                 if rot == 1:
-                    src.manipulation.set_state_block(state, sx+zi, y, sz+xi, block)
+                    src.states.set_state_block(state, sx + zi, y, sz + xi, block)
                 if rot == 2:
-                    src.manipulation.set_state_block(state, ex-xi, y, ez-zi, block)
+                    src.states.set_state_block(state, ex - xi, y, ez - zi, block)
                 if rot == 3:
-                    src.manipulation.set_state_block(state, ex-zi, y, ez-xi, block)
+                    src.states.set_state_block(state, ex - zi, y, ez - xi, block)
                 i+=1
                 xi += 1
             zi += 1
