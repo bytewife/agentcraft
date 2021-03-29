@@ -25,6 +25,7 @@ class State:
     agent_height = 2
     agent_jump_ability = 2
     heightmap_offset = -1
+    node_size = 3
 
     ## Create surface grid
     def __init__(self, world_slice=None, blocks_file=None, max_y_offset=tallest_building_height):
@@ -43,7 +44,9 @@ class State:
             self.pathfinder = src.pathfinding.Pathfinding()
             self.sectors = self.pathfinder.create_sectors(self.heightmaps["MOTION_BLOCKING_NO_LEAVES"],
                                             self.legal_actions)  # add tihs into State
-            self.gen_nodes(self.len_x, self.len_z)
+            self.nodes, self.node_pointers = self.gen_nodes(self.len_x, self.len_z, self.node_size)
+            self.prosperities = [[0] * self.len_z] * self.len_x
+
 
         else:  # for testing
             print("State instantiated for testing!")
@@ -61,7 +64,8 @@ class State:
             self.len_x, self.len_y, self.len_z, self.blocks = parse_blocks_file(blocks_file)
 
 
-    def gen_nodes(self, len_x, len_z):
+    # note: not every block has a node. These will point to None
+    def gen_nodes(self, len_x, len_z, node_size):
         if len_x < 0 or len_z < 0:
             print("Lengths cannot be <0")
         node_size = 3  # in blocks
@@ -69,19 +73,31 @@ class State:
         nodes_in_z = int(len_z / node_size)
         node_count = nodes_in_x * nodes_in_z
         nodes = {}  # contains coord pointing to data struct
-        node_pointers = [[(0,0) * len_x] * len_z]
-        print(node_pointers)
-        # for x in range(nodes_in_x):
-        #     for z in range(nodes_in_z):
-        #         center = (1+x*node_size, 1+z*node_size)
-        #         node = Node(center=center)
-        #         nodes[(center)]
+        node_pointers = [[None] * len_z] * len_x
+        for x in range(nodes_in_x):
+            for z in range(nodes_in_z):
+                center = (1+x*node_size+self.world_x, 1+z*node_size+self.world_z)
+                node = self.Node(center=center)
+                nodes[center] = node
+                for dir in src.movement.directions:
+                    nx = x*node_size+1 + dir[0]
+                    nz = z*node_size+1 + dir[1]
+                    node_pointers[nx][nz] = center
+        return nodes, node_pointers
 
 
     class Node:
         def __init__(self, center):
             self.center = center
             self.size = 3
+            self.local_prosperity = 0  # sum of all of its blocks
+
+
+    def calc_local_prosperity(self, node_center):
+        local_p = self.prosperities[node_center[0]][node_center[1]]
+        for dir in src.movement.directions:
+            local_p += self.prosperities[node_center+dir[0]][node_center+dir[1]]
+        return local_p
 
 
     def gen_heightmaps(self, world_slice):
@@ -200,7 +216,6 @@ class State:
                 if type == "TREE":
                     self.trees.append((x, z))
                 types[x].append(type)
-        print(types)
         print("done initializing types")
         return types
 
@@ -291,9 +306,6 @@ class State:
         x_target = x_origin + x_off
         y_target = y_origin + y_off
         z_target = z_origin + z_off
-        print(x_target)
-        print(y_target)
-        print(z_target)
         if self.out_of_bounds_3D(x_target, y_target, z_target):
             return None
         return self.blocks[x_target][y_target][z_target]

@@ -41,5 +41,5 @@ z2 = 34
 area = [x1,z1,x2,z2]
 area = src.my_utils.correct_area(area)
 sim = src.simulation.Simulation(area)
-print(sim.state.abs_ground_hm)
+# print(sim.state.abs_ground_hm)
 # sim.step(16, True, 1.0)
