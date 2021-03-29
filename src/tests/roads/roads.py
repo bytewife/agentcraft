@@ -20,12 +20,15 @@ file_name = ""
 sim = src.simulation.Simulation(area)
 # print(sim.state.prosperities)
 sim.state.prosperities[0][0] = 1
-print(sim.state.prosperities)
+# print(sim.state.prosperities)
 for center in sim.state.nodes:
     pass
 a = get_line([0,1], [4,9])
-for b in a:
-    src.states.set_state_block(sim.state, b[0], 1, b[1], "minecraft:oak_log")
+# print(a)
+# print(sim.state.node_pointers[0][0])
+# sim.state.roads.append((10, 10))
+sim.state.add_road_to((8,0), (10,10), "MAJOR_ROAD")
+
 sim.step()
 print(a)
 # print(file_name+" complete")

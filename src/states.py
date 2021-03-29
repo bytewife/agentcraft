@@ -7,6 +7,8 @@ import src.movement
 import src.pathfinding
 import src.scheme_utils
 import numpy as np
+from random import choice
+import src.linedrawing
 
 class State:
 
@@ -27,6 +29,9 @@ class State:
     agent_jump_ability = 2
     heightmap_offset = -1
     node_size = 3
+    road_nodes = {}
+    roads = []
+    road_segs = []
 
     ## Create surface grid
     def __init__(self, world_slice=None, blocks_file=None, max_y_offset=tallest_building_height):
@@ -84,9 +89,7 @@ class State:
                 for dir in src.movement.directions:
                     nx = x*node_size+1 + dir[0]
                     nz = z*node_size+1 + dir[1]
-                    # print(nz)
                     node_pointers[nx][nz] = center
-                    # print(node_pointers)
         return nodes, node_pointers
 
 
@@ -355,7 +358,92 @@ class State:
             else False
 
 
+    def set_block(self, x, y, z, block_name):
+        self.blocks[x][y][z] = block_name
+        key = src.my_utils.convert_coords_to_key(x, y, z)
+        self.changed_blocks[key] = block_name
+
+
+    # might have to get point2 within the func, rather than pass it in
+    def add_road_to(self, point1, point2, road_type):
+        self.roads.append((point1))
+        path = src.linedrawing.get_line(point1, point2) # inclusive
+        # add road segnmets
+        middle_nodes = []
+        if len(path) > 0:
+            for n in range(1, len(path)-1):
+                node = self.node_pointers[path[n]]
+                if not node in self.road_segs and node != None:
+                    middle_nodes.append(node)
+        # draw two more lines
+        for card in src.movement.cardinals:
+            # offset1 = choice(src.movement.cardinals)
+            aux1 = src.linedrawing.get_line(
+                (point1[0]+ card[0], point1[1] +card[1]),
+                (point2[0]+ card[0], point2[1] + card[1]),
+            )
+            path.extend(aux1)
+        # render
+        road_segment = RoadSegment(point1, point2, middle_nodes, road_type, self.road_segs)
+        print("road segment is ")
+        for block in path:
+            x = block[0]
+            z = block[1]
+            y = int(self.rel_ground_hm[x][z]) - 1
+            set_state_block(self, x, y, z, "minecraft:blue_concrete")
+
+
+    def apply_local_prosperity(self, x, z, value):
+        self.prosperities[x][z] += value
+
+
 def set_state_block(state, x, y, z, block_name):
     state.blocks[x][y][z] = block_name
     key = src.my_utils.convert_coords_to_key(x, y, z)
     state.changed_blocks[key] = block_name
+
+
+class RoadSegment:
+    def __init__(self, rnode1, rnode2, nodes, type, rs_list):
+        self.start = rnode1
+        self.end = rnode2
+        self.type = type
+        self.shape = []
+        self.nodes = nodes
+
+    def merge(self, rs2, match, rs_list, roadnodes):
+        if self.type != rs2.type:
+            return
+        if self.start == match:
+            self.shape.reverse()
+            self.start = self.end
+        self.shape.append((match.x, match.y))
+        self.nodes.append((match.x, match.y))
+        if rs2.end == match:
+            rs2.shape.reverse()
+            rs2.end = rs2.start
+        self.shape.extend(rs2.shape)
+        self.nodes.extend(rs2.nodes)
+        self.end = rs2.end
+        rs_list.discard(rs2)
+        roadnodes.remove(match)
+        roadnodes.remove(match)
+
+    def split(self, node, rs_list, roadnodes):
+        roadnodes.append(node)
+        roadnodes.append(node)
+
+        i = 0
+        while i < len(self.nodes) - 1:
+            if self.nodes[i] == (node.x, node.y):
+                break
+            i += 1
+        nodes1 = self.nodes[:i]
+        nodes2 = self.nodes[i + 1:]
+
+        new_rs = RoadSegment(node, self.end, nodes2, self.type, roadnodes)
+        rs_list.add(new_rs)
+
+        self.nodes = nodes1
+        self.end = node
+
