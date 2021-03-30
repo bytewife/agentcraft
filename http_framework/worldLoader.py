@@ -40,7 +40,6 @@ class WorldSlice:
     # TODO format this to blocks
 
     def __init__(self, rect, heightmapTypes=["MOTION_BLOCKING", "MOTION_BLOCKING_NO_LEAVES", "OCEAN_FLOOR", "WORLD_SURFACE"], heightmapOnly = False, heightmapOnlyType="MOTION_BLOCKING_NO_LEAVES"):
-        print("getting heightmap")
         self.rect = rect
         # -16
         lowerMultOf16X = floor(rect[0]) >> 4
@@ -105,7 +104,6 @@ class WorldSlice:
             return
 
         # sections
-        print("extracting chunk sections")
 
         for x in range(self.chunkRect[2]):
             for z in range(self.chunkRect[3]):

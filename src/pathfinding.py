@@ -42,8 +42,6 @@ class Pathfinding:
         x, z = parent.pos
         curr_legal_actions = all_legal_actions[x][z]
         for n in range(len(curr_legal_actions)):
-            # self.i+=1
-            # print(self.i)
             if curr_legal_actions[n] == False: continue
             dx = src.movement.directions[n][0]
             dz = src.movement.directions[n][1]
@@ -58,9 +56,6 @@ class Pathfinding:
             else:
                 g += diagonal_cost
             h = self.heuristic(*pos, *goal)
-            # if pos == (1,1) or pos == (2,0):
-            #     print(str(pos) + " is")
-            #     print(h)
             child = self.Node(
                 pos, g, h, parent,
                 action_to_here=(-dx, -dz), action_cost=cardinal_cost, legal_actions=all_legal_actions[tx][tz]
@@ -75,10 +70,7 @@ class Pathfinding:
         closed = set() # change to a dict with coord-node
         g_lookup = {}
         while len(open) > 0:
-            # print(closed)
             node = heappop(open)
-            print(str(node.pos) + " heuristic is "+str(node.f))
-            # print(node.h)
             if node.pos[0] == end[0] and node.pos[1] == end[1]:  # to account for both tuples and lists
                 return self.backwards_traverse(node, start)
             closed.add(node.pos)

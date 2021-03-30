@@ -67,13 +67,14 @@ class TYPE_TILES:
 		TYPE.GREEN.value: {  # GREEN
 			"minecraft:grass_block",
 			"minecraft:sand"
+			"minecraft:coarse_dirt",
+			"minecraft:dirt",
+			"minecraft:oak_sapling",
 		},
 		TYPE.BROWN.value: {  # BROWN
 			"minecraft:gravel",
 			"minecraft:diorite",
 			"minecraft:stone",
-			"minecraft:coarse_dirt",
-			"minecraft:dirt",
 		},
 		TYPE.BUILDING.value: {  # BUILDING
 			""

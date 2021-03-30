@@ -27,9 +27,6 @@ class Agent:
         self.state = state
         self.path = []
         self.motive = motive
-        self.x = 0
-        self.y = 0
-        self.z = 0
         self.rendered_x = 0
         self.rendered_y = 0
         self.rendered_z = 0
@@ -71,10 +68,8 @@ class Agent:
     def follow_path(self, state, walkable_heightmap):
         if len(self.path) < 1:
             if self.motive == self.Motive.LOGGING.name:
-                print(self.name + " has finished their path and is now cutting.")
                 status = self.log_adjacent_tree(state)
                 if status == src.manipulation.TASK_OUTCOME.SUCCESS:
-                    print("done!")
                     return
                 else:
                     return
@@ -84,7 +79,6 @@ class Agent:
 
 
     def set_motive(self, new_motive : Enum):
-        # print(self.state.sectors)
         tree_search_radius = 50
         radius_increase = 10
         radius_increase_increments = 10
@@ -96,6 +90,7 @@ class Agent:
                 trees = self.get_nearby_trees(starting_search_radius=tree_search_radius,
                                               radius_inc=radius_increase,
                                               max_iterations=1)
+                print('trees is')
                 print(trees)
                 if trees is None: continue
                 while len(trees) > 0:
@@ -111,6 +106,7 @@ class Agent:
                             self.set_path(path)
                             return
                     closed.add(chosen_tree)
+            # DO_RAND_WALK
             print("could not find trees!")
             exit(1)
 
@@ -126,7 +122,7 @@ class Agent:
             by = int(state.abs_ground_hm[bx][bz]) - self.state.world_y  # this isn't being updated in heightmap
             if src.manipulation.is_log(self.state, bx, by, bz):
                 status = src.manipulation.cut_tree_at(self.state, bx, by, bz)
-                state.prosperity[bx][bz] += src.my_utils.ACTION_PROSPERITY.LOGGING
+                state.nodes[state.node_pointers[bx][bz]].add_prosperity(src.my_utils.ACTION_PROSPERITY.LOGGING)
                 break  # cut one at a time
         return status  # someone sniped this tree.
 
@@ -136,8 +132,8 @@ class Agent:
         kill_cmd = """kill @e[name={name}]""".format(name = self.name)
         http_framework.interfaceUtils.runCommand(kill_cmd)
         spawn_cmd = """\
-summon minecraft:armor_stand {x} {y} {z} {{ShowArms:1, NoBasePlate:1, CustomNameVisible:1, Rotation:[{rot}f,0f,0f], \
-Small:{is_small}, CustomName: '{{"text":"{name}", "color":"customcolor", "bold":false, "underlined":false, \
+summon minecraft:armor_stand {x} {y} {z} {{NoGravity: 1, ShowArms:1, NoBasePlate:1, CustomNameVisible:1, Rotation:[{rot}f,0f,0f], \
+mall:{is_small}, CustomName: '{{"text":"{name}", "color":"customcolor", "bold":false, "underlined":false, \
 "strikethrough":false, "italic":false, "obscurated":false}}', \
 ArmorItems:[{{id:"{boots}",Count:1b}},\
 {{id:"{lower_armor}",Count:1b}},\
@@ -163,7 +159,7 @@ RightArm:[348f,67f,0f]}}\
             hand1=self.current_action_item,
             hand2="apple",
             head_tilt="350")  # this can be related to resources! 330 is high, 400 is low
-        print(http_framework.interfaceUtils.runCommand(spawn_cmd))
+        http_framework.interfaceUtils.runCommand(spawn_cmd)
 
     # def set_model(self, block):
     #     self.model = block

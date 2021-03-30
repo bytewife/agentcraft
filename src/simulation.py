@@ -9,7 +9,7 @@ import numpy as np
 class Simulation:
 
     # with names? Let's look after ensembles and other's data scructure for max flexibility
-    def __init__(self, XZXZ, run_start=True, phase=0, maNum=10, miNum=400, byNum= 2000, brNum=1000, buNum=400, pDecay=0.75, tDecay=0.25, corNum=5, times=1, is_rendering_each_step=True, rendering_step_duration=1.0):
+    def __init__(self, XZXZ, run_start=True, phase=0, maNum=5, miNum=400, byNum= 2000, brNum=1000, buNum=400, pDecay=0.75, tDecay=0.25, corNum=5, times=1, is_rendering_each_step=True, rendering_step_duration=1.0):
         self.agents = set()
         self.world_slice = http_framework.worldLoader.WorldSlice(XZXZ)
         self.state = src.states.State(self.world_slice)
@@ -37,11 +37,9 @@ class Simulation:
                 a = self.state.init_main_st()
 
     def step(self, times=1):
-
-        self.handle_nodes()
-
         ##########
         for i in range(times):
+            self.handle_nodes()
             self.update_agents()
             self.state.render()
             time.sleep(self.rendering_step_duration)
@@ -56,26 +54,32 @@ class Simulation:
         random.shuffle(indices)  # shuffle coordinates to update
         for (i, j) in indices:  # update a specific random numbor of tiles
             self.state.updateFlags[i][j] = 0
-            node_pos = self.state.nodes[self.state.node_pointers[(i,j)]]  # possible optimization here
+            node_pos = self.state.node_pointers[(i,j)]  # possible optimization here
             node = self.state.nodes[(node_pos)]
 
             # calculate roads
-            if not (src.my_utils.TYPE.GREEN.name in node.type or src.my_utils.TYPE.TREE.name in node.type or src.my_utils.TYPE.BUILDING.name in node.type):
+            if not (src.my_utils.TYPE.GREEN.name in node.type() or src.my_utils.TYPE.TREE.name in node.type() or src.my_utils.TYPE.BUILDING.name in node.type()):
+                print("returnung")
                 return
+            print("going")
 
-            node.local_prosperity = sum([n.prosperity for n in node.local])  # should i change this to be tile-based?
-            node.local_traffic = sum([n.traffic for n in node.range])
+            node.local_prosperity = sum([n.prosperity() for n in node.local])
+            node.local_traffic = sum([n.traffic() for n in node.range])
+            print("local prosp is "+str(node.local_prosperity))
 
             road_found_far = len(set(node.range) & set(self.state.roads))
+            print("road found far is "+str(road_found_far))
             road_found_near = len(set(node.local) & set(self.state.roads))
 
             # major roads
             if node.local_prosperity > self.maNum and not road_found_far:  # if node's local prosperity is high
+                print("prosperity fulfilled; creating road")
                 if node.local_prosperity > self.brNum:  # bridge/new lot minimum
                     self.state.create_road(i, j, src.my_utils.TYPE.MAJOR_ROAD.name, leave_lot=True, correction=self.corNum)
                 else:
                     self.state.create_road(i, j, src.my_utils.TYPE.MAJOR_ROAD.name, correction=self.corNum)
             if node.local_prosperity > self.buNum and road_found_near:
+                print("prosperity fulfilled; creating building")
                 self.state.set_type_building(node.local) # wait, the local is a building?
 
             # if self.phase >= 2:
@@ -92,7 +96,7 @@ class Simulation:
                     self.state.append_road((i, j), src.my_utils.TYPE.MINOR_ROAD.name, correction=self.corNum)
 
                 # calculate reservations of greenery
-                elif src.my_utils.TYPE.TREE.name in node.type or src.my_utils.TYPE.GREEN.name in node.type:
+                elif src.my_utils.TYPE.TREE.name in node.type() or src.my_utils.TYPE.GREEN.name in node.type():
                     if len(node.neighbors & self.state.built):
                         lot = node.get_lot()
                         if lot is not None:
