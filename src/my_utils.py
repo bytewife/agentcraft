@@ -42,7 +42,7 @@ class Heightmaps(Enum):
 class Type_Tiles:
 	tile_sets = {
 		Type.WATER.value: {  #WATER
-			"minecraft:water"
+			"minecraft:water",
             "minecraft:lily_pad"
 		},
 		Type.TREE.value: {  # FOREST

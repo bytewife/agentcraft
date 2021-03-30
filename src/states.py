@@ -19,6 +19,7 @@ class State:
     abs_ground_hm = []
     rel_ground_hm = [] # TODO create function for this. Agents will be armor stands, and they can be updated in real time
     trees = []
+    water = []
     world_y = 0
     world_x = 0
     world_z = 0
@@ -32,8 +33,9 @@ class State:
     node_size = 3
     road_nodes = {}
     roads = []
-    road_segs = []
+    road_segs = set()
     built = set()
+    lots = set()
 
     ## Create surface grid
     def __init__(self, world_slice=None, blocks_file=None, max_y_offset=tallest_building_height):
@@ -41,7 +43,7 @@ class State:
             self.blocks, self.world_y, self.len_y, self.abs_ground_hm = self.gen_blocks_array(world_slice)
             self.rel_ground_hm = self.gen_rel_ground_hm(self.abs_ground_hm)  # a heightmap based on the state's y values. -1
             self.heightmaps = world_slice.heightmaps
-            self.types = self.gen_types("MOTION_BLOCKING_NO_LEAVES")  # 2D array. Exclude leaves because it would be hard to determine tree positions
+            self.types = self.gen_types(self.rel_ground_hm)  # 2D array. Exclude leaves because it would be hard to determine tree positions
             self.world_x = world_slice.rect[0]
             self.world_z = world_slice.rect[1]
             self.len_x = world_slice.rect[2] - world_slice.rect[0]
@@ -81,33 +83,50 @@ class State:
         nodes_in_x = int(len_x / node_size)
         nodes_in_z = int(len_z / node_size)
         node_count = nodes_in_x * nodes_in_z
+        self.last_node_pointer_x = nodes_in_x * node_size
+        self.last_node_pointer_z = nodes_in_z * node_size
         nodes = {}  # contains coord pointing to data struct
         node_pointers = np.full((len_x,len_z), None)
         for x in range(nodes_in_x):
             for z in range(nodes_in_z):
                 cx = x*node_size+1
                 cz = z*node_size+1
-                node = self.Node(center=(cx, cz), types=[src.my_utils.Type.BROWN.name])  # TODO change type
+                node = self.Node(center=(cx, cz), types=[src.my_utils.Type.BROWN.name], size=self.node_size)  # TODO change type
                 nodes[(cx, cz)] = node
                 node_pointers[cx][cz] = (cx, cz)
                 for dir in src.movement.directions:
                     nx = cx + dir[0]
                     nz = cz + dir[1]
                     node_pointers[nx][nz] = (cx, cz)
-
+        for node in nodes.values():
+            node.neighbors = node.gen_neighbors(nodes, node_pointers, self)
+            node.local = node.gen_local(nodes, node_pointers, self)
+            node.range = node.gen_range()
+            node.adjacent = node.gen_adjacent(nodes, node_pointers)
+            # print("ranges for " + str(node.center))
+            # print(node.get_ranges_positions())
         return nodes, node_pointers
 
 
     class Node:
 
-        def __init__(self, center, types):
+        local = set()
+        def __init__(self, center, types, size):
             self.center = center
-            self.size = 3
+            self.size = size
             self.local_prosperity = 0  # sum of all of its blocks
+            self.prosperity = 0
             self.type = set()
             self.type.update(types)
             self.neighbors = set()
             self.lot = None
+            self.range = set()
+            self.adjacent = set()
+            self.locality_radius = 2
+            self.range_radius = 3
+            self.neighborhood_radius = 4
+            self.adjacent_radius = 1
+
 
         def add_type(self, type):
             self.type.add(type)
@@ -120,9 +139,91 @@ class State:
             self.type.clear()
 
 
+        def gen_adjacent(self, nodes, node_pointers):
+            adj = set()
+            for dir in src.movement.directions:
+                pos = (self.center[0] + dir[0], self.center[1] + dir[1])
+                node = nodes[node_pointers[pos]]
+                adj.add(node)
+            return adj
+
+
         def add_neighbor(self, node):
             self.neighbors.add(node)
 
+
+        def gen_neighbors(self, nodes, node_pointers, state):
+            neighbors = set()
+            i = 0
+            for r in range(1, self.neighborhood_radius+1):
+                for ox in range(-r, r+1):
+                    for oz in range(-r, r+1):
+                        x = (self.center[0])+ox*self.size
+                        z = (self.center[1])+oz*self.size
+                        if state.out_of_bounds_Node(x, z):
+                            continue
+                        node = nodes[node_pointers[(x, z)]]
+                        neighbors.add(node)
+            return neighbors
+
+
+        # get local nodes
+        def gen_local(self, nodes, node_pointers, state):
+            local = set()
+            i = 0
+            for r in range(1, self.locality_radius + 1):
+                for ox in range(-r, r + 1):
+                    for oz in range(-r, r + 1):
+                        x = (self.center[0]) + ox * self.size
+                        z = (self.center[1]) + oz * self.size
+                        if state.out_of_bounds_Node(x, z):
+                            continue
+                        node = nodes[node_pointers[(x, z)]]
+                        local.add(node)
+            return local
+
+
+        def get_locals_positions(self):
+            arr = []
+            for node in self.local:
+                arr.append(node.center)
+            return arr
+
+
+        def get_neighbors_positions(self):
+            arr = []
+            for node in self.neighbors:
+                arr.append(node.center)
+            return arr
+
+
+        def get_ranges_positions(self):
+            arr = []
+            for node in self.range:
+                arr.append(node.center)
+            return arr
+
+
+        def gen_range(self):
+            local = {self}
+            _range = []
+            for i in range(1, self.range_radius+1):
+                new_neighbors = set([e for n in local for e in n.neighbors if e not in local])
+                if len(new_neighbors) == 0:
+                    _range = list(local)
+                    self.water_neighbors = [l for l in _range if src.my_utils.Type.WATER.name in l.type]
+                    self.resource_neighbors = [l for l in _range if (
+                                src.my_utils.Type.BUILDING.name in l.type and l.prosperity > 300) or src.my_utils.Type.TREE.name in l.type or src.my_utils.Type.GREEN.name in l.type]
+                    break
+                local.update(new_neighbors)
+
+                if i == self.range_radius - 1:
+                    _range = list(local)
+                    self.water_neighbors = [l for l in _range if src.my_utils.Type.WATER.name in l.type]
+                    self.resource_neighbors = [l for l in _range if (
+                                src.my_utils.Type.BUILDING.name in l.type and l.prosperity > 300) or src.my_utils.Type.TREE.name in l.type or src.my_utils.Type.GREEN.name in l.type]
+            self.built_resources = self.prosperity
+            return _range
 
 
     def calc_local_prosperity(self, node_center):
@@ -204,7 +305,7 @@ class State:
                 self.trees.remove((x, z))
         #     y = self.heightmaps["MOTION_BLOCKING_NO_LEAVES"][x][z]-self.world_y+self.heightmap_offset
         #     if self.is_log(x, y, z):
-        #         new_type = "FOREST"
+        #         new_type = "TREE"
         self.types[x][z] = new_type
 
 
@@ -241,26 +342,29 @@ class State:
         return worldSlice
 
 
-    def gen_types(self, heightmap_name):
-        types = []
-        for x in range(len(self.blocks)):
-            types.append([])
-            for z in range(len(self.blocks[0][0])):
-                type = self.determine_type(x, z, heightmap_name)
+    def gen_types(self, heightmap):
+        xlen = len(self.blocks)
+        zlen = len(self.blocks[0][0])
+        types = [["str" for i in range(zlen)] for j in range(xlen)]
+        for x in range(xlen):
+            for z in range(zlen):
+                type = self.determine_type(x, z, heightmap)
                 if type == "TREE":
                     self.trees.append((x, z))
-                types[x].append(type)
+                if type == "WATER":
+                    self.water.append((x,z))
+                types[x][z] = type
         print("done initializing types")
         return types
 
 
-    def determine_type(self, x, z, heightmap_name="MOTION_BLOCKING_NO_LEAVES"):
-        block_y = self.heightmaps[heightmap_name][x][z] - self.world_y + self.heightmap_offset
+    def determine_type(self, x, z, heightmap):
+        block_y = int(heightmap[x][z]) - 1
         block = self.blocks[x][block_y][z]
         for i in range(1, len(src.my_utils.Type)+1):
             if block in src.my_utils.Type_Tiles.tile_sets[i]:
                 return src.my_utils.Type(i).name
-        return src.my_utils.Type.AIR.name
+        return src.my_utils.Type.BROWN.name
 
 
 
@@ -381,6 +485,11 @@ class State:
         return True if x < 0 or z < 0 or x >= len(self.blocks) or z >= len(self.blocks[0][0]) \
             else False
 
+    def out_of_bounds_Node(self, x, z):
+        if x < 0 or z < 0 or  x > self.last_node_pointer_x or z > self.last_node_pointer_z: # the problem is that some blocks don't point to a tile.
+            return True
+        return False
+
 
     def set_block(self, x, y, z, block_name):
         self.blocks[x][y][z] = block_name
@@ -388,10 +497,19 @@ class State:
         self.changed_blocks[key] = block_name
 
 
+    def set_type_building(self, nodes):
+        for node in nodes:
+            if src.my_utils.Type.GREEN.name in node.type or \
+                    src.my_utils.Type.BROWN.name in node.type or \
+                    src.my_utils.Type.TREE.name in node.type:
+                node.clear_type()
+                node.add_type(src.my_utils.Type.BUILDING.name)
+                self.built.add(node)
+
+
     def set_type_road(self, node_points, road_type):
         for point in node_points:
-            print(self.nodes)
-            node = self.nodes[point]
+            node = self.nodes[self.node_pointers[point]]
             if src.my_utils.Type.WATER.name in node.type:
                 node.clear_type()
                 node.add_type(src.my_utils.Type.BRIDGE.name)
@@ -402,6 +520,64 @@ class State:
                 node.add_neighbor(road)
                 road.add_neighbor(node)
             self.roads.append(node)  # put node in roads array
+
+
+    def init_main_st(self):
+        (x1, y1) = choice(self.water)
+        n = self.nodes[self.node_pointers[(x1, y1)]]
+        n1_options = list(set(n.range) - set(n.local)) # far away nodes
+        # n1_options = list(set(self.nodes[self.node_pointers[(10,10)]])) # far away nodes
+        n1 = np.random.choice(n1_options, replace=False)
+        print(n1)
+        print(n1)
+        while src.my_utils.Type.WATER.name in n1.type:  # generate and test until n1 isn't water
+            n1 = np.random.choice(n1_options, replace=False)
+        n2_options = list(set(n1.range) - set(n1.local))
+        n2 = np.random.choice(n2_options, replace=False)
+        points = src.linedrawing.get_line((n1.center[0], n1.center[1]), (n2.center[0], n2.center[1]))
+        while any(src.my_utils.Type.WATER.name in self.nodes[self.node_pointers[(x, y)]].type for (x, y) in
+                  points):  # if any of the points of the potential road are in water, regenerate
+            n2 = np.random.choice(n2_options, replace=False)
+            points = src.linedrawing.get_line((n1.x, n1.y), (n2.x, n2.y))
+
+        points = self.points_to_nodes(points)
+        (x1, y1) = points[0]
+        (x2, y2) = points[len(points) - 1]
+        self.set_type_road(points, src.my_utils.Type.MAJOR_ROAD.name) # TODO check if the fact that this leads to repeats causes issue
+        middle_nodes = []
+        if len(points) > 2:
+            middle_nodes = points[1:len(points) - 1]
+        self.road_segs.add(
+            RoadSegment(self.nodes[(x1,y1)], self.nodes[(x2,y2)], middle_nodes, src.my_utils.Type.MAJOR_ROAD.name, self.road_segs))
+        for (x, y) in points:
+            adjacent = self.nodes[(x,y)].adjacent
+            adjacent = [s for n in adjacent for s in n.adjacent]  # every node in the road builds buildings around them
+            for pt in adjacent:
+                if pt not in points:
+                    self.set_type_building([self.nodes[(pt.center[0], pt.center[1])]])
+        self.init_lots(x1, y1, x2, y2)  # main street is a lot
+
+
+    def init_lots(self, x1, y1, x2, y2):
+        (mx, my) = (int(x1 + x2) // 2, int(y1 + y2) // 2)  # middle
+        self.add_lot([(mx - 25, my - 25), (mx + 25, my + 25)])
+
+
+    def add_lot(self, points):
+        lot = Lot(self, points)
+        if lot is not None:
+            self.lots.add(lot)
+            return True
+        return False
+
+
+    def points_to_nodes(self, points):
+        nodes = []
+        for point in points:
+            node = self.node_pointers[point]  # node coords
+            if node not in nodes:
+                nodes.append(node)
+        return nodes
 
     # might have to get point2 within the func, rather than pass it in
     def create_road(self, point1, point2, road_type):
@@ -477,41 +653,50 @@ class State:
             self.set_type_road(node_path, src.my_utils.Type.MAJOR_ROAD.name)
 
 
-    def append_road(self, point, road_type):
-        # self.roads.append((point1))
-        self.roads.append(self.nodes[self.node_pointers[point]])
-        block_path = src.linedrawing.get_line(point)  # inclusive
-        # add road segnmets
-        middle_nodes = []
-        node_path = []
-        if len(block_path) > 0:
-            start = self.node_pointers[block_path[0]]
-            node_path.append(start)  # start
-            for n in range(1, len(block_path) - 1):
-                node = self.node_pointers[block_path[n]]
-                if not node in self.road_segs and node != None:
-                    middle_nodes.append(node)
-                    node_path.append(node)
-            a = self.node_pointers
-            end = self.node_pointers[block_path[len(block_path) - 1]]
-            node_path.append(self.node_pointers[block_path[len(block_path) - 1]])  # end
+    # def init_main_st(self, water_pts):
+    #     (x1, y1) = random.choice(water_pts)  # start in water
+    #     n = self.array[x1][y1]
+    #     n1_options = list(set(n.range()) - set(n.local()))
+    #     n1 = np.random.choice(n1_options, replace=False)
+    #     while Type.WATER in n1.type:  # generate and test until n1 isn't water
+    #         n1 = np.random.choice(n1_options, replace=False)
+    #     n2_options = list(set(n1.range()) - set(n1.local()))
+    #     n2 = np.random.choice(n2_options, replace=False)
+    #     points = get_line((n1.x, n1.y), (n2.x, n2.y))
+    #     while any(Type.WATER in self.array[x][y].type for (x, y) in
+    #               points):  # if any of the points of the potential road are in water, regenerate
+    #         n2 = np.random.choice(n2_options, replace=False)
+    #         points = get_line((n1.x, n1.y), (n2.x, n2.y))
+    #
+    #     (x1, y1) = points[0]
+    #     (x2, y2) = points[len(points) - 1]
+    #     self.set_type_road(points, Type.MAJOR_ROAD)
+    #     middle_nodes = []
+    #     if len(points) > 2:
+    #         middle_nodes = points[1:len(points) - 1]
+    #     self.roadsegments.add(
+    #         RoadSegment(self.array[x1][y1], self.array[x2][y2], middle_nodes, Type.MAJOR_ROAD, self.roadsegments))
+    #     for (x, y) in points:
+    #         adjacent = self.array[x][y].adjacent
+    #         adjacent = [s for n in adjacent for s in n.adjacent]  # every node in the road builds buildings around them
+    #         for pt in adjacent:
+    #             if pt not in points:
+    #                 self.set_type_building([self.array[pt.x][pt.y]])
+    #     self.init_lots(x1, y1, x2, y2)  # main street is a lot
 
-        # draw two more lines
-        for card in src.movement.cardinals:
-            # offset1 = choice(src.movement.cardinals)
-            aux1 = src.linedrawing.get_line(
-                (point[0] + card[0], point[1] + card[1]),
-                (point2[0] + card[0], point2[1] + card[1]),
-            )
-            block_path.extend(aux1)
-        # render
-        road_segment = RoadSegment(point, point2, middle_nodes, road_type, self.road_segs)
-        for block in block_path:
-            x = block[0]
-            z = block[1]
-            y = int(self.rel_ground_hm[x][z]) - 1
-            set_state_block(self, x, y, z, "minecraft:blue_concrete")
-        self.set_type_road(node_path, src.my_utils.Type.MAJOR_ROAD.name)
+
+    def append_road(self, point, road_type):
+        # convert point to node
+        point = self.node_pointers[point]
+        # self.roads.append((point1))
+        closest_point, middle_points = self.get_closest_point(self.nodes[self.node_pointers[point]], # get closest point to any road
+                                                              [],
+                                                              self.roads,
+                                                              road_type,
+                                                              False)
+        self.create_road(point, closest_point, road_type)
+
+
 
 
     def get_closest_point(self, node, lots, possible_targets, road_type, leave_lot, correction=5):
@@ -556,7 +741,7 @@ class State:
             for (i, j) in points:
                 if src.my_utils.Type.WATER.name in self.nodes[self.node_pointers[(i, j)]].type:
                     return None, None
-        closest_point = (node2.center[1], node2.center[1])
+        closest_point = (node2.center[0], node2.center[1])
         return closest_point, points
 
 
@@ -616,3 +801,42 @@ class RoadSegment:
         self.nodes = nodes1
         self.end = node
 
+
+class Lot:
+    def __init__(self, state, points):
+        self.state = state
+        # self.neighbors = set() # neighbor lots, not currently used
+        self.get_lot(points)
+
+    def get_pt_avg(self, points):
+        x = sum(x for (x, y) in points) / len(points)
+        y = sum(y for (x, y) in points) / len(points)
+        return (x, y)
+
+    def get_lot(self, points):
+        [pt1, pt2] = points
+
+        (ax, ay) = self.get_pt_avg(points)
+        self.center = (cx, cy) = (int(ax), int(ay))
+        center_node = self.state.nodes[(cx,cy)]
+
+        lot = set([center_node])
+        self.border = set()
+        while True:
+            neighbors = set([e for n in lot for e in n.adjacent if \
+                             e not in lot and e.lot is None and e.x != pt1[0] and e.x != pt2[0] and e.y != pt1[
+                                 1] and e.y != pt2[1] \
+                             and src.my_utils.Type.WATER.name not in e.type])
+            if len(neighbors) > 0:
+                lot.update(neighbors)
+                self.border = neighbors
+            else:
+                break
+
+        for node in lot:
+            node.lot = self
+        self.nodes = lot
+
+
+    def get_nodes(self):
+        return self.nodes

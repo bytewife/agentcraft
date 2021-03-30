@@ -12,24 +12,35 @@ from enum import Enum
 
 x1 = -10
 z1 = 35
-x2 = -31
-z2 = 62
+x2 = -33
+z2 = 64
 area = [x1,z1,x2,z2]
 area = src.my_utils.correct_area(area)
 file_name = ""
 sim = src.simulation.Simulation(area)
+
+# print(sim.state.nodes)
 # print(sim.state.prosperities)
-sim.state.prosperities[0][0] = 1
+# sim.state.init_main_st()
+
+# range testing
+print("neighbors")
+# print(sim.state.nodes[(10,10)].get_neighbors_positions())
+# print(len(sim.state.nodes[(13,13)].get_ranges_positions()))
+for node in sim.state.nodes[(13,13)].range:
+    y = sim.state.rel_ground_hm[node.center[0]][ node.center[1]] - 1
+    sim.state.set_block(node.center[0], y,node.center[1], "minecraft:white_wool")
+#
+
+# sim.state.prosperities[0][0] = 1
+
 # print(sim.state.prosperities)
 for center in sim.state.nodes:
     pass
-# a = get_line([0,1], [4,9])
-# print(a)
-# print(sim.state.node_pointers[0][0])
-# sim.state.roads.append((10, 10))
-sim.state.create_road((8,20), (15,2), src.my_utils.Type.MAJOR_ROAD.name)
-sim.state.get_closest_point(sim.state.nodes[sim.state.node_pointers[(0,8)]], [], sim.state.roads, src.my_utils.Type.MAJOR_ROAD.name, False)
-sim.state.create_road((0,8), (13,13), src.my_utils.Type.MAJOR_ROAD.name)
+
+# sim.state.create_road((8,20), (15,2), src.my_utils.Type.MAJOR_ROAD.name)
+# sim.state.get_closest_point(sim.state.nodes[sim.state.node_pointers[(0,8)]], [], sim.state.roads, src.my_utils.Type.MAJOR_ROAD.name, False)
+# sim.state.create_road((0,8), (13,13), src.my_utils.Type.MAJOR_ROAD.name)
 
 sim.step()
 # print(a)
