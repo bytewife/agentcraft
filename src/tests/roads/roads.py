@@ -21,7 +21,8 @@ sim = src.simulation.Simulation(area)
 
 # print(sim.state.nodes)
 # print(sim.state.prosperities)
-# sim.state.init_main_st()
+sim.state.init_main_st()
+print(sim.state.roads)
 
 # range testing
 print("neighbors")
