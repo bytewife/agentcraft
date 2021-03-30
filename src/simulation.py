@@ -17,7 +17,10 @@ class Simulation:
             self.start()
 
     def start(self):
-        self.state.init_main_st()
+            # for i in range(200):
+            a = False
+            while a is False:
+                a = self.state.init_main_st()
 
     def step(self, phase=0, maNum=10, miNum=400, byNum= 2000, brNum=1000, buNum=400, pDecay=0.75, tDecay=0.25, corNum=5, times=1, is_rendering_each_step=True, rendering_step_duration=1.0):
         self.state.prosperity *= pDecay

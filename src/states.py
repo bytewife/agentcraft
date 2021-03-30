@@ -31,7 +31,7 @@ class State:
     agent_jump_ability = 2
     heightmap_offset = -1
     node_size = 3
-    road_nodes = {}
+    road_nodes = []
     roads = []
     road_segs = set()
     built = set()
@@ -102,11 +102,9 @@ class State:
         for node in nodes.values():
             node.adjacent = node.gen_adjacent(nodes, node_pointers, self)
             node.neighbors = node.gen_neighbors(nodes, node_pointers, self)
-            # node.local = node.gen_local(nodes, node_pointers, self)
-            node.gen_local()
-            node.range = node.gen_range()
-            # print("ranges for " + str(node.center))
-            # print(node.get_ranges_positions())
+            # node = node.gen_local()
+            node.local = node.gen_local(nodes, node_pointers, self)
+            node.range, node.water_resources, node.resource_neighbors = node.gen_range(nodes, node_pointers, self)
         return nodes, node_pointers
 
 
@@ -124,7 +122,7 @@ class State:
             self.lot = None
             self.range = set()
             self.adjacent = set()
-            self.locality_radius = 3
+            self.locality_radius = 2
             self.range_radius = 4
             self.neighborhood_radius = 1
             self.adjacent_radius = 1
@@ -171,34 +169,48 @@ class State:
 
 
         # get local nodes
-        # def gen_local(self, nodes, node_pointers, state):
-        #     local = set()
-        #     i = 0
-        #     for r in range(1, self.locality_radius + 1):
-        #         for ox in range(-r, r + 1):
-        #             for oz in range(-r, r + 1):
-        #                 if ox == 0 and oz == 0: continue
-        #                 x = (self.center[0]) + ox * self.size
-        #                 z = (self.center[1]) + oz * self.size
-        #                 if state.out_of_bounds_Node(x, z):
-        #                     continue
-        #                 node = nodes[node_pointers[(x, z)]]
-        #                 local.add(node)
-        #     return local
-        def gen_local(self):
+        def gen_local(self, nodes, node_pointers, state):
+            local = set()
+            i = 0
+            for r in range(1, self.locality_radius + 1):
+                for ox in range(-r, r + 1):
+                    for oz in range(-r, r + 1):
+                        if ox == 0 and oz == 0: continue
+                        x = (self.center[0]) + ox * self.size
+                        z = (self.center[1]) + oz * self.size
+                        if state.out_of_bounds_Node(x, z):
+                            continue
+                        node = nodes[node_pointers[(x, z)]]
+                        if src.my_utils.Type.WATER.name in node.type:
+                            continue
+                        local.add(node)
+            return local
+
+
+        def gen_range(self, nodes, node_pointers, state):
             local = set([self])
-            for i in range(1, self.locality_radius + 1):
-                new_neighbors = set(
-                    [e for n in local for e in n.adjacent if e not in local if src.my_utils.Type.WATER.name not in e.type])
-                if len(new_neighbors) == 0:
-                    self.plot = list(local)
-                    self.local = list(local)
-                    break
-                local.update(new_neighbors)
-                if i == 2 - 1:
-                    self.plot = list(local)
-                if i == self.locality_radius - 1:
-                    self.local = list(local)
+            water_neighbors = []
+            resource_neighbors = []
+            for r in range(1, self.range_radius + 1):
+                for ox in range(-r, r + 1):
+                    for oz in range(-r, r + 1):
+                        if ox == 0 and oz == 0: continue
+                        x = (self.center[0]) + ox * self.size
+                        z = (self.center[1]) + oz * self.size
+                        if state.out_of_bounds_Node(x, z):
+                            continue
+                        node = nodes[node_pointers[(x, z)]]
+                        if src.my_utils.Type.WATER.name in node.type:
+                            continue
+                        if src.my_utils.Type.WATER.name in node.type:
+                            water_neighbors.append(node)
+                        if src.my_utils.Type.TREE.name in node.type \
+                                or src.my_utils.Type.GREEN.name in node.type \
+                                or src.my_utils.Type.BUILDING.name in node.type:
+                                resource_neighbors.append(node)
+                        local.add(node)
+            self.built_resources = self.prosperity
+            return local, water_neighbors, resource_neighbors
 
 
         def get_locals_positions(self):
@@ -222,26 +234,23 @@ class State:
             return arr
 
 
-        def gen_range(self):
-            local = {self}
-            _range = []
-            for i in range(1, self.range_radius+1):
-                new_neighbors = set([e for n in local for e in n.neighbors if e not in local])
-                if len(new_neighbors) == 0:
-                    _range = list(local)
-                    self.water_neighbors = [l for l in _range if src.my_utils.Type.WATER.name in l.type]
-                    self.resource_neighbors = [l for l in _range if (
-                                src.my_utils.Type.BUILDING.name in l.type and l.prosperity > 300) or src.my_utils.Type.TREE.name in l.type or src.my_utils.Type.GREEN.name in l.type]
-                    break
-                local.update(new_neighbors)
 
-                if i == self.range_radius - 1:
-                    _range = list(local)
-                    self.water_neighbors = [l for l in _range if src.my_utils.Type.WATER.name in l.type]
-                    self.resource_neighbors = [l for l in _range if (
-                                src.my_utils.Type.BUILDING.name in l.type and l.prosperity > 300) or src.my_utils.Type.TREE.name in l.type or src.my_utils.Type.GREEN.name in l.type]
-            self.built_resources = self.prosperity
-            return _range
+
+        def get_lot(self):
+            # finds enclosed green areas
+            lot = set([self])
+            new_neighbors = set()
+            for i in range(5):
+                new_neighbors = set([e for n in lot for e in n.adjacent if e not in lot and (
+                            src.my_utils.Type.GREEN.name in e.type or src.my_utils.Type.TREE.name in e.type or src.my_utils.Type.BUILDING.name in e.type)])
+                accept = set([n for n in new_neighbors if src.my_utils.Type.BUILDING.name not in n.type])
+                if len(new_neighbors) == 0:
+                    break
+                lot.update(accept)
+            if len([n for n in new_neighbors if src.my_utils.Type.BUILDING.name not in n.type]) == 0:  # neighbors except self
+                return lot
+            else:
+                return None
 
 
     def calc_local_prosperity(self, node_center):
@@ -543,6 +552,7 @@ class State:
     def init_main_st(self):
         (x1, y1) = choice(self.water)
         n = self.nodes[self.node_pointers[(x1, y1)]]
+        print('center is '+str(n.center))
         n1_options = list(set(n.range) - set(n.local))  # Don't put water right next to water, depending on range
         n1 = np.random.choice(n1_options, replace=False)  # Pick random point of the above
         while src.my_utils.Type.WATER.name in n1.type:  # generate and test until n1 isn't water
@@ -550,11 +560,25 @@ class State:
         n2_options = list(set(n1.range) - set(n1.local))
         n2 = np.random.choice(n2_options, replace=False)  # n2 is based off of n1's range, - local to make it farther
         points = src.linedrawing.get_line((n1.center[0], n1.center[1]), (n2.center[0], n2.center[1]))
-        while any(src.my_utils.Type.WATER.name in self.nodes[self.node_pointers[(x, y)]].type for (x, y) in
-                  points):
-            n2 = np.random.choice(n2_options, replace=False)
-            points = src.linedrawing.get_line((n1.x, n1.y), (n2.x, n2.y))
-
+        water_found = True
+        limit = 10
+        i = 0
+        while water_found:
+            if i > limit:
+                return False
+            water_found = False
+            for p in points:
+                x = self.node_pointers[p][0]
+                z = self.node_pointers[p][1]
+                y = self.rel_ground_hm[x][z] - 1
+                b = self.blocks[x][y][z]
+                if b in src.my_utils.Type_Tiles.tile_sets[src.my_utils.Type.WATER.value]:
+                    n2 = np.random.choice(n2_options, replace=False)
+                    print(n2)
+                    points = src.linedrawing.get_line((n1.center[0], n1.center[1]), (n2.center[0], n2.center[1]))
+                    water_found = True
+                    i+=1
+                    break
         points = self.points_to_nodes(points)  # points is the path of nodes from the chosen
         (x1, y1) = points[0]
         (x2, y2) = points[len(points) - 1]
@@ -599,8 +623,8 @@ class State:
 
     # might have to get point2 within the func, rather than pass it in
     def create_road(self, point1, point2, road_type, points=None, leave_lot=False, correction=5):
-        self.roads.append(self.nodes[self.node_pointers[point1]])
-        self.roads.append(self.nodes[self.node_pointers[point2]])
+        self.road_nodes.append(self.nodes[self.node_pointers[point1]])
+        self.road_nodes.append(self.nodes[self.node_pointers[point2]])
         block_path = []
         if points == None:
             block_path = src.linedrawing.get_line(point1, point2) # inclusive
@@ -636,13 +660,13 @@ class State:
             n1 = self.nodes[point1]
             for rs in self.road_segs:
                 if point1 in rs.nodes:  # if the road is in roads already, split it off
-                    rs.split(n1, self.road_segs, self.road_segs)  # split RoadSegment
+                    rs.split(n1, self.road_segs, self.road_nodes)  # split RoadSegment
                     break
         if check2:
             n2 = self.nodes[point2]
             for rs in self.road_segs:
                 if point2 in rs.nodes:
-                    rs.split(n2, self.road_segs, self.road_segs)
+                    rs.split(n2, self.road_segs, self.road_nodes)
                     break
 
         # do checks
@@ -654,7 +678,8 @@ class State:
             x = block[0]
             z = block[1]
             y = int(self.rel_ground_hm[x][z]) - 1
-            set_state_block(self, x, y, z, "minecraft:blue_concrete")
+            if block != "minecraft:water":
+                set_state_block(self, x, y, z, "minecraft:blue_concrete")
         self.set_type_road(node_path, src.my_utils.Type.MAJOR_ROAD.name)
 
 
@@ -724,7 +749,7 @@ class State:
             if x2 >= self.len_x or z2 >= self.len_z or x2 < 0 or z2 < 0:
                 break
             landtype = landscape.array[x2][z2].type
-            if src.my_utils.Type.GREEN.name in landtype or src.my_utils.Type.FOREST.name in landtype or src.my_utils.Type.WATER.name in landtype:
+            if src.my_utils.Type.GREEN.name in landtype or src.my_utils.Type.TREE.name in landtype or src.my_utils.Type.WATER.name in landtype:
                 break
             if src.my_utils.Type.MAJOR_ROAD.name in landtype or src.my_utils.Type.MINOR_ROAD.name in landtype and src.my_utils.Type.BYPASS.name not in landtype:
                 return (x2, z2)
@@ -844,7 +869,7 @@ class RoadSegment:
 
         i = 0
         while i < len(self.nodes) - 1:
-            if self.nodes[i] == (node.x, node.y):
+            if self.nodes[i] == (node.center[0], node.center[1]):
                 break
             i += 1
         nodes1 = self.nodes[:i]
@@ -881,8 +906,7 @@ class Lot:
         self.border = set()
         while True:
             neighbors = set([e for n in lot for e in n.adjacent if \
-                             e not in lot and e.lot is None and e.center[0] != pt1[0] and e.center[0] != pt2[0] and e.center[1] != pt1[
-                                 1] and e.center[1] != pt2[1] \
+                             e not in lot and e.lot is None and e.center[0] != pt1[0] and e.center[0] != pt2[0] and e.center[1] != pt1[ 1] and e.center[1] != pt2[1] \
                              and src.my_utils.Type.WATER.name not in e.type])
             if len(neighbors) > 0:
                 lot.update(neighbors)
