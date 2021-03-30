@@ -100,10 +100,11 @@ class State:
                     nz = cz + dir[1]
                     node_pointers[nx][nz] = (cx, cz)
         for node in nodes.values():
+            node.adjacent = node.gen_adjacent(nodes, node_pointers, self)
             node.neighbors = node.gen_neighbors(nodes, node_pointers, self)
-            node.local = node.gen_local(nodes, node_pointers, self)
+            # node.local = node.gen_local(nodes, node_pointers, self)
+            node.gen_local()
             node.range = node.gen_range()
-            node.adjacent = node.gen_adjacent(nodes, node_pointers)
             # print("ranges for " + str(node.center))
             # print(node.get_ranges_positions())
         return nodes, node_pointers
@@ -133,17 +134,17 @@ class State:
             self.type.add(type)
 
 
-        def clear_type(self, built_arr):
-            if self in built_arr:
-                built_arr.discard(self)
-            # if src.my_utils.BUILDING.name
+        def clear_type(self, state):
+            if self in state.built:
+                state.built.discard(self)
             self.type.clear()
 
 
-        def gen_adjacent(self, nodes, node_pointers):
+        def gen_adjacent(self, nodes, node_pointers, state):
             adj = set()
             for dir in src.movement.directions:
-                pos = (self.center[0] + dir[0], self.center[1] + dir[1])
+                pos = (self.center[0] + dir[0]*self.size, self.center[1] + dir[1]*self.size)
+                if state.out_of_bounds_Node(*pos): continue
                 node = nodes[node_pointers[pos]]
                 adj.add(node)
             return adj
@@ -159,6 +160,7 @@ class State:
             for r in range(1, self.neighborhood_radius+1):
                 for ox in range(-r, r+1):
                     for oz in range(-r, r+1):
+                        if ox == 0 and oz == 0: continue
                         x = (self.center[0])+ox*self.size
                         z = (self.center[1])+oz*self.size
                         if state.out_of_bounds_Node(x, z):
@@ -169,19 +171,34 @@ class State:
 
 
         # get local nodes
-        def gen_local(self, nodes, node_pointers, state):
-            local = set()
-            i = 0
-            for r in range(1, self.locality_radius + 1):
-                for ox in range(-r, r + 1):
-                    for oz in range(-r, r + 1):
-                        x = (self.center[0]) + ox * self.size
-                        z = (self.center[1]) + oz * self.size
-                        if state.out_of_bounds_Node(x, z):
-                            continue
-                        node = nodes[node_pointers[(x, z)]]
-                        local.add(node)
-            return local
+        # def gen_local(self, nodes, node_pointers, state):
+        #     local = set()
+        #     i = 0
+        #     for r in range(1, self.locality_radius + 1):
+        #         for ox in range(-r, r + 1):
+        #             for oz in range(-r, r + 1):
+        #                 if ox == 0 and oz == 0: continue
+        #                 x = (self.center[0]) + ox * self.size
+        #                 z = (self.center[1]) + oz * self.size
+        #                 if state.out_of_bounds_Node(x, z):
+        #                     continue
+        #                 node = nodes[node_pointers[(x, z)]]
+        #                 local.add(node)
+        #     return local
+        def gen_local(self):
+            local = set([self])
+            for i in range(1, self.locality_radius + 1):
+                new_neighbors = set(
+                    [e for n in local for e in n.adjacent if e not in local if src.my_utils.Type.WATER.name not in e.type])
+                if len(new_neighbors) == 0:
+                    self.plot = list(local)
+                    self.local = list(local)
+                    break
+                local.update(new_neighbors)
+                if i == 2 - 1:
+                    self.plot = list(local)
+                if i == self.locality_radius - 1:
+                    self.local = list(local)
 
 
         def get_locals_positions(self):
@@ -503,7 +520,7 @@ class State:
             if src.my_utils.Type.GREEN.name in node.type or \
                     src.my_utils.Type.BROWN.name in node.type or \
                     src.my_utils.Type.TREE.name in node.type:
-                node.clear_type()
+                node.clear_type(self)
                 node.add_type(src.my_utils.Type.BUILDING.name)
                 self.built.add(node)
 
@@ -512,10 +529,10 @@ class State:
         for point in node_points:
             node = self.nodes[self.node_pointers[point]]
             if src.my_utils.Type.WATER.name in node.type:
-                node.clear_type()
+                node.clear_type(self)
                 node.add_type(src.my_utils.Type.BRIDGE.name)
             else:
-                node.clear_type(self.built)
+                node.clear_type(self)
                 node.add_type(road_type)
             for road in self.roads:
                 node.add_neighbor(road)
@@ -864,8 +881,8 @@ class Lot:
         self.border = set()
         while True:
             neighbors = set([e for n in lot for e in n.adjacent if \
-                             e not in lot and e.lot is None and e.x != pt1[0] and e.x != pt2[0] and e.y != pt1[
-                                 1] and e.y != pt2[1] \
+                             e not in lot and e.lot is None and e.center[0] != pt1[0] and e.center[0] != pt2[0] and e.center[1] != pt1[
+                                 1] and e.center[1] != pt2[1] \
                              and src.my_utils.Type.WATER.name not in e.type])
             if len(neighbors) > 0:
                 lot.update(neighbors)
