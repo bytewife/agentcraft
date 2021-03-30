@@ -16,10 +16,14 @@ ROTATION_LOOKUP = {
 	(1, 1): "315",
 }
 
+ACTION_ITEMS = { "LOGGING": ["iron_axe"] }
 
-ACTION_ITEMS = { src.agent.Agent.Motive.LOGGING.name: ["iron_axe"], }
 
-class Type(Enum):
+class ACTION_PROSPERITY():
+	LOGGING = 10
+
+
+class TYPE(Enum):
 	WATER = 1
 	TREE = 2
 	GREEN = 3
@@ -33,63 +37,63 @@ class Type(Enum):
 	AIR = 11
 
 
-class Heightmaps(Enum):
+class HEIGHTMAPS(Enum):
 	MOTION_BLOCKING = 1
 	MOTION_BLOCKING_NO_LEAVES = 2
 	OCEAN_FLOOR = 3
 	WORLD_SURFACE = 4
 
-class Type_Tiles:
+class TYPE_TILES:
 	tile_sets = {
-		Type.WATER.value: {  #WATER
+		TYPE.WATER.value: {  #WATER
 			"minecraft:water",
             "minecraft:lily_pad"
 		},
-		Type.TREE.value: {  # FOREST
+		TYPE.TREE.value: {  # FOREST
 			"minecraft:log",
 			"minecraft:dark_oak_log",
-			"minecraft:stripped_dark_oak_log"
+			"minecraft:stripped_dark_oak_log",
 			"minecraft:spruce_log",
 			"minecraft:acacia_log",
-            "minecraft:stripped_spruce_log",
+			"minecraft:stripped_spruce_log",
 			"minecraft:oak_log",
 			"minecraft:stripped_oak_log",
 			"minecraft:jungle_log",
-            "minecraft:stripped_jungle_log",
-			"minecraft:stripped_acacia_log",
-			"minecraft:stripped_birch_log",
-			"minecraft:birch_log"
+			"minecraft:stripped_jungle_log",
+            "minecraft:stripped_acacia_log",
+            "minecraft:stripped_birch_log",
+			"minecraft:birch_log",
 		},
-		Type.GREEN.value: {  # GREEN
+		TYPE.GREEN.value: {  # GREEN
 			"minecraft:grass_block",
 			"minecraft:sand"
 		},
-		Type.BROWN.value: {  # BROWN
+		TYPE.BROWN.value: {  # BROWN
 			"minecraft:gravel",
 			"minecraft:diorite",
 			"minecraft:stone",
 			"minecraft:coarse_dirt",
 			"minecraft:dirt",
 		},
-		Type.BUILDING.value: {  # BUILDING
+		TYPE.BUILDING.value: {  # BUILDING
 			""
 		},
-		Type.MAJOR_ROAD.value: {  # MAJOR ROAD
+		TYPE.MAJOR_ROAD.value: {  # MAJOR ROAD
 
 		},
-		Type.MINOR_ROAD.value: {  # MINOR ROAD
+		TYPE.MINOR_ROAD.value: {  # MINOR ROAD
 
 		},
-		Type.BRIDGE.value: {  # BRIDGE
+		TYPE.BRIDGE.value: {  # BRIDGE
 
 		},
-		Type.CITY_GARDEN.value: {
+		TYPE.CITY_GARDEN.value: {
 
 		},
-		Type.HIGHWAY.value: {
+		TYPE.HIGHWAY.value: {
 
 		},
-		Type.AIR.value: {
+		TYPE.AIR.value: {
 			"minecraft:air",
 			"minecraft:cave_air"
 		}

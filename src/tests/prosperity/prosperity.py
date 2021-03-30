@@ -24,7 +24,11 @@ file_name = ""
 # print(np.where(a > 0.45))
 # print(a)
 sim = src.simulation.Simulation(area)
+print(sim.state.types)
 
+ag = src.agent.Agent(sim.state, 0, 0, sim.state.rel_ground_hm, "Prof")
+sim.add_agent(ag)
+ag.set_motive(ag.Motive.LOGGING)
 # for node in sim.state.nodes[(13,13)].range:
 #     y = sim.state.rel_ground_hm[node.center[0]][ node.center[1]] - 1
 #     sim.state.set_block(node.center[0], y,node.center[1], "minecraft:white_wool")

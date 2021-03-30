@@ -2,7 +2,7 @@ import src.my_utils
 import src.states
 from enum import Enum
 
-class TaskOutcome(Enum):
+class TASK_OUTCOME(Enum):
     FAILURE = 0
     SUCCESS = 1
     IN_PROGRESS = 2
@@ -24,26 +24,20 @@ def cut_tree_at(state, x, y, z, times=1):
         #     return TaskOutcome.IN_PROGRESS.name
         log_type = get_log_type(state.blocks[x][y][z])
         replacement = "minecraft:air"
-        # state.blocks[x][y][z] = replacement
         src.states.set_state_block(state, x, y, z, replacement)
-        print("changed blocks")
-        print(state.changed_blocks)
-        if \
-                is_leaf(state.get_adjacent_block(x, y, z, 0, 1, 0)) or \
-        is_leaf(state.get_adjacent_block(x, y, z, 1, 0, 0)
-        ):
+        if is_leaf(state.get_adjacent_block(x, y, z, 0, 1, 0)) \
+                or is_leaf(state.get_adjacent_block(x, y, z, 1, 0, 0)) \
+                or is_leaf(state.get_adjacent_block(x, y, z, -1, 0, 0)) \
+                or is_leaf(state.get_adjacent_block(x, y, z, 0, 0, 1)) \
+                or is_leaf(state.get_adjacent_block(x, y, z, 0, 0, -1)):
             flood_kill_leaves(state, x, y + 1, z)
         if not is_log(state, x, y - 1, z):  # place sapling
             sapling = "minecraft:" + log_type + "_sapling"
-            # state.blocks[x][y][z] = sapling
             src.states.set_state_block(state, x, y, z, sapling)
-            print("TREES")
-            print(state.trees)
             state.trees.remove((x,z))
-            print(state.trees)
-            return TaskOutcome.SUCCESS.name
+            return TASK_OUTCOME.SUCCESS.name
         y -= 1
-    return TaskOutcome.IN_PROGRESS.name
+    return TASK_OUTCOME.IN_PROGRESS.name
 
 
 def do_recur_on_adjacent(state, x, y, z, target_block_checker, recur_func, forward_call):

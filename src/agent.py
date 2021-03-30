@@ -73,7 +73,7 @@ class Agent:
             if self.motive == self.Motive.LOGGING.name:
                 print(self.name + " has finished their path and is now cutting.")
                 status = self.log_adjacent_tree(state)
-                if status == src.manipulation.TaskOutcome.SUCCESS:
+                if status == src.manipulation.TASK_OUTCOME.SUCCESS:
                     print("done!")
                     return
                 else:
@@ -85,7 +85,7 @@ class Agent:
 
     def set_motive(self, new_motive : Enum):
         # print(self.state.sectors)
-        tree_search_radius = 10
+        tree_search_radius = 50
         radius_increase = 10
         radius_increase_increments = 10
         self.motive = new_motive.name
@@ -96,6 +96,7 @@ class Agent:
                 trees = self.get_nearby_trees(starting_search_radius=tree_search_radius,
                                               radius_inc=radius_increase,
                                               max_iterations=1)
+                print(trees)
                 if trees is None: continue
                 while len(trees) > 0:
                     chosen_tree = choice(trees)
@@ -115,7 +116,7 @@ class Agent:
 
 
     def log_adjacent_tree(self, state):
-        status = src.manipulation.TaskOutcome.FAILURE.name
+        status = src.manipulation.TASK_OUTCOME.FAILURE.name
         for dir in src.movement.directions:
             xo, zo = dir
             bx = self.x + xo
@@ -123,10 +124,9 @@ class Agent:
             if bx < 0 or bz < 0 or bx >= len(self.state.blocks) or bz >= len(self.state.blocks[0][0]):
                 continue
             by = int(state.abs_ground_hm[bx][bz]) - self.state.world_y  # this isn't being updated in heightmap
-            print("BY_IS")
-            print(by)
             if src.manipulation.is_log(self.state, bx, by, bz):
                 status = src.manipulation.cut_tree_at(self.state, bx, by, bz)
+                state.prosperity[bx][bz] += src.my_utils.ACTION_PROSPERITY.LOGGING
                 break  # cut one at a time
         return status  # someone sniped this tree.
 

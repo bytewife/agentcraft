@@ -1,7 +1,7 @@
 from math import sqrt
 import numpy as np
 from random import randint
-from my_utils import Type_Tiles, Type
+from my_utils import TYPE_TILES, TYPE
 from states import *
 
 class LegalPrecomp:
@@ -218,7 +218,7 @@ class PathGenerator:
                         self.level.blocks[x][y][z] = self.block_list[i]
                         # self.level.setBlockDataAt(x, y, z, self.data_list[i])
                         y2 = y + 1
-                        while self.level.blocks[x][y2][z] in Type_Tiles.tile_sets[Type.CITY_GARDEN]:
+                        while self.level.blocks[x][y2][z] in TYPE_TILES.tile_sets[TYPE.CITY_GARDEN]:
                             if y2 - y > 2:
                                 break
                             self.level.blocks[x][y2][z] = 'minecraft:gold_block'

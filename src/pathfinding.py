@@ -2,6 +2,7 @@ from heapq import heappop, heappush, heappushpop
 from math import sqrt
 from numpy import full_like
 import src.movement
+from math import dist
 
 cardinal_cost = 100
 diagonal_cost = 141
@@ -35,11 +36,14 @@ class Pathfinding:
         return g_lookup[parent] + p_to_c_cost
 
 
+    i = 0
     def expand(self, parent : Node, goal, max_x, max_z, all_legal_actions):  # TODO integtrate legal actions here
         children = []
         x, z = parent.pos
         curr_legal_actions = all_legal_actions[x][z]
         for n in range(len(curr_legal_actions)):
+            # self.i+=1
+            # print(self.i)
             if curr_legal_actions[n] == False: continue
             dx = src.movement.directions[n][0]
             dz = src.movement.directions[n][1]
@@ -53,8 +57,12 @@ class Pathfinding:
                 g += cardinal_cost
             else:
                 g += diagonal_cost
+            h = self.heuristic(*pos, *goal)
+            # if pos == (1,1) or pos == (2,0):
+            #     print(str(pos) + " is")
+            #     print(h)
             child = self.Node(
-                pos, g, self.heuristic(*pos, *goal), parent,
+                pos, g, h, parent,
                 action_to_here=(-dx, -dz), action_cost=cardinal_cost, legal_actions=all_legal_actions[tx][tz]
             )
             children.append(child)
@@ -67,7 +75,10 @@ class Pathfinding:
         closed = set() # change to a dict with coord-node
         g_lookup = {}
         while len(open) > 0:
+            # print(closed)
             node = heappop(open)
+            print(str(node.pos) + " heuristic is "+str(node.f))
+            # print(node.h)
             if node.pos[0] == end[0] and node.pos[1] == end[1]:  # to account for both tuples and lists
                 return self.backwards_traverse(node, start)
             closed.add(node.pos)
@@ -75,7 +86,8 @@ class Pathfinding:
                 p_to_c_cost = child.action_cost
                 if child.pos in closed: continue
                 # TODO fix the below to be "if child.pos in open" and the last if.
-                if not child.pos in closed and child.pos in g_lookup and g_lookup[child.pos] < self.calc_g(node.pos, g_lookup, p_to_c_cost): continue # g is the action cost to get here, parent's g + parent to child g
+                if child.pos in closed: continue
+                if child.pos in g_lookup.keys() and g_lookup[child.pos] <= self.calc_g(node.pos, g_lookup, p_to_c_cost): continue # g is the action cost to get here, parent's g + parent to child g
                 g_lookup[child.pos] = child.g
                 heappush(open, child)
         return []
@@ -92,6 +104,7 @@ class Pathfinding:
 
 
     def heuristic(self, x1, z1, x2, z2):
+        # return round(dist((x1, z1), (x2, z2)))
         return round(sqrt((x1 - x2) ** 2 + (z1 - z2) ** 2) * cardinal_cost)
 
 

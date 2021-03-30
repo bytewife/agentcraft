@@ -69,7 +69,7 @@ def check_if_legal_move(blocks, x, y, z, x_offset, z_offset, jump_ability, heigh
     is_legal = True
     for i in range(0, actor_height):
         target = blocks[target_x][target_y + i][target_z]
-        if not (target in src.my_utils.Type_Tiles.tile_sets[src.my_utils.Type.AIR.value]):
+        if not (target in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.AIR.value]):
             is_legal = False
             break
     if is_legal:
