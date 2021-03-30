@@ -58,26 +58,27 @@ class Simulation:
             node = self.state.nodes[(node_pos)]
 
             # calculate roads
-            if not (src.my_utils.TYPE.GREEN.name in node.type() or src.my_utils.TYPE.TREE.name in node.type() or src.my_utils.TYPE.BUILDING.name in node.type()):
+            if not (src.my_utils.TYPE.GREEN.name in node.get_type() or src.my_utils.TYPE.TREE.name in node.type or src.my_utils.TYPE.BUILDING.name in node.type):
                 print("returnung")
                 return
-            print("going")
+
 
             node.local_prosperity = sum([n.prosperity() for n in node.local])
+            print("going because local prosp is "+str(node.local_prosperity))
             node.local_traffic = sum([n.traffic() for n in node.range])
-            print("local prosp is "+str(node.local_prosperity))
 
             road_found_far = len(set(node.range) & set(self.state.roads))
             print("road found far is "+str(road_found_far))
             road_found_near = len(set(node.local) & set(self.state.roads))
+            print("road found near is "+str(road_found_far))
 
             # major roads
             if node.local_prosperity > self.maNum and not road_found_far:  # if node's local prosperity is high
                 print("prosperity fulfilled; creating road")
                 if node.local_prosperity > self.brNum:  # bridge/new lot minimum
-                    self.state.create_road(i, j, src.my_utils.TYPE.MAJOR_ROAD.name, leave_lot=True, correction=self.corNum)
+                    self.state.create_road((i, j), src.my_utils.TYPE.MAJOR_ROAD.name, leave_lot=True, correction=self.corNum)
                 else:
-                    self.state.create_road(i, j, src.my_utils.TYPE.MAJOR_ROAD.name, correction=self.corNum)
+                    self.state.create_road((i, j), src.my_utils.TYPE.MAJOR_ROAD.name, correction=self.corNum)
             if node.local_prosperity > self.buNum and road_found_near:
                 print("prosperity fulfilled; creating building")
                 self.state.set_type_building(node.local) # wait, the local is a building?
@@ -96,7 +97,7 @@ class Simulation:
                     self.state.append_road((i, j), src.my_utils.TYPE.MINOR_ROAD.name, correction=self.corNum)
 
                 # calculate reservations of greenery
-                elif src.my_utils.TYPE.TREE.name in node.type() or src.my_utils.TYPE.GREEN.name in node.type():
+                elif src.my_utils.TYPE.TREE.name in node.get_type() or src.my_utils.TYPE.GREEN.name in node.get_type():
                     if len(node.neighbors & self.state.built):
                         lot = node.get_lot()
                         if lot is not None:

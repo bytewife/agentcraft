@@ -69,7 +69,10 @@ class Agent:
         if len(self.path) < 1:
             if self.motive == self.Motive.LOGGING.name:
                 status = self.log_adjacent_tree(state)
-                if status == src.manipulation.TASK_OUTCOME.SUCCESS:
+                if status == src.manipulation.TASK_OUTCOME.SUCCESS.name:
+                    print("finding another tree!")
+                    # lets log another tree for now
+                    self.set_motive(src.agent.Agent.Motive.LOGGING)
                     return
                 else:
                     return
@@ -79,9 +82,9 @@ class Agent:
 
 
     def set_motive(self, new_motive : Enum):
-        tree_search_radius = 50
+        tree_search_radius = 10
         radius_increase = 10
-        radius_increase_increments = 10
+        radius_increase_increments = 15
         self.motive = new_motive.name
         self.current_action_item = choice(src.my_utils.ACTION_ITEMS[self.motive])
         if new_motive.name == self.Motive.LOGGING.name:
@@ -90,8 +93,6 @@ class Agent:
                 trees = self.get_nearby_trees(starting_search_radius=tree_search_radius,
                                               radius_inc=radius_increase,
                                               max_iterations=1)
-                print('trees is')
-                print(trees)
                 if trees is None: continue
                 while len(trees) > 0:
                     chosen_tree = choice(trees)
@@ -124,6 +125,7 @@ class Agent:
                 status = src.manipulation.cut_tree_at(self.state, bx, by, bz)
                 state.nodes[state.node_pointers[bx][bz]].add_prosperity(src.my_utils.ACTION_PROSPERITY.LOGGING)
                 break  # cut one at a time
+        print(status)
         return status  # someone sniped this tree.
 
 

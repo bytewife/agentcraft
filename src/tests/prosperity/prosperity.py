@@ -24,7 +24,7 @@ file_name = ""
 # print(np.where(a > 0.45))
 # print(a)
 sim = src.simulation.Simulation(area, rendering_step_duration=0.2)
-ag = src.agent.Agent(sim.state, 20, 2, sim.state.rel_ground_hm, "Prof")
+ag = src.agent.Agent(sim.state, 0, 2, sim.state.rel_ground_hm, "Prof")
 sim.add_agent(ag)
 ag.set_motive(ag.Motive.LOGGING)
 # for node in sim.state.nodes[(13,13)].range:
@@ -35,7 +35,7 @@ ag.set_motive(ag.Motive.LOGGING)
 # for center in sim.state.nodes:
 #     pass
 
-sim.step(15)
+sim.step(60)
 
 
 node = sim.state.nodes[sim.state.node_pointers[23][5]]

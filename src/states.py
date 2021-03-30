@@ -122,10 +122,11 @@ class State:
             self.range = set()
             self.adjacent = set()
             self.locality_radius = 3
-            self.range_radius = 9
+            self.range_radius = 5
             self.neighborhood_radius = 1
             self.adjacent_radius = 1
             self.state = state
+            # self.type = set()  # to cache type()
 
 
         # def local_prosperity(self):
@@ -145,16 +146,17 @@ class State:
         #
 
         # the tiles' types + mask_type (like building or roads
-        def type(self):
-            all_types = []
+        def get_type(self):
+            all_types = set()
             for x in range(-self.size, self.size+1):
                 for z in range(-self.size, self.size+1):
                     nx = self.center[0] + x
                     nz = self.center[1] + x
                     if self.state.out_of_bounds_Node(nx, nz): continue
-                    all_types.append(self.state.types[nx][nz])  # each block has a single type
+                    all_types.add(self.state.types[nx][nz])  # each block has a single type
             for t in self.mask_type:
-                all_types.append(t)
+                all_types.add(t)
+            self.type = all_types
             return all_types
 
 
@@ -224,7 +226,7 @@ class State:
                         if state.out_of_bounds_Node(x, z):
                             continue
                         node = nodes[node_pointers[(x, z)]]
-                        if src.my_utils.TYPE.WATER.name in node.type():
+                        if src.my_utils.TYPE.WATER.name in node.get_type():
                             continue
                         local.add(node)
             return local
@@ -243,13 +245,13 @@ class State:
                         if state.out_of_bounds_Node(x, z):
                             continue
                         node = nodes[node_pointers[(x, z)]]
-                        if src.my_utils.TYPE.WATER.name in node.type():
+                        if src.my_utils.TYPE.WATER.name in node.get_type():
                             continue
-                        if src.my_utils.TYPE.WATER.name in node.type():
+                        if src.my_utils.TYPE.WATER.name in node.type:
                             water_neighbors.append(node)
-                        if src.my_utils.TYPE.TREE.name in node.type() \
-                                or src.my_utils.TYPE.GREEN.name in node.type() \
-                                or src.my_utils.TYPE.BUILDING.name in node.type():
+                        if src.my_utils.TYPE.TREE.name in node.type \
+                                or src.my_utils.TYPE.GREEN.name in node.type \
+                                or src.my_utils.TYPE.BUILDING.name in node.type:
                                 resource_neighbors.append(node)
                         local.add(node)
             self.built_resources = self.prosperity
@@ -567,9 +569,9 @@ class State:
 
     def set_type_building(self, nodes):
         for node in nodes:
-            if src.my_utils.TYPE.GREEN.name in node.type() or \
-                    src.my_utils.TYPE.BROWN.name in node.type() or \
-                    src.my_utils.TYPE.TREE.name in node.type():
+            if src.my_utils.TYPE.GREEN.name in node.get_type() or \
+                    src.my_utils.TYPE.BROWN.name in node.type or \
+                    src.my_utils.TYPE.TREE.name in node.type:
                 node.clear_type(self)
                 node.add_type(src.my_utils.TYPE.BUILDING.name)
                 self.built.add(node)
@@ -578,7 +580,7 @@ class State:
     def set_type_road(self, node_points, road_type):
         for point in node_points:
             node = self.nodes[self.node_pointers[point]]
-            if src.my_utils.TYPE.WATER.name in node.type():
+            if src.my_utils.TYPE.WATER.name in node.get_type():
                 node.clear_type(self)
                 node.add_type(src.my_utils.TYPE.BRIDGE.name) # we don't use add_type. instead we give each tile a type
             else:
