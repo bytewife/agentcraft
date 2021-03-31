@@ -682,7 +682,7 @@ class State:
         return nodes
 
     # might have to get point2 within the func, rather than pass it in
-    def create_road(self, point1, point2, road_type, points=None, leave_lot=False, correction=5, road_blocks=None, inner_block_rate=1.0, outer_block_rate=0.05, fringe_rate=0.05):
+    def create_road(self, point1, point2, road_type, points=None, leave_lot=False, correction=5, road_blocks=None, inner_block_rate=1.0, outer_block_rate=0.75, fringe_rate=0.05):
         self.road_nodes.append(self.nodes[self.node_pointers[point1]])
         self.road_nodes.append(self.nodes[self.node_pointers[point2]])
         block_path = []
@@ -692,13 +692,11 @@ class State:
         if points == None:
             block_path = src.linedrawing.get_line(point1, point2) # inclusive
         else:
-            print("in here")
             block_path = points
         # add road segnmets
         middle_nodes = []
         node_path = []
         if len(block_path) > 0:
-            print("block_path is "+str(block_path))
             start = self.node_pointers[block_path[0]]
             node_path.append(start) # start
             for n in range(1, len(block_path)-1):
@@ -711,14 +709,8 @@ class State:
             node_path.append(end)  # end
 
         ## draw two more lines
-        aux_path = []
-        for card in src.movement.cardinals:
-            # offset1 = choice(src.movement.cardinals)
-            aux1 = src.linedrawing.get_line(
-                (point1[0]+ card[0], point1[1] + card[1]),
-                (point2[0]+ card[0], point2[1] + card[1]),
-            )
-            aux_path.extend(aux1)
+
+
 
         check1 = True
         check2 = True
@@ -753,16 +745,37 @@ class State:
             if random() < inner_block_rate:
                 road_block = choice(road_blocks)
                 set_state_block(self, x, y, z, road_block)
-        # for block in aux_path:
-        #     x = block[0]
-        #     z = block[1]
-        #     y = int(self.rel_ground_hm[x][z]) - 1
-        #     block = self.blocks[x][y][z]
-        #     if self.blocks[x][y][z] == "minecraft:water" or src.manipulation.is_log(self, x, y, z):
-        #         continue
-        #     if random() < outer_block_rate:
-        #         road_block = choice(road_blocks)
-        #         set_state_block(self, x, y, z, road_block)
+
+        aux_path = []
+        for card in src.movement.cardinals:
+            # offset1 = choice(src.movement.cardinals)
+            def clamp(x, z):
+                if x > self.last_node_pointer_x:
+                    x = self.last_node_pointer_x
+                elif x < 0:
+                    x = 0
+                if z > self.last_node_pointer_z:
+                    z = self.last_node_pointer_z
+                elif z < 0:
+                    z = 0
+                return (x,z)
+            p1 = clamp(block_path[0][0] + card[0], block_path[0][1] + card[1])
+            p2 = clamp(block_path[len(block_path)-1][0] + card[0], block_path[len(block_path)-1][1] + card[1])
+            aux1 = src.linedrawing.get_line( p1, p2 )
+            aux_path.extend(aux1)
+
+
+        ## borders
+        for block in aux_path:
+            x = block[0]
+            z = block[1]
+            y = int(self.rel_ground_hm[x][z]) - 1
+            block = self.blocks[x][y][z]
+            if self.blocks[x][y][z] == "minecraft:water" or src.manipulation.is_log(self, x, y, z):
+                continue
+            if random() < outer_block_rate:
+                road_block = choice(road_blocks)
+                set_state_block(self, x, y, z, road_block)
 
         self.set_type_road(node_path, src.my_utils.TYPE.MAJOR_ROAD.name)
 
