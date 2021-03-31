@@ -108,7 +108,6 @@ def adjust_property_by_rotation(block, property, longest_len, rot, rot_factor=1,
             second_old = second_old[1:]
         new_second = property + new_dir + second_old
         block = first + new_second
-        print(block)
     return block
 
 
@@ -158,9 +157,9 @@ def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, dir
                 if rot == 1:
                     src.states.set_state_block(state, sx + zi, y, sz + xi, block)
                 if rot == 2:
-                    src.states.set_state_block(state, ex - xi, y, ez - zi, block)
+                    src.states.set_state_block(state, ex - xi - 1, y, ez - zi - 1, block)
                 if rot == 3:
-                    src.states.set_state_block(state, ex - zi, y, ez - xi, block)
+                    src.states.set_state_block(state, ex - zi + 1, y, ez - xi - 3, block)  # this is a hack for now
                 i+=1
                 xi += 1
             zi += 1

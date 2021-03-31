@@ -35,7 +35,7 @@ class State:
     road_nodes = []
     roads = []
     road_segs = set()
-    built = set()
+    construction = set()  # nodes where buildings can be placed
     lots = set()
 
 
@@ -112,6 +112,115 @@ class State:
         return nodes, node_pointers
 
 
+    def place_building_at(self, ctrn_node, bld, bld_lenx, bld_lenz):
+        # check if theres adequate space by getting nodes, and move the building to center it if theres extra space
+        # if not ctrn_node in self.construction: return
+        alloc_lenx = ctrn_node.size
+        clock_x = 1
+        # for every orientation of this node+neighbors whose lenx and lenz are the min space required to place building at
+        min_nodes_in_x = math.ceil(bld_lenx/ctrn_node.size)
+        min_nodes_in_z = math.ceil(bld_lenz/ctrn_node.size)
+        min_tiles = min_nodes_in_x*min_nodes_in_z
+        found_ctrn_dir = None
+        found_nodes = set()
+
+
+        # get rotation based on neighboring road
+        found_road = False
+        face_dir = None
+        for dir in src.movement.cardinals:  # maybe make this cardinal only
+            nx = ctrn_node.center[0] + dir[0]*ctrn_node.size
+            nz = ctrn_node.center[1] + dir[1]*ctrn_node.size
+            if self.out_of_bounds_Node(nx, nz): continue
+            np = (nx, nz)
+            neighbor = self.nodes[self.node_pointers[np]]
+            if neighbor in self.roads:
+                print("found road!")
+                found_road = True
+                face_dir = dir
+                break
+        if found_road == False:
+            return False
+        rot = 0
+        if face_dir[0] == 1: rot = 2
+        if face_dir[0] == -1: rot = 1
+        if face_dir[1] == -1: rot = 0
+        if face_dir[1] == 1: rot = 3
+        print('face_dir is '+str(face_dir))
+
+        self.set_block(ctrn_node.center[0], 10, ctrn_node.center[1],"minecraft:emerald_block")
+
+        if rot in [1, 3]:
+            temp = min_nodes_in_x
+            min_nodes_in_x = min_nodes_in_z
+            min_nodes_in_z = temp
+
+        ## find site where x and z are reversed. this rotates
+        for dir in src.movement.diagonals:
+            if found_ctrn_dir != None:
+                break
+            tiles = 0
+            for x in range(0, min_nodes_in_x):
+                for z in range(0, min_nodes_in_z):
+                    # x1 = ctrn_node.center[0]+x*ctrn_node.size*dir[0]
+                    # z1 = ctrn_node.center[1]+z*ctrn_node.size*dir[1]
+                    nx = ctrn_node.center[0]+x*ctrn_node.size*dir[0]
+                    nz = ctrn_node.center[1]+z*ctrn_node.size*dir[1]
+                    if self.out_of_bounds_Node(nx, nz): break
+                    node = self.nodes[(nx,nz)]
+                    if not node in self.construction: break
+                    tiles += 1
+                    found_nodes.add(node)
+            if tiles == min_tiles:  # found a spot!
+                found_ctrn_dir = dir
+                break
+            else:
+                found_nodes.clear()
+
+        if found_ctrn_dir == None:
+            return False
+        # debug
+        # for n in found_nodes:
+        #     x = n.center[0]
+        #     z = n.center[1]
+        #     y = self.rel_ground_hm[x][z] + 9
+        #     self.set_block(x, y, z, "minecraft:iron_block")
+        ctrn_dir = found_ctrn_dir
+        x1 = ctrn_node.center[0] - ctrn_dir[0]  # to uncenter
+        z1 = ctrn_node.center[1] - ctrn_dir[1]
+        x2 = ctrn_node.center[0] + ctrn_dir[0] + ctrn_dir[0] * ctrn_node.size * (min_nodes_in_x - 1)
+        z2 = ctrn_node.center[1] + ctrn_dir[1] + ctrn_dir[1] * ctrn_node.size * (min_nodes_in_z - 1)
+        # self.set_block(x1, 9, z1, "minecraft:sandstone")
+        # self.set_block(x2, 9, z2, "minecraft:sandstone")
+        x = min(x1, x2)  # since the building is placed is ascending
+        z = min(z1, z2)
+
+        ## get rotation
+        # for n in found_nodes:
+        #     for dir in src.movement.cardinals:
+        #         nx = dir[0]*n.size +
+
+
+        y = self.rel_ground_hm[x][z] # temp
+        src.scheme_utils.place_schematic_in_state(self, bld, x, y, z, rot=rot) # rot=0 for facing in x dir. rot=1 is faces -z dir
+        y = self.rel_ground_hm[x][z] + 5
+        self.set_block(x, y, z, "minecraft:diamond_block")
+
+        ## remove nodes from construction
+        # for node in list(found_nodes):
+        #     self.construction.remove(node)
+
+        return True
+        # confirm theres a contsruction node there
+        ## flip building to face road, get flipped lens
+        ## get construction site
+
+
+        ## later, check if contruction site next to road
+
+
+
+
     class Node:
 
         local = set()
@@ -164,6 +273,7 @@ class State:
             return all_types
 
 
+
         def add_prosperity(self, amt):
             self.state.prosperity[self.center[0]][self.center[1]] += amt
             self.state.updateFlags[self.center[0]][self.center[1]] = 1
@@ -183,9 +293,8 @@ class State:
 
 
         def clear_type(self, state):
-            if self in state.built:
-                print("found self in building")
-                state.built.discard(self)
+            if self in state.construction:
+                state.construction.discard(self)
             self.mask_type.clear()
 
 
@@ -410,7 +519,7 @@ class State:
         for index in range(1,len(worldSlice.heightmaps)+1):
             self.heightmaps[hm_type] = worldSlice.heightmaps[src.my_utils.HEIGHTMAPS(index).name]
         for x in range(len(self.heightmaps[hm_type])):
-            for z in range(len(self.heightmaps[hm_type])):
+            for z in range(len(self.heightmaps[hm_type][0])):
                 self.heightmaps[hm_type][x][z] = worldSlice.heightmaps[hm_type][x][z] - 1
         self.abs_ground_hm = self.heightmaps[hm_type]
         self.rel_ground_hm = self.gen_rel_ground_hm(self.abs_ground_hm)
@@ -579,7 +688,7 @@ class State:
                     src.my_utils.TYPE.TREE.name in node.type:
                 node.clear_type(self)
                 node.add_type(src.my_utils.TYPE.BUILDING.name)
-                self.built.add(node)
+                self.construction.add(node)
 
 
     def set_type_road(self, node_points, road_type):
@@ -595,14 +704,13 @@ class State:
                 # node.clear_type(self)  # mine
                 node.add_neighbor(road)
                 road.add_neighbor(node)
-            if node in self.built:
-                self.built.discard(node)
+            if node in self.construction:
+                self.construction.discard(node)
             self.roads.append(node)  # put node in roads array
 
 
     def init_main_st(self):
         (x1, y1) = choice(self.water)
-        print("node_pointers is "+str(self.node_pointers))
         n_pos = self.node_pointers[(x1, y1)]
         water_checks = 100
         i = 0
@@ -658,6 +766,7 @@ class State:
         p2 = (x2, y2)
         self.init_lots(*p1, *p2)  # main street is a lot
         self.create_road(point1=p1, point2=p2, road_type=src.my_utils.TYPE.MAJOR_ROAD.name)
+        return [p1, p2]
 
 
     def init_lots(self, x1, y1, x2, y2):
@@ -778,6 +887,7 @@ class State:
                 set_state_block(self, x, y, z, road_block)
 
         self.set_type_road(node_path, src.my_utils.TYPE.MAJOR_ROAD.name)
+        return [point1, point2]
 
 
     # def init_main_st(self, water_pts):

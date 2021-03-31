@@ -22,7 +22,7 @@ def get_line(start, end):
         y1, y2 = y2, y1
         swapped = True
 
-    # Recalculate differentials
+    # eRecalculate differentials
     dx = x2 - x1
     dy = y2 - y1
 

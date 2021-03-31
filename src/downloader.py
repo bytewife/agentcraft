@@ -20,9 +20,9 @@ areaFlex = [0, 0, 10, 10] # default build area
 # area = src.my_utils.correct_area(area)
 # worldSlice = http_framework.worldLoader.WorldSlice(area)  #_so area is chunks?
 
-file_name = "market_stall_1"
-src.scheme_utils.download_schematic(293, 62, 844, 300, 65, 839, file_name)
-src.scheme_utils.place_schematic_in_world(file_name, 293, 62, 855, dir_z=-1)
+file_name = "tests/prosperity/market_stall_2"
+src.scheme_utils.download_schematic(10, 63, 30, 15, 67, 37, file_name)
+src.scheme_utils.place_schematic_in_world(file_name, 0, 63, 0, dir_z=-1)
 
 # src.scheme_utils.download_schematic(x1, 62, z1, -7, x2, z2, file_name + ".in")
 # src.scheme_utils.download_heightmap(worldSlice, file_name +"hm")

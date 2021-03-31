@@ -46,7 +46,8 @@ def cut_tree_at(state, x, y, z, times=1):
             new_type = state.determine_type(x, z, state.rel_ground_hm, yoff) # -1 to account for sapling
             state.types[x][z] = new_type
             print("new state is "+str(state.types[x][z]))
-            state.trees.remove((x,z))
+            if (x,z) in state.trees:  # prevent sniping
+                state.trees.remove((x,z))
             # replace types
             return TASK_OUTCOME.SUCCESS.name
         y -= 1

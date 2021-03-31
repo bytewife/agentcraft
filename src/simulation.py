@@ -5,6 +5,7 @@ import http_framework.worldLoader
 import time
 import random
 import numpy as np
+import names
 
 class Simulation:
 
@@ -34,10 +35,21 @@ class Simulation:
 
     def start(self):
         print("started")
-        for i in range(1):
-            a = False
-            while a is False:
-                a = self.state.init_main_st()
+        result = False  # returns agent positions or False
+        for i in range(100):
+            while result is False:
+                result = self.state.init_main_st()
+
+        # for agent_pos in result:
+        #     new_agent = src.agent.Agent(self.state, *agent_pos, walkable_heightmap=self.state.rel_ground_hm, name=names.get_first_name())
+        #     self.add_agent(new_agent)
+        #     new_agent.set_motive(src.agent.Agent.Motive.LOGGING)
+
+        construction_site = random.choice(list(self.state.construction))
+        while self.state.place_building_at(construction_site, "market_stall_2", 6, 9) is False:  # TODO dynamically get size
+            construction_site = random.choice(list(self.state.construction))
+
+
 
     def step(self, times=1):
         ##########
@@ -110,7 +122,7 @@ class Simulation:
 
                 # calculate reservations of greenery
                 elif src.my_utils.TYPE.TREE.name in node.get_type() or src.my_utils.TYPE.GREEN.name in node.get_type():
-                    if len(node.neighbors & self.state.built):
+                    if len(node.neighbors & self.state.construction):
                         lot = node.get_lot()
                         if lot is not None:
                             # if random.random() < 0.5:

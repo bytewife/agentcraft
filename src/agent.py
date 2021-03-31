@@ -92,9 +92,9 @@ class Agent:
 
 
     def set_motive(self, new_motive : Enum):
-        tree_search_radius = 5
+        tree_search_radius = 10
         radius_increase = 5
-        radius_increase_increments = 15
+        radius_increase_increments = 13
         self.motive = new_motive.name
         if self.motive in src.my_utils.ACTION_ITEMS:
             self.current_action_item = choice(src.my_utils.ACTION_ITEMS[self.motive])
@@ -131,7 +131,7 @@ class Agent:
             xo, zo = dir
             bx = self.x + xo
             bz = self.z + zo
-            if bx < 0 or bz < 0 or bx >= len(self.state.blocks) or bz >= len(self.state.blocks[0][0]):
+            if bx < 0 or bz < 0 or bx >= state.len_z-1 or bz >= state.len_x-1:
                 continue
             by = int(state.abs_ground_hm[bx][bz]) - self.state.world_y  # this isn't being updated in heightmap
             if src.manipulation.is_log(self.state, bx, by, bz):
