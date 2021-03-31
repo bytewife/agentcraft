@@ -8,8 +8,9 @@ import src.movement
 import src.pathfinding
 import src.scheme_utils
 import numpy as np
-from random import choice
+from random import choice, random
 import src.linedrawing
+import src.manipulation
 
 class State:
 
@@ -37,6 +38,7 @@ class State:
     built = set()
     lots = set()
 
+
     ## Create surface grid
     def __init__(self, world_slice=None, blocks_file=None, max_y_offset=tallest_building_height):
         if not world_slice is None:
@@ -56,8 +58,10 @@ class State:
                                             self.legal_actions)  # add tihs into State
             self.nodes, self.node_pointers = self.gen_nodes(self.len_x, self.len_z, self.node_size)
             self.prosperity = np.zeros((self.len_x, self.len_z))
-            self.traffic = np.zeros((self.len_x, self.len_y))
-            self.updateFlags = np.zeros((self.len_x, self.len_y))
+            self.traffic = np.zeros((self.len_x, self.len_z))
+            self.updateFlags = np.zeros((self.len_x, self.len_z))
+            print('nodes is '+str(len(self.nodes)))
+            print('traffic is '+str(len(self.traffic)))
 
 
         else:  # for testing
@@ -121,8 +125,8 @@ class State:
             self.lot = None
             self.range = set()
             self.adjacent = set()
-            self.locality_radius = 3
-            self.range_radius = 5
+            self.locality_radius = 2
+            self.range_radius = 3
             self.neighborhood_radius = 1
             self.adjacent_radius = 1
             self.state = state
@@ -166,11 +170,12 @@ class State:
 
 
         def prosperity(self):
-            return self.state.prosperity[self.center[0], self.center[1]]
+            return self.state.prosperity[self.center[0]][self.center[1]]
 
 
         def traffic(self):
-            return self.state.traffic[self.center[0], self.center[1]]
+            if not self.state.out_of_bounds_Node(self.center[0], self.center[1]):  # let's get rid of this check later
+                return self.state.traffic[self.center[0]][self.center[1]]
 
 
         def add_type(self, type):
@@ -179,6 +184,7 @@ class State:
 
         def clear_type(self, state):
             if self in state.built:
+                print("found self in building")
                 state.built.discard(self)
             self.mask_type.clear()
 
@@ -483,7 +489,7 @@ class State:
         self.update_heightmaps()  # must wait until all blocks are placed
         for position, block in self.changed_blocks.items():
             state_x, state_y, state_z = src.my_utils.convert_key_to_coords(position)
-            self.update_block_info(state_x, state_y, state_z)  # Must occur after new blocks have been placed
+            self.update_block_info(state_x, state_z)  # Must occur after new blocks have been placed
         self.changed_blocks.clear()
         if i > 0:
             print(str(i)+" blocks rendered")
@@ -493,8 +499,7 @@ class State:
 
 
     # is this state x
-    def update_block_info(self, x, y, z):  # this might be expensive if you use this repeatedly in a group
-        # update heightmap was here
+    def update_block_info(self, x, z):  # this might be expensive if you use this repeatedly in a group
         for xo in range(-1, 2):
             for zo in range(-1, 2):
                 bx = x + xo
@@ -587,19 +592,33 @@ class State:
                 node.clear_type(self)
                 node.add_type(road_type)
             for road in self.roads:
+                # node.clear_type(self)  # mine
                 node.add_neighbor(road)
                 road.add_neighbor(node)
+            if node in self.built:
+                self.built.discard(node)
             self.roads.append(node)  # put node in roads array
 
 
     def init_main_st(self):
         (x1, y1) = choice(self.water)
-        n = self.nodes[self.node_pointers[(x1, y1)]]
+        print("node_pointers is "+str(self.node_pointers))
+        n_pos = self.node_pointers[(x1, y1)]
+        water_checks = 100
+        i = 0
+        while n_pos == None:
+            if i > water_checks:
+                print("Error: could not find suitable water source!")
+                return
+            (x1, y1) = choice(self.water)
+            n_pos = self.node_pointers[(x1, y1)]
+            i+=1
+        n = self.nodes[n_pos]
         n1_options = list(set(n.range) - set(n.local))  # Don't put water right next to water, depending on range
         n1 = np.random.choice(n1_options, replace=False)  # Pick random point of the above
         while src.my_utils.TYPE.WATER.name in n1.mask_type:  # generate and test until n1 isn't water
             n1 = np.random.choice(n1_options, replace=False)  # If it's water, choose again
-        n2_options = list(set(n1.range) - set(n1.local))
+        n2_options = list(set(n1.range) - set(n1.local))  # the length of the main road is the difference between the local and the range
         n2 = np.random.choice(n2_options, replace=False)  # n2 is based off of n1's range, - local to make it farther
         points = src.linedrawing.get_line((n1.center[0], n1.center[1]), (n2.center[0], n2.center[1]))
         water_found = True
@@ -628,7 +647,7 @@ class State:
         if len(points) > 2:
             middle_nodes = points[1:len(points) - 1]
         self.road_segs.add(
-            RoadSegment(self.nodes[(x1,y1)], self.nodes[(x2,y2)], middle_nodes, src.my_utils.TYPE.MAJOR_ROAD.name, self.road_segs))
+            RoadSegment(self.nodes[(x1,y1)], self.nodes[(x2,y2)], middle_nodes, src.my_utils.TYPE.MAJOR_ROAD.name, self.road_segs, self))
         for (x, y) in points:
             adjacent = self.nodes[(x,y)].adjacent
             adjacent = [s for n in adjacent for s in n.adjacent]  # every node in the road builds buildings around them
@@ -663,7 +682,7 @@ class State:
         return nodes
 
     # might have to get point2 within the func, rather than pass it in
-    def create_road(self, point1, point2, road_type, points=None, leave_lot=False, correction=5):
+    def create_road(self, point1, point2, road_type, points=None, leave_lot=False, correction=5, road_blocks=None, inner_block_rate=1.0, outer_block_rate=0.05, fringe_rate=0.05):
         self.road_nodes.append(self.nodes[self.node_pointers[point1]])
         self.road_nodes.append(self.nodes[self.node_pointers[point2]])
         block_path = []
@@ -691,41 +710,60 @@ class State:
             end = self.node_pointers[block_path[len(block_path)-1]]
             node_path.append(end)  # end
 
-        # draw two more lines
-        # for card in src.movement.cardinals:
-        #     # offset1 = choice(src.movement.cardinals)
-        #     aux1 = src.linedrawing.get_line(
-        #         (point1[0]+ card[0], point1[1] +card[1]),
-        #         (point2[0]+ card[0], point2[1] + card[1]),
-        #     )
-        #     block_path.extend(aux1)
-        # render
+        ## draw two more lines
+        aux_path = []
+        for card in src.movement.cardinals:
+            # offset1 = choice(src.movement.cardinals)
+            aux1 = src.linedrawing.get_line(
+                (point1[0]+ card[0], point1[1] + card[1]),
+                (point2[0]+ card[0], point2[1] + card[1]),
+            )
+            aux_path.extend(aux1)
+
         check1 = True
         check2 = True
         if check1:
             n1 = self.nodes[point1]
             for rs in self.road_segs:
                 if point1 in rs.nodes:  # if the road is in roads already, split it off
-                    rs.split(n1, self.road_segs, self.road_nodes)  # split RoadSegment
+                    rs.split(n1, self.road_segs, self.road_nodes, state=self)  # split RoadSegment
                     break
         if check2:
             n2 = self.nodes[point2]
             for rs in self.road_segs:
                 if point2 in rs.nodes:
-                    rs.split(n2, self.road_segs, self.road_nodes)
+                    rs.split(n2, self.road_segs, self.road_nodes, state=self)
                     break
 
         # do checks
-        road_segment = RoadSegment(self.nodes[point1], self.nodes[point2], middle_nodes, road_type, self.road_segs)
+        road_segment = RoadSegment(self.nodes[point1], self.nodes[point2], middle_nodes, road_type, self.road_segs, state=self)
         self.road_segs.add(road_segment)
 
         # place blocks. TODO prolly not right- i think you wanna render road segments
+        if road_blocks == None:
+            road_blocks = ["minecraft:gravel", "minecraft:granite", "minecraft:coarse_dirt", "minecraft:grass_path"]
+        ## render
         for block in block_path:
             x = block[0]
             z = block[1]
             y = int(self.rel_ground_hm[x][z]) - 1
-            if self.blocks[x][y][z] != "minecraft:water":
-                set_state_block(self, x, y, z, "minecraft:blue_concrete")
+            block  =self.blocks[x][y][z]
+            if self.blocks[x][y][z] == "minecraft:water" or src.manipulation.is_log(self, x, y, z):
+                continue
+            if random() < inner_block_rate:
+                road_block = choice(road_blocks)
+                set_state_block(self, x, y, z, road_block)
+        # for block in aux_path:
+        #     x = block[0]
+        #     z = block[1]
+        #     y = int(self.rel_ground_hm[x][z]) - 1
+        #     block = self.blocks[x][y][z]
+        #     if self.blocks[x][y][z] == "minecraft:water" or src.manipulation.is_log(self, x, y, z):
+        #         continue
+        #     if random() < outer_block_rate:
+        #         road_block = choice(road_blocks)
+        #         set_state_block(self, x, y, z, road_block)
+
         self.set_type_road(node_path, src.my_utils.TYPE.MAJOR_ROAD.name)
 
 
@@ -773,6 +811,8 @@ class State:
                                                               state=self,
                                                               leave_lot=False,
                                                               correction=correction)
+        if closest_point == None:
+            return
         (x2, y2) = closest_point
         closest_point = None
         if road_type == src.my_utils.TYPE.MINOR_ROAD.name:
@@ -788,6 +828,7 @@ class State:
 
 
     def get_point_to_close_gap_minor(self, x1, z1, points):
+        print("BUILDING MINOR ROAD")
         (x_, z_) = points[1]
         x = x1 - x_
         z = z1 - z_
@@ -805,6 +846,7 @@ class State:
 
 
     def get_point_to_close_gap_major(self, node, x1, z1, points):
+        print("EXTENDING MAJOR ROAD")
         # extends a major road to the edge of a lot
         if node.lot is None:
             return None
@@ -829,16 +871,15 @@ class State:
     def get_closest_point(self, node, lots, possible_targets, road_type, state, leave_lot, correction=5):
         x, z = node.center
         nodes = possible_targets
-        nodes = [n for n in nodes if src.my_utils.TYPE.BRIDGE.name not in n.mask_type]
+        nodes = [n for n in nodes if src.my_utils.TYPE.BRIDGE.name not in n.get_type()]  # expensive
         if len(nodes) == 0:
             print("leave_lot = {} no road segments".format(leave_lot))
             return None, None
-        for i in nodes:
-            a = i
         dists = [math.hypot(n.center[0] - x, n.center[1] - z) for n in nodes]
         node2 = nodes[dists.index(min(dists))]
+        print("node center is "+str(node2.center[0]))
         (x2, z2) = (node2.center[0], node2.center[1])
-        xthr = 2
+        xthr = 2   # TODO tweak these
         zthr = 2
         if node.lot is None:
             if road_type is not src.my_utils.TYPE.MINOR_ROAD.name and abs(x2 - x) > xthr and abs(
@@ -847,19 +888,20 @@ class State:
                     (cx2, cy2) = node2.lot.center
                     (x, z) = (x + x - cx2, z + z - cy2)
                     # clamp road endpoints
-                    if x >= self.len_x:
-                        x = self.len_x - 1
+                    if x >= self.last_node_pointer_x:
+                        x = self.last_node_pointer_x
                     if x < 0:
                         x = 0
-                    if z >= self.len_z:
-                        z = self.len_z - 1
+                    if z >= self.last_node_pointer_z:
+                        z = self.last_node_pointer_z
                     if z < 0:
                         z = 0
-                if abs(x2 - x) > 10 and abs(z2 - z) > 10:
+                if abs(x2 - x) > xthr and abs(z2 - z) > zthr:
                     if not state.add_lot([(x2, z2), (x, z)]):
                         print("leave_lot = {} add lot failed".format(leave_lot))
                         return None, None
             else:
+                print("Failed!")
                 return None, None
         points = src.linedrawing.get_line((x, z), (node2.center[0], node2.center[1]))
         if len(points) <= 2:
@@ -883,13 +925,20 @@ def set_state_block(state, x, y, z, block_name):
 
 
 class RoadSegment:
-    def __init__(self, rnode1, rnode2, nodes, type, rslist):
+    def __init__(self, rnode1, rnode2, nodes, type, rslist, state):
         self.start = rnode1
         self.end = rnode2
         self.type = type
         self.shape = []
         self.nodes = nodes
-
+        # mine
+        # for n in nodes:
+        #     if n in state.built:
+        #         state.built.discard(n)
+        # if self.start in state.built:
+        #     state.built.discard(self.start)
+        # if self.end in state.built:
+        #     state.built.discard(self.end)
 
     def merge(self, rs2, match, rs_list, roadnodes):
         if self.type != rs2.mask_type:
@@ -910,7 +959,7 @@ class RoadSegment:
         roadnodes.remove(match)
 
 
-    def split(self, node, rs_list, roadnodes):
+    def split(self, node, rs_list, roadnodes, state):
         roadnodes.append(node)
         roadnodes.append(node)
 
@@ -922,11 +971,19 @@ class RoadSegment:
         nodes1 = self.nodes[:i]
         nodes2 = self.nodes[i + 1:]
 
-        new_rs = RoadSegment(node, self.end, nodes2, self.type, roadnodes)
+        new_rs = RoadSegment(node, self.end, nodes2, self.type, roadnodes, state=state)
         rs_list.add(new_rs)
 
         self.nodes = nodes1
         self.end = node
+
+        # for n in roadnodes:
+        #     if n in state.built:
+        #         state.built.discard(n)
+        # if self.start in state.built:
+        #     state.built.discard(self.start)
+        # if self.end in state.built:
+        #     state.built.discard(self.end)
 
 
 class Lot:
@@ -946,7 +1003,6 @@ class Lot:
         (ax, ay) = self.get_pt_avg(points)
         bx, by  = (int(ax), int(ay))
         self.center = (cx, cy) = self.state.node_pointers[(bx, by)]
-
         center_node = self.state.nodes[(cx,cy)]
 
         lot = set([center_node])

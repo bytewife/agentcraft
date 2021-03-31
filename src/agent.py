@@ -13,13 +13,15 @@ class Agent:
     class Motive(Enum):
         LOGGING = 0
         BUILD = 1
+        IDLE = 2
 
     def __init__(self, state, state_x, state_z, walkable_heightmap, name,
                  parent_1=None, parent_2=None, model="minecraft:carved_pumpkin", motive=Motive.LOGGING.name):
 
         self.x = self.rendered_x = state_x
         self.z = self.rendered_z = state_z
-        self.y = self.rendered_y = walkable_heightmap[state_x][state_z] + 1
+        self.y = self.rendered_y = walkable_heightmap[state_x][state_z] + 0
+        self.dx = self.dz = 1  # temp
         self.name = name
         self.parent_1 = parent_1
         self.parent_2 = parent_2
@@ -27,9 +29,6 @@ class Agent:
         self.state = state
         self.path = []
         self.motive = motive
-        self.rendered_x = 0
-        self.rendered_y = 0
-        self.rendered_z = 0
         self.current_action_item = ""
         self.favorite_item = ""
 
@@ -74,7 +73,18 @@ class Agent:
                     # lets log another tree for now
                     self.set_motive(src.agent.Agent.Motive.LOGGING)
                     return
+                elif status == src.manipulation.TASK_OUTCOME.FAILURE.name:  # if they got sniped
+                    print("tree sniped")
+                    # find another instead
+                    self.set_motive(src.agent.Agent.Motive.LOGGING)
+                    # udate this tree
+                    for dir in src.movement.directions:
+                        point = (dir[0]+self.x, dir[1]+self.z)
+                        if state.out_of_bounds_2D(*point): continue
+                        self.state.update_block_info(*point)
+                    return
                 else:
+                    # self.set_motive(src.agent.Agent.Motive.LOGGING)
                     return
         else:
             new_pos = self.path.pop()
@@ -82,17 +92,19 @@ class Agent:
 
 
     def set_motive(self, new_motive : Enum):
-        tree_search_radius = 10
-        radius_increase = 10
+        tree_search_radius = 5
+        radius_increase = 5
         radius_increase_increments = 15
         self.motive = new_motive.name
-        self.current_action_item = choice(src.my_utils.ACTION_ITEMS[self.motive])
+        if self.motive in src.my_utils.ACTION_ITEMS:
+            self.current_action_item = choice(src.my_utils.ACTION_ITEMS[self.motive])
         if new_motive.name == self.Motive.LOGGING.name:
             closed = set()
             for inc in range(radius_increase_increments):
-                trees = self.get_nearby_trees(starting_search_radius=tree_search_radius,
-                                              radius_inc=radius_increase,
+                trees = self.get_nearby_trees(starting_search_radius=tree_search_radius+radius_increase*inc,
+                                              radius_inc=1,
                                               max_iterations=1)
+                print("trees is "+str(trees))
                 if trees is None: continue
                 while len(trees) > 0:
                     chosen_tree = choice(trees)
@@ -103,12 +115,13 @@ class Agent:
                     for pos in src.movement.adjacents(self.state, *chosen_tree):
                         if self.state.sectors[pos[0], pos[1]] ==   \
                         self.state.sectors[self.x][self.z]:
-                            path = self.state.pathfinder.get_path((self.x, self.z), pos, 31, 31, self.state.legal_actions)
+                            path = self.state.pathfinder.get_path((self.x, self.z), pos, self.state.len_x, self.state.len_z, self.state.legal_actions)
                             self.set_path(path)
                             return
                     closed.add(chosen_tree)
             # DO_RAND_WALK
             print("could not find trees!")
+            self.set_motive(self.Motive.IDLE)
             exit(1)
 
 
@@ -125,7 +138,7 @@ class Agent:
                 status = src.manipulation.cut_tree_at(self.state, bx, by, bz)
                 state.nodes[state.node_pointers[bx][bz]].add_prosperity(src.my_utils.ACTION_PROSPERITY.LOGGING)
                 break  # cut one at a time
-        print(status)
+        print("logging status is "+status+" with ")
         return status  # someone sniped this tree.
 
 

@@ -9,7 +9,7 @@ import numpy as np
 class Simulation:
 
     # with names? Let's look after ensembles and other's data scructure for max flexibility
-    def __init__(self, XZXZ, run_start=True, phase=0, maNum=5, miNum=400, byNum= 2000, brNum=1000, buNum=400, pDecay=0.75, tDecay=0.25, corNum=5, times=1, is_rendering_each_step=True, rendering_step_duration=1.0):
+    def __init__(self, XZXZ, run_start=True, phase=0, maNum=5, miNum=400, byNum= 2000, brNum=1000, buNum=10, pDecay=0.75, tDecay=0.25, corNum=5, times=1, is_rendering_each_step=True, rendering_step_duration=0.8):
         self.agents = set()
         self.world_slice = http_framework.worldLoader.WorldSlice(XZXZ)
         self.state = src.states.State(self.world_slice)
@@ -25,6 +25,9 @@ class Simulation:
         self.is_rendering_each_step = is_rendering_each_step
         self.rendering_step_duration = rendering_step_duration
         self.phase = phase
+        self.prosperity = 0
+        self.phase2threshold = 100
+        self.phase3threshold = 200
 
         if run_start:
             self.start()
@@ -38,7 +41,13 @@ class Simulation:
 
     def step(self, times=1):
         ##########
+
         for i in range(times):
+            p = np.sum(self.state.prosperity)
+            if p > self.phase2threshold:
+                self.phase = 2
+            if p > self.phase3threshold:
+                self.phase = 3
             self.handle_nodes()
             self.update_agents()
             self.state.render()
@@ -65,7 +74,7 @@ class Simulation:
 
             node.local_prosperity = sum([n.prosperity() for n in node.local])
             print("going because local prosp is "+str(node.local_prosperity))
-            node.local_traffic = sum([n.traffic() for n in node.range])
+            node.local_traffic = sum([n.traffic() for n in node.range if not self.state.out_of_bounds_Node(n.center[0], n.center[1])])
 
             road_found_far = len(set(node.range) & set(self.state.roads))
             print("road found far is "+str(road_found_far))
