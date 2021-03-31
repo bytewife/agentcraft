@@ -23,7 +23,7 @@ file_name = ""
 # a *= 0.8
 # print(np.where(a > 0.45))
 # print(a)
-sim = src.simulation.Simulation(area, rendering_step_duration=0.2)
+sim = src.simulation.Simulation(area, rendering_step_duration=0.05)
 ag = src.agent.Agent(sim.state, 0, 2, sim.state.rel_ground_hm, "Prof")
 sim.add_agent(ag)
 ag.set_motive(ag.Motive.LOGGING)

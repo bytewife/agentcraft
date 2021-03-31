@@ -76,9 +76,11 @@ class Simulation:
             if node.local_prosperity > self.maNum and not road_found_far:  # if node's local prosperity is high
                 print("prosperity fulfilled; creating road")
                 if node.local_prosperity > self.brNum:  # bridge/new lot minimum
-                    self.state.create_road((i, j), src.my_utils.TYPE.MAJOR_ROAD.name, leave_lot=True, correction=self.corNum)
+                    print("built major bridge road")
+                    self.state.append_road(point=(i, j), road_type=src.my_utils.TYPE.MAJOR_ROAD.name, leave_lot=True, correction=self.corNum)
                 else:
-                    self.state.create_road((i, j), src.my_utils.TYPE.MAJOR_ROAD.name, correction=self.corNum)
+                    print("built major normal road")
+                    self.state.append_road(point=(i, j), road_type=src.my_utils.TYPE.MAJOR_ROAD.name, correction=self.corNum)
             if node.local_prosperity > self.buNum and road_found_near:
                 print("prosperity fulfilled; creating building")
                 self.state.set_type_building(node.local) # wait, the local is a building?
@@ -93,6 +95,7 @@ class Simulation:
             if self.phase >= 3:
                 # find closest road node, connect to it
                 if node.local_prosperity > self.miNum and not road_found_near:
+                    print("building minor road")
                     # if not len([n for n in node.plot() if Type.BUILDING not in n.type]):
                     self.state.append_road((i, j), src.my_utils.TYPE.MINOR_ROAD.name, correction=self.corNum)
 

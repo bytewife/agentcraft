@@ -31,10 +31,19 @@ def cut_tree_at(state, x, y, z, times=1):
                 or is_leaf(state.get_adjacent_block(x, y, z, 0, 0, 1)) \
                 or is_leaf(state.get_adjacent_block(x, y, z, 0, 0, -1)):
             flood_kill_leaves(state, x, y + 1, z)
+        # if state.blocks[x][y-1][z] == "minecraft:air":
+        #     src.states.set_state_block(state, x, y, z, replacement)
+        #     new_type = state.determine_type(x, z, state.rel_ground_hm)  # -1 to account for sapling
+        #     state.types[x][z] = new_type
+        #     state.trees.remove((x, z))
         if not is_log(state, x, y - 1, z):  # place sapling
-            sapling = "minecraft:" + log_type + "_sapling"
-            src.states.set_state_block(state, x, y, z, sapling)
-            new_type = state.determine_type(x, z, state.rel_ground_hm, -1) # -1 to account for sapling
+            new_replacement = "minecraft:" + log_type + "_sapling"
+            yoff = -1
+            if state.blocks[x][y-1][z] == "minecraft:air":
+                new_replacement = "minecraft:air"
+                yoff = 0  # needs verification
+            src.states.set_state_block(state, x, y, z, new_replacement)
+            new_type = state.determine_type(x, z, state.rel_ground_hm, yoff) # -1 to account for sapling
             state.types[x][z] = new_type
             print("new state is "+str(state.types[x][z]))
             state.trees.remove((x,z))

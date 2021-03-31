@@ -638,7 +638,7 @@ class State:
         p1 = (x1, y1)
         p2 = (x2, y2)
         self.init_lots(*p1, *p2)  # main street is a lot
-        self.create_road(p1, p2, src.my_utils.TYPE.MAJOR_ROAD.name)
+        self.create_road(point1=p1, point2=p2, road_type=src.my_utils.TYPE.MAJOR_ROAD.name)
 
 
     def init_lots(self, x1, y1, x2, y2):
@@ -667,14 +667,19 @@ class State:
         self.road_nodes.append(self.nodes[self.node_pointers[point1]])
         self.road_nodes.append(self.nodes[self.node_pointers[point2]])
         block_path = []
+        print("point1 is "+str(point1))
+        print("point2 is "+str(point2))
+        print("points is "+str(points))
         if points == None:
             block_path = src.linedrawing.get_line(point1, point2) # inclusive
         else:
+            print("in here")
             block_path = points
         # add road segnmets
         middle_nodes = []
         node_path = []
         if len(block_path) > 0:
+            print("block_path is "+str(block_path))
             start = self.node_pointers[block_path[0]]
             node_path.append(start) # start
             for n in range(1, len(block_path)-1):
@@ -756,41 +761,41 @@ class State:
     #     self.init_lots(x1, y1, x2, y2)  # main street is a lot
 
 
-    def append_road(self, point, road_type, correction):
+    def append_road(self, point, road_type, leave_lot=False, correction=5):
         # convert point to node
         point = self.node_pointers[point]
         node = self.nodes[point]
         # self.roads.append((point1))
-        closest_point, path_points = self.get_closest_point(self.nodes[self.node_pointers[point]], # get closest point to any road
-                                                              [],
-                                                              self.roads,
-                                                              road_type,
+        closest_point, path_points = self.get_closest_point(node=self.nodes[self.node_pointers[point]], # get closest point to any road
+                                                              lots=[],
+                                                              possible_targets=self.roads,
+                                                              road_type=road_type,
                                                               state=self,
                                                               leave_lot=False,
                                                               correction=correction)
         (x2, y2) = closest_point
         closest_point = None
         if road_type == src.my_utils.TYPE.MINOR_ROAD.name:
-            closest_point = self.get_point_to_close_gap_minor(*point, self, points)  # connects 2nd end of minor roads to the nearest major or minor road. I think it's a single point
+            closest_point = self.get_point_to_close_gap_minor(*point, path_points)  # connects 2nd end of minor roads to the nearest major or minor road. I think it's a single point
         elif road_type == src.my_utils.TYPE.MAJOR_ROAD.name:  # extend major
-            closest_point = self.get_point_to_close_gap_major(node, *point, self, points)  # "extends a major road to the edge of a lot"
+            closest_point = self.get_point_to_close_gap_major(node, *point, path_points)  # "extends a major road to the edge of a lot"
 
         if closest_point is not None:
             point = closest_point
-            path_points.extend(src.linedrawing.get_line((x2, y2), (x1, y1)))  # append to the points list the same thing in reverse? or is this a diff line?
+            path_points.extend(src.linedrawing.get_line((x2, y2), point))  # append to the points list the same thing in reverse? or is this a diff line?
 
-        self.create_road(point, (x2, y2), path_points, road_type)
+        self.create_road(point, (x2, y2), road_type=road_type, points=path_points)
 
 
-    def get_point_to_close_gap_minor(self, x1, z1, landscape, points):
+    def get_point_to_close_gap_minor(self, x1, z1, points):
         (x_, z_) = points[1]
         x = x1 - x_
         z = z1 - z_
         (x2, z2) = (x1 + x, z1 + z)
         while True:
-            if x2 >= self.len_x or z2 >= self.len_z or x2 < 0 or z2 < 0:
+            if x2 >= self.last_node_pointer_x or z2 >= self.last_node_pointer_z or x2 < 0 or z2 < 0:
                 break
-            landtype = landscape.array[x2][z2].mask_type
+            landtype = self.nodes[self.node_pointers[(x2, z2)]].get_type()
             if src.my_utils.TYPE.GREEN.name in landtype or src.my_utils.TYPE.TREE.name in landtype or src.my_utils.TYPE.WATER.name in landtype:
                 break
             if src.my_utils.TYPE.MAJOR_ROAD.name in landtype or src.my_utils.TYPE.MINOR_ROAD.name in landtype and src.my_utils.TYPE.BYPASS.name not in landtype:
@@ -799,7 +804,7 @@ class State:
         return None
 
 
-    def get_point_to_close_gap_major(self, node, x1, z1, landscape, points):
+    def get_point_to_close_gap_major(self, node, x1, z1, points):
         # extends a major road to the edge of a lot
         if node.lot is None:
             return None
@@ -809,13 +814,13 @@ class State:
         (x2, z2) = (x1 + x, z1 + z)
         border = node.lot.border
         while True:
-            if x2 >= self.len_x or z2 >= self.len_z or x2 < 0 or z2 < 0:
+            if x2 >= self.last_node_pointer_x or z2 >= self.last_node_pointer_z or x2 < 0 or z2 < 0:
                 break
-            landtype = self.nodes[(x2, z2)].mask_type
+            landtype = self.nodes[self.node_pointers[(x2, z2)]].get_type()
             if src.my_utils.TYPE.WATER.name in landtype:
                 break
             if (x2, z2) in border:
-                landtype = self.nodes[(x2, z2)].mask_type
+                # landtype = self.nodes[(x2, z2)].mask_type
                 return (x2, z2)
             (x2, z2) = (x2 + x, z2 + z)
         return None
