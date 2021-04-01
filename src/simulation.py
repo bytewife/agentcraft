@@ -45,9 +45,11 @@ class Simulation:
         #     self.add_agent(new_agent)
         #     new_agent.set_motive(src.agent.Agent.Motive.LOGGING)
 
-        building = "market_stall_2"
+        # building = "market_stall_2"
+        building = "../../../schemes/market_stall_1"
+        # building = "../../../schemes/med_house_2"
         construction_site = random.choice(list(self.state.construction))
-        while self.state.place_building_at(construction_site, building, 6, 8) is False:  # TODO dynamically get size
+        while self.state.place_building_at(construction_site, building, 8, 6) is False:  # flip the x and z
             construction_site = random.choice(list(self.state.construction))
 
 

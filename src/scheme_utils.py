@@ -174,7 +174,7 @@ def adjust_property_by_rotation(block, property, longest_len, rot, rot_factor=1,
             new_dir = str(new_dir.value* rot_factor)
         else:
             new_dir = new_dir.name
-        # if  rot == 3:
+        # if  rot == 0:
         #     if new_dir == 'east': new_dir = 'west'
         #     elif new_dir == 'west': new_dir = 'east'
         if rot == 1 or rot == 3:
@@ -237,7 +237,7 @@ def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, dir
                 if rot == 2:
                     src.states.set_state_block(state, ex - xi - 1, y, ez - zi - 1, block)
                 if rot == 3:
-                    src.states.set_state_block(state, ex - zi + 1, y, ez - xi - 3, block)  # this is a hack for now
+                    src.states.set_state_block(state, ex - zi + 2, y, ez - xi - 3, block)  # this is a hack for now
                 i+=1
                 xi += 1
             zi += 1

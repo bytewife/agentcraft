@@ -12,19 +12,28 @@ areaFlex = [0, 0, 10, 10] # default build area
 #     z2 = buildArea["zTo"]
 #     areaFlex = [x1, z1, x2-x1, z2-z1]
 
-x1 = 295
-y1 = 78
-z1 = 809
-x2 = 307
-y2 = 93
-z2 = 821
-# x1 = 335
-# y1 = 48
-# z1 = 838
-# x2 = 320
-# y2 = 64
-# z2 = 850
-file_name = "../schemes/med_house_1"
+# x1 = 330
+# y1 = 89
+# z1 = 842
+# x2 = 340
+# y2 = 106
+# z2 = 855
+
+# x1 = 302
+# y1 = 95
+# z1 = 843
+# x2 = 312
+# y2 = 108
+# z2 = 856
+
+x1 = 9
+y1 = 72
+z1 = 37
+x2 = 14
+y2 = 78
+z2 = 44
+
+file_name = "../schemes/market_stall_1"
 src.scheme_utils.download_schematic(x1, y1, z1, x2, y2, z2, file_name)
 src.scheme_utils.download_schematic(x1, y1, z1, x2, y2, z2, file_name+"_flex", flexible_tiles=True)
 # src.scheme_utils.place_schematic_in_world(file_name, x2, y2 + y2 - y2 + 5, z2, dir_z=-1)

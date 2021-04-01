@@ -139,19 +139,28 @@ class State:
         if found_road == False:
             return False
         rot = 0
-        if face_dir[0] == 1: rot = 2  # good
-        if face_dir[0] == -1: rot = 0 # good
-        if face_dir[1] == -1: rot = 1
-        if face_dir[1] == 1: rot = 3 # good, but rot blocks doesn't work. same with 1
+        # if face_dir[0] == 1:
+        #     rot = 3  # good
+        # if face_dir[0] == -1:
+        #     rot = 1 # good
+        # if face_dir[1] == -1:
+        #     rot = 0
+        # if face_dir[1] == 1:
+        #     rot = 2 # good, but rot blocks doesn't work. same with 1
         # if face_dir[0] == 1: rot = 2
         # if face_dir[0] == -1: rot = 1
         # if face_dir[1] == -1: rot = 0
         # if face_dir[1] == 1: rot = 3
+        if face_dir[0] == 1: rot = 2
+        if face_dir[0] == -1: rot = 0
+        if face_dir[1] == -1: rot = 1
+        if face_dir[1] == 1: rot = 3
+
         print('face_dir is '+str(face_dir))
 
-        self.set_block(ctrn_node.center[0], 10, ctrn_node.center[1],"minecraft:emerald_block")
+        self.set_block(ctrn_node.center[0], 17, ctrn_node.center[1],"minecraft:emerald_block")
 
-        if rot in [1, 3]:
+        if rot in [0, 2]:
             temp = min_nodes_in_x
             min_nodes_in_x = min_nodes_in_z
             min_nodes_in_z = temp
