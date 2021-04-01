@@ -139,10 +139,14 @@ class State:
         if found_road == False:
             return False
         rot = 0
-        if face_dir[0] == 1: rot = 2
-        if face_dir[0] == -1: rot = 1
-        if face_dir[1] == -1: rot = 0
-        if face_dir[1] == 1: rot = 3
+        if face_dir[0] == 1: rot = 2  # good
+        if face_dir[0] == -1: rot = 0 # good
+        if face_dir[1] == -1: rot = 1
+        if face_dir[1] == 1: rot = 3 # good, but rot blocks doesn't work. same with 1
+        # if face_dir[0] == 1: rot = 2
+        # if face_dir[0] == -1: rot = 1
+        # if face_dir[1] == -1: rot = 0
+        # if face_dir[1] == 1: rot = 3
         print('face_dir is '+str(face_dir))
 
         self.set_block(ctrn_node.center[0], 10, ctrn_node.center[1],"minecraft:emerald_block")
@@ -177,11 +181,11 @@ class State:
         if found_ctrn_dir == None:
             return False
         # debug
-        # for n in found_nodes:
-        #     x = n.center[0]
-        #     z = n.center[1]
-        #     y = self.rel_ground_hm[x][z] + 9
-        #     self.set_block(x, y, z, "minecraft:iron_block")
+        for n in found_nodes:
+            x = n.center[0]
+            z = n.center[1]
+            y = self.rel_ground_hm[x][z] + 9
+            self.set_block(x, y, z, "minecraft:iron_block")
         ctrn_dir = found_ctrn_dir
         x1 = ctrn_node.center[0] - ctrn_dir[0]  # to uncenter
         z1 = ctrn_node.center[1] - ctrn_dir[1]
@@ -206,6 +210,7 @@ class State:
         for node in list(found_nodes):
             self.construction.remove(node)
 
+        print("rot is "+str(rot))
         return True
         # confirm theres a contsruction node there
         ## flip building to face road, get flipped lens
@@ -230,8 +235,8 @@ class State:
             self.lot = None
             self.range = set()
             self.adjacent = set()
-            self.locality_radius = 2
-            self.range_radius = 3
+            self.locality_radius = 3
+            self.range_radius = 4
             self.neighborhood_radius = 1
             self.adjacent_radius = 1
             self.state = state
@@ -753,7 +758,8 @@ class State:
         self.road_segs.add(
             RoadSegment(self.nodes[(x1,y1)], self.nodes[(x2,y2)], middle_nodes, src.my_utils.TYPE.MAJOR_ROAD.name, self.road_segs, self))
         for (x, y) in points:
-            adjacent = self.nodes[(x,y)].adjacent
+            # adjacent = self.nodes[(x,y)].adjacent
+            adjacent = self.nodes[(x,y)].local  # this is where we increase building range
             adjacent = [s for n in adjacent for s in n.adjacent]  # every node in the road builds buildings around them
             for pt in adjacent:
                 if pt not in points:

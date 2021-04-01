@@ -6,7 +6,7 @@ from enum import Enum
 import src.states
 
 
-def download_area(origin_x, origin_y, origin_z, end_x, end_y, end_z):
+def download_area(origin_x, origin_y, origin_z, end_x, end_y, end_z, flexible_tiles=False):
     print("downloading area")
     block_string = ""
     dir_x = 1
@@ -27,14 +27,17 @@ def download_area(origin_x, origin_y, origin_z, end_x, end_y, end_z):
             for x in range(origin_x, end_x+dir_x, dir_x):
                 block = http_framework.interfaceUtils.getBlock(x, y, z)[10:].ljust(100, ' ')  # polished_blackstone_brick_stairs
 
-                first_underscore = block.index('_')
-                if block[:8] == 'stripped':
-                    # stripped_oak_log
-                    block = "#9stripped__log"
-                elif block[-3:] == 'log':
-                    block = '#0_log'  # index 0 is where you want to stick the type right after you remove the #0
-                elif block[:first_underscore] in woods and block[first_underscore:] != "_door":
-                    block = '#0'+block[first_underscore:]
+                if flexible_tiles:
+                    first_underscore = None
+                    if '_' in block:
+                        first_underscore = block.index('_')
+                    if block[:8] == 'stripped':
+                        # stripped_oak_log
+                        block = "#9stripped__log"
+                    elif block[-3:] == 'log':
+                        block = '#0_log'  # index 0 is where you want to stick the type right after you remove the #0
+                    elif first_underscore != None and block[:first_underscore] in woods and block[first_underscore:first_underscore+5] != "_door":
+                        block = '#0'+block[first_underscore:]
 
                 block_string = block_string + block + " "
             block_string+="\n"
@@ -49,49 +52,103 @@ class Facing(Enum):
     south = 2
     east = 3
 
+class rFacing(Enum):
+    south = 0
+    east = 3
+    north = 2
+    west = 1
 
-def download_schematic(origin_x, origin_y, origin_z, end_x, end_y, end_z, file_name):
+
+def download_schematic(origin_x, origin_y, origin_z, end_x, end_y, end_z, file_name, flexible_tiles=False):
     file = open(file_name, "w")
     len_x = abs(origin_x - end_x) + 1
     len_y = abs(origin_y - end_y) + 1
     len_z = abs(origin_z - end_z) + 1
     file.write(str(len_x) + " " + str(len_y) + " " + str(len_z))
     file.write("\n")
-    file.write(download_area(origin_x, origin_y, origin_z, end_x, end_y, end_z))
+    file.write(download_area(origin_x, origin_y, origin_z, end_x, end_y, end_z, flexible_tiles))
     file.close()
 
 
 ### Place a pre-authored building. Takes dir arguments, which essentially orient the schematic placement
-def place_schematic_in_world(file_name, origin_x, origin_y, origin_z, dir_x=1, dir_y=-1, dir_z=1):
+def place_schematic_in_world(file_name, origin_x, origin_y, origin_z, dir_x=1, dir_y=-1, dir_z=1, rot=0):
     size, blocks = get_schematic_parts(file_name)
     length_x, length_y, length_z = size
+
+    sx = sz = ex = ez = 0
+    end_x, end_y, end_z = origin_x + length_x, origin_y + length_y, origin_z + length_z
+    sx = origin_x
+    sz = origin_z
+    ex = end_x
+    ez = end_z
+
     length_x = int(length_x)
     length_y = int(length_y)
     length_z = int(length_z)
-    n_blocks = len(blocks)
+
     end_x = origin_x + int(length_x) - 1
     end_y = origin_y + int(length_y) - 1
     end_z = origin_z + int(length_z) - 1
     origin_x, origin_y, origin_z, end_x, end_y, end_z = handle_dir(
         origin_x, origin_y, origin_z, end_x, end_y, end_z, dir_x, dir_y, dir_z
-        )
-
+    )
     XI = 0
-    YI = max(length_y-1, 0)
+    YI = max(length_y - 1, 0)
     ZI = 0
     yi = YI
-    for y in range(origin_y, end_y+1, -dir_y):
+    i = 0
+    for y in range(origin_y, end_y + 1, -dir_y):
         zi = ZI
-        for z in range(origin_z, end_z+1, dir_z):
+        for z in range(origin_z, end_z + 1, dir_z):
             xi = XI
-            for x in range(origin_x, end_x+1, dir_x):
-                index =yi*length_z*length_x + zi*length_x + xi
-                block = "minecraft:"+blocks[index]
-                http_framework.interfaceUtils.placeBlockBatched(x, y, z, block, n_blocks)#, n_blocks-1)
+            for x in range(origin_x, end_x + 1, dir_x):
+                index = yi * length_z * length_x + zi * length_x + xi
+                block = "minecraft:" + blocks[index]
+                block = adjust_property_by_rotation(block, property="facing=", longest_len=5, rot=rot, shortest_len=4,
+                                                    rot_factor=1)
+                if rot == 0:
+                    http_framework.interfaceUtils.setBlock(sx + xi, y, sz + zi, block)
+                if rot == 1:
+                    http_framework.interfaceUtils.setBlock(sx + zi, y, sz + xi, block)
+                if rot == 2:
+                    http_framework.interfaceUtils.setBlock(ex - xi - 1, y, ez - zi - 1, block)
+                if rot == 3:
+                    http_framework.interfaceUtils.setBlock(ex - zi + 1, y, ez - xi - 3, block)  # this is a hack for now
+                i += 1
                 xi += 1
             zi += 1
         yi -= 1
+    print(str(i) + " schematic blocks placed")
     print("done placing schematic")
+    # size, blocks = get_schematic_parts(file_name)
+    # length_x, length_y, length_z = size
+    # length_x = int(length_x)
+    # length_y = int(length_y)
+    # length_z = int(length_z)
+    # n_blocks = len(blocks)
+    # end_x = origin_x + int(length_x) - 1
+    # end_y = origin_y + int(length_y) - 1
+    # end_z = origin_z + int(length_z) - 1
+    # origin_x, origin_y, origin_z, end_x, end_y, end_z = handle_dir(
+    #     origin_x, origin_y, origin_z, end_x, end_y, end_z, dir_x, dir_y, dir_z
+    #     )
+    #
+    # XI = 0
+    # YI = max(length_y-1, 0)
+    # ZI = 0
+    # yi = YI
+    # for y in range(origin_y, end_y+1, -dir_y):
+    #     zi = ZI
+    #     for z in range(origin_z, end_z+1, dir_z):
+    #         xi = XI
+    #         for x in range(origin_x, end_x+1, dir_x):
+    #             index =yi*length_z*length_x + zi*length_x + xi
+    #             block = "minecraft:"+blocks[index]
+    #             http_framework.interfaceUtils.placeBlockBatched(x, y, z, block, n_blocks)#, n_blocks-1)
+    #             xi += 1
+    #         zi += 1
+    #     yi -= 1
+    # print("done placing schematic")
 
 
 def adjust_property_by_rotation(block, property, longest_len, rot, rot_factor=1, shortest_len=1, use_num=False):
@@ -99,27 +156,41 @@ def adjust_property_by_rotation(block, property, longest_len, rot, rot_factor=1,
     facing_i = block.find(property)
     if facing_i != -1:
         # get facing dir string
-        curr_dir = 0
+        curr_dir = None
         start_i = facing_i + index
         facing_substr = block[start_i:start_i + longest_len]  # len of "facing="
+        print("facing substr is "+facing_substr)
         # find dir
         for dir in Facing:
             if dir.name in facing_substr:
                 curr_dir = dir.value * rot_factor
+        if curr_dir == None:  # is up or down
+            return block
         # change direction based on dir
-        new_dir = Facing((curr_dir + rot + 2) % 4)
+        # new_dir = Facing((curr_dir + rot) % 4)
+        print("curr dir is "+str(curr_dir))
+        new_dir = Facing((curr_dir + rot) % 4)
         if use_num:
             new_dir = str(new_dir.value* rot_factor)
         else:
             new_dir = new_dir.name
+        # if  rot == 3:
+        #     if new_dir == 'east': new_dir = 'west'
+        #     elif new_dir == 'west': new_dir = 'east'
+        if rot == 1 or rot == 3:
+            if new_dir == 'north': new_dir = 'south'
+            elif new_dir == 'south': new_dir = 'north'
         # string maniup to add new dir
         first, second_old = block.split(property)
         second_old = second_old[shortest_len:]
+        # print("second old is "+str(block))
+        # print("with "+str(second_old))
         if second_old[0] == "h":
             second_old = second_old[1:]
         new_second = property + new_dir + second_old
         block = first + new_second
     return block
+
 
 
 ## where the origin coords are the local coords within state
@@ -133,13 +204,9 @@ def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, dir
     sz = origin_z
     ex = end_x
     ez = end_z
-    dx = length_x
-    dz = length_z
-
     if state.out_of_bounds_3D(origin_x, origin_y, origin_z) or state.out_of_bounds_3D(end_x, end_y, end_z):
         print("Tried to build out of bounds!")
         return False
-
     length_x = int(length_x)
     length_y = int(length_y)
     length_z = int(length_z)

@@ -45,8 +45,9 @@ class Simulation:
         #     self.add_agent(new_agent)
         #     new_agent.set_motive(src.agent.Agent.Motive.LOGGING)
 
+        building = "market_stall_2"
         construction_site = random.choice(list(self.state.construction))
-        while self.state.place_building_at(construction_site, "market_stall_2", 6, 9) is False:  # TODO dynamically get size
+        while self.state.place_building_at(construction_site, building, 6, 8) is False:  # TODO dynamically get size
             construction_site = random.choice(list(self.state.construction))
 
 
