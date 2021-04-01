@@ -25,7 +25,7 @@ def cut_tree_at(state, x, y, z, times=1):
         log_type = get_log_type(state.blocks[x][y][z])
         replacement = "minecraft:air"
         src.states.set_state_block(state, x, y, z, replacement)
-        if is_leaf(state.get_adjacent_block(x, y, z, 0, 1, 0)) \
+      if is_leaf(state.get_adjacent_block(x, y, z, 0, 1, 0)) \
                 or is_leaf(state.get_adjacent_block(x, y, z, 1, 0, 0)) \
                 or is_leaf(state.get_adjacent_block(x, y, z, -1, 0, 0)) \
                 or is_leaf(state.get_adjacent_block(x, y, z, 0, 0, 1)) \

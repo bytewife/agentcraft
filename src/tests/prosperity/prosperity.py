@@ -50,20 +50,28 @@ sim.step(1)
 # print(sim.state.construction)
 # show building spots
 
+## ROADS
 for r in sim.state.roads:
     if r in sim.state.construction:
-        sim.state.construction.discard(r)
+        # sim.state.construction.discard(r)
+        pass
     x = r.center[0]
     z = r.center[1]
     y = sim.state.rel_ground_hm[x][z] + 1
-    sim.state.set_block(x,y,z,"minecraft:redstone_block")
+    # sim.state.set_block(x,y,z,"minecraft:redstone_block")
 
-
+## CONSTRUCTION
 for b in sim.state.construction:
     x = b.center[0]
     z = b.center[1]
     y = sim.state.rel_ground_hm[x][z] + 1
     sim.state.set_block(x,y,z,"minecraft:gold_block")
+    if src.my_utils.TYPE.WATER.name in b.get_type():
+        print("water found!")
+
+##
+
+
 print("road_segs")
 print(sim.state.road_segs)
 sim.step(1)

@@ -21,10 +21,21 @@ def download_area(origin_x, origin_y, origin_z, end_x, end_y, end_z):
     if end_z < origin_z:
         dir_z = -1
     # for y in range(origin_y, end_y, 1):
+    woods = ["dark_oak", "oak", "spruce", "birch", "acacia", "jungle"]  # woods that are determined to be switcheable. leaving out oak as an aesthetic cohice
     for y in range(end_y, origin_y-dir_y, -dir_y):
         for z in range(origin_z, end_z+dir_z, dir_z):
             for x in range(origin_x, end_x+dir_x, dir_x):
                 block = http_framework.interfaceUtils.getBlock(x, y, z)[10:].ljust(100, ' ')  # polished_blackstone_brick_stairs
+
+                first_underscore = block.index('_')
+                if block[:8] == 'stripped':
+                    # stripped_oak_log
+                    block = "#9stripped__log"
+                elif block[-3:] == 'log':
+                    block = '#0_log'  # index 0 is where you want to stick the type right after you remove the #0
+                elif block[:first_underscore] in woods and block[first_underscore:] != "_door":
+                    block = '#0'+block[first_underscore:]
+
                 block_string = block_string + block + " "
             block_string+="\n"
         block_string+="\n"

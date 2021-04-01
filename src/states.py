@@ -115,15 +115,12 @@ class State:
     def place_building_at(self, ctrn_node, bld, bld_lenx, bld_lenz):
         # check if theres adequate space by getting nodes, and move the building to center it if theres extra space
         # if not ctrn_node in self.construction: return
-        alloc_lenx = ctrn_node.size
-        clock_x = 1
         # for every orientation of this node+neighbors whose lenx and lenz are the min space required to place building at
         min_nodes_in_x = math.ceil(bld_lenx/ctrn_node.size)
         min_nodes_in_z = math.ceil(bld_lenz/ctrn_node.size)
         min_tiles = min_nodes_in_x*min_nodes_in_z
         found_ctrn_dir = None
         found_nodes = set()
-
 
         # get rotation based on neighboring road
         found_road = False
@@ -200,15 +197,14 @@ class State:
         #     for dir in src.movement.cardinals:
         #         nx = dir[0]*n.size +
 
-
         y = self.rel_ground_hm[x][z] # temp
         src.scheme_utils.place_schematic_in_state(self, bld, x, y, z, rot=rot) # rot=0 for facing in x dir. rot=1 is faces -z dir
         y = self.rel_ground_hm[x][z] + 5
         self.set_block(x, y, z, "minecraft:diamond_block")
 
         ## remove nodes from construction
-        # for node in list(found_nodes):
-        #     self.construction.remove(node)
+        for node in list(found_nodes):
+            self.construction.remove(node)
 
         return True
         # confirm theres a contsruction node there
