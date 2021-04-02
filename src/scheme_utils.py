@@ -250,6 +250,7 @@ def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, dir
                 if index >= len(blocks):
                     return False
                 block = blocks[index]
+                use_head = False
                 # check for flex tile
                 if block[0] == '#':
                     # print("before: " + str(block))
@@ -257,21 +258,33 @@ def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, dir
                     block = block[2:2+insert_pos]+"birch"+block[2+insert_pos:]
                     # print(block)
                     # print("after: "+str(block))
+                elif block[:11] == "player_head":
+                    print("head is ")
+                    print(block)
+                    use_head = True
 
                 block = "minecraft:" + block
                 block = adjust_property_by_rotation(block, property="facing=", longest_len=5, rot=rot, shortest_len=4, rot_factor=1)
                 if rot == 0:
-                    src.states.set_state_block(state, sx + xi, y, sz + zi, block)
+                    if use_head == False:
+                        src.states.set_state_block(state, sx + xi, y, sz + zi, block)
+                    else:
+                        print(http_framework.interfaceUtils.setBlockWithData(sx + xi + state.world_x, y + state.world_y, sz + zi + state.world_z, block))
                 if rot == 1:
-                    src.states.set_state_block(state, sx + zi, y, sz + xi, block)
+                    if use_head == False:
+                        src.states.set_state_block(state, sx + zi, y, sz + xi, block)
+                    else:
+                        print(http_framework.interfaceUtils.setBlockWithData(sx + zi + state.world_x, y + state.world_y, sz + xi + state.world_z, block))
                 if rot == 2:
-                    src.states.set_state_block(state, ex - xi, y, ez - zi, block)
+                    if use_head == False:
+                        src.states.set_state_block(state, ex - xi, y, ez - zi, block)
+                    else:
+                        print(http_framework.interfaceUtils.setBlockWithData(ex - xi + state.world_x, y + state.world_y, ez - zi + state.world_z, block))
                 if rot == 3:
-                    # src.states.set_state_block(state, ex - zi + 2, y, ez - xi - 3, block)  # this is a hack for now
-                    # dx = origin_x - (end_x+1)
-                    # dz = origin_z - (end_z+1)
-                    src.states.set_state_block(state, ex - zi, y, ez - xi, block)  # this is a hack for now
-                src.states.set_state_block(state, ex, y+3, ez, "minecraft:redstone_block")
+                    if use_head == False:
+                        src.states.set_state_block(state, ex - zi, y, ez - xi, block)  # this is a hack for now
+                    else:
+                        print(http_framework.interfaceUtils.setBlockWithData(ex - zi + state.world_x, y + state.world_y, ez - xi + state.world_z, block))
                 i+=1
                 xi += 1
             zi += 1

@@ -106,8 +106,7 @@ def clearBlockBuffer():
 
 # use this if designated in file by {}
 def setBlockWithData(abs_x, abs_y, abs_z, data):
-    command = "setblock {} {} {} {} replace".format(abs_x, abs_y, abs_z, data)
-    print(command)
+    command = "setblock {} {} {} {}".format(abs_x, abs_y, abs_z, data)
     return runCommand(command)
 
 

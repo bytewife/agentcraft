@@ -49,7 +49,7 @@ class Simulation:
         # building = "../../../schemes/market_stall_1"
         # building = "../../../schemes/med_house_2"
         # building = "../../../schemes/church_1_flex"
-        building = "../../../schemes/med_house_4_flex"
+        building = "../../../schemes/"+random.choice(src.my_utils.STRUCTURES['all'])
         construction_site = random.choice(list(self.state.construction))
         f = open(building, "r")
         size = f.readline()

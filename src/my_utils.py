@@ -15,6 +15,15 @@ STRUCTURES = {
 		"med_house_2_flex",
 		"med_house_3_flex",
 		"med_house_4_flex",
+	],
+    "all": [
+		"med_house_1_flex",
+		"med_house_2_flex",
+		"med_house_4_flex",
+        "small_house_1_flex",
+		"small_house_2_flex",
+        "market_stall_1_flex",
+		"market_stall_2_flex",
 	]
 }
 

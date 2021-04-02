@@ -31,25 +31,9 @@ file_name = ""
 clean_agents = "kill @e[type=minecraft:armor_stand,x={},y=64,z={},distance=..100]".format(str((x2+x1)/2), str((z2+z1)/2))
 http_framework.interfaceUtils.runCommand(clean_agents)
 
+# sim = src.simulation.Simulation(area, rendering_step_duration=0.0)
 sim = src.simulation.Simulation(area, rendering_step_duration=0.0)
-# ag = src.agent.Agent(sim.state, 50, 27, sim.state.rel_ground_hm, "Prof")
-# sim.add_agent(ag)
-# ag.set_motive(ag.Motive.LOGGING)
-# for node in sim.state.nodes[(13,13)].range:
-#     y = sim.state.rel_ground_hm[node.center[0]][ node.center[1]] - 1
-#     sim.state.set_block(node.center[0], y,node.center[1], "minecraft:white_wool")
-# #
-
-# for center in sim.state.nodes:
-#     pass
-
 sim.step(1)
-# print("lots")
-# print(sim.state.lots)
-# print("built")
-# print(sim.state.construction)
-# show building spots
-
 ## ROADS
 for r in sim.state.roads:
     if r in sim.state.construction:
@@ -67,7 +51,8 @@ for b in sim.state.construction:
     y = sim.state.rel_ground_hm[x][z] + 1
     sim.state.set_block(x,y,z,"minecraft:gold_block")
     if src.my_utils.TYPE.WATER.name in b.get_type():
-        print("water found!")
+        pass
+        # print("water found!")
 
 ##
 

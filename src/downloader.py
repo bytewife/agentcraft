@@ -67,6 +67,13 @@ areaFlex = [0, 0, 10, 10] # default build area
 # x2 = 290
 # y2 = 123
 # z2 = 734
+# # # med_house_3
+# x1 = 244
+# y1 = 54
+# z1 = 842
+# x2 = 253
+# y2 = 68
+# z2 = 855
 # # # cart 1 (hay)
 # x1 = 278
 # y1 = 71
@@ -89,13 +96,13 @@ areaFlex = [0, 0, 10, 10] # default build area
 # y2 = 129
 # z2 = 791
 # # small_house 2 (meat, books)
-x1 = 339
-y1 = 55
-z1 = 822
-x2 = 349
-y2 = 71
-z2 = 831
-file_name = "../schemes/small_house_"
+# x1 = 339
+# y1 = 55
+# z1 = 822
+# x2 = 349
+# y2 = 71
+# z2 = 831
+file_name = "../schemes/med_house_"
 src.scheme_utils.download_schematic(x1, y1, z1, x2, y2, z2, file_name)
 src.scheme_utils.download_schematic(x1, y1, z1, x2, y2, z2, file_name+"_flex", flexible_tiles=True, leave_dark_oak=False)
 src.scheme_utils.download_schematic(x1, y1, z1, x2, y2, z2, file_name+"_flex_keep_dark", flexible_tiles=True, leave_dark_oak=True)
