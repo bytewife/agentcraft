@@ -40,23 +40,23 @@ class Simulation:
             while result is False:
                 result = self.state.init_main_st()
 
-        # for agent_pos in result:
-        #     new_agent = src.agent.Agent(self.state, *agent_pos, walkable_heightmap=self.state.rel_ground_hm, name=names.get_first_name())
-        #     self.add_agent(new_agent)
-        #     new_agent.set_motive(src.agent.Agent.Motive.LOGGING)
-
-        # building = "market_stall_2"
-        # building = "../../../schemes/market_stall_1"
-        # building = "../../../schemes/med_house_2"
-        # building = "../../../schemes/church_1_flex"
+        # build a house
         building = "../../../schemes/"+random.choice(src.my_utils.STRUCTURES['all'])
         construction_site = random.choice(list(self.state.construction))
         f = open(building, "r")
         size = f.readline()
         x_size, y_size, z_size = [int(n) for n in size.split(' ')]
-        while self.state.place_building_at(construction_site, building, x_size, z_size) is False:  # flip the x and z
+        i = 0
+        build_tries = 300
+        while self.state.place_building_at(construction_site, building, x_size, z_size) is False and i < build_tries:  # flip the x and z
             construction_site = random.choice(list(self.state.construction))
+            i+=1
 
+        # spawn agents at main street endpoints
+        for agent_pos in result:
+            new_agent = src.agent.Agent(self.state, *agent_pos, walkable_heightmap=self.state.rel_ground_hm, name=names.get_first_name())
+            self.add_agent(new_agent)
+            new_agent.set_motive(src.agent.Agent.Motive.LOGGING)
 
 
     def step(self, times=1):

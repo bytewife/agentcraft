@@ -15,6 +15,15 @@ class Agent:
         BUILD = 1
         IDLE = 2
 
+    shared_resources = {
+        "oak_log": 0,
+        "dark_oak_log": 0,
+        "spruce_log": 0,
+        "birch_log": 0,
+        "acacia_log": 0,
+        "jungle_log": 0,
+    }
+
     def __init__(self, state, state_x, state_z, walkable_heightmap, name,
                  parent_1=None, parent_2=None, model="minecraft:carved_pumpkin", motive=Motive.LOGGING.name):
 
@@ -31,6 +40,9 @@ class Agent:
         self.motive = motive
         self.current_action_item = ""
         self.favorite_item = ""
+        self.unshared_resources = {
+            "water": 0
+        }
 
 
     # 3D movement is a stretch goal
@@ -137,6 +149,10 @@ class Agent:
             if src.manipulation.is_log(self.state, bx, by, bz):
                 status = src.manipulation.cut_tree_at(self.state, bx, by, bz)
                 state.nodes[state.node_pointers[bx][bz]].add_prosperity(src.my_utils.ACTION_PROSPERITY.LOGGING)
+                if status == src.manipulation.TASK_OUTCOME.SUCCESS.name:
+                    # increase resoruces
+                    src.agent.Agent.shared_resources['oak_log'] += 1
+                    print("resources is now "+str(src.agent.Agent.shared_resources['oak_log']))
                 break  # cut one at a time
         print("logging status is "+status+" with ")
         return status  # someone sniped this tree.

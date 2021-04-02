@@ -10,21 +10,30 @@ ROAD_SETS = {
 }
 
 STRUCTURES = {
-	"med_house": [
+    "decor": [
+		"cart_1_flex",
+	],
+	"small": [
+		"small_house_1_flex",
+		"small_house_2_flex",
+	],
+	"med": [
 		"med_house_1_flex",
 		"med_house_2_flex",
 		"med_house_3_flex",
 		"med_house_4_flex",
 	],
-    "all": [
+	"large": [
+		"church_1_flex",
+		"church_2_flex",
+	],
+	"all": [
 		"med_house_1_flex",
 		"med_house_2_flex",
 		"med_house_4_flex",
-        "small_house_1_flex",
-		"small_house_2_flex",
         "market_stall_1_flex",
 		"market_stall_2_flex",
-	]
+	],
 }
 
 ROTATION_LOOKUP = {

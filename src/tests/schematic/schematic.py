@@ -23,5 +23,5 @@ print(file_name+" complete")
 hm = sim.state.rel_ground_hm
 x = 10
 z = 30
-src.scheme_utils.place_schematic_in_state(sim.state, "building", x, hm[x][z], z, dir_x=-1, dir_z = 1, rot=1)
+src.scheme_utils.place_schematic_in_state(sim.state, "building", x, hm[x][z], z, built_arr=[], dir_x=-1, dir_z = 1, rot=1)
 sim.step(10, True, 1.0)

@@ -40,6 +40,7 @@ class State:
     lots = set()
 
 
+
     ## Create surface grid
     def __init__(self, world_slice=None, blocks_file=None, max_y_offset=tallest_building_height):
         if not world_slice is None:
@@ -51,6 +52,8 @@ class State:
             self.world_z = world_slice.rect[1]
             self.len_x = world_slice.rect[2] - world_slice.rect[0]
             self.len_z = world_slice.rect[3] - world_slice.rect[1]
+            self.end_x = world_slice.rect[2]
+            self.end_z = world_slice.rect[3]
             self.legal_actions = src.movement.gen_all_legal_actions(
                 self.blocks, vertical_ability=self.agent_jump_ability, heightmap=self.rel_ground_hm, actor_height=self.agent_height, unwalkable_blocks=[]
             )
@@ -61,6 +64,8 @@ class State:
             self.prosperity = np.zeros((self.len_x, self.len_z))
             self.traffic = np.zeros((self.len_x, self.len_z))
             self.updateFlags = np.zeros((self.len_x, self.len_z))
+            self.built = set()
+            self.built_heightmap = {}
             print('nodes is '+str(len(self.nodes)))
             print('traffic is '+str(len(self.traffic)))
 
@@ -184,24 +189,12 @@ class State:
         z1 = ctrn_node.center[1] - ctrn_dir[1]
         x2 = ctrn_node.center[0] + ctrn_dir[0] + ctrn_dir[0] * ctrn_node.size * (min_nodes_in_x - 1)
         z2 = ctrn_node.center[1] + ctrn_dir[1] + ctrn_dir[1] * ctrn_node.size * (min_nodes_in_z - 1)
-        # self.set_block(x1, 9, z1, "minecraft:sandstone")
-        # self.set_block(x2, 9, z2, "minecraft:sandstone")
         xf = min(x1, x2)  # since the building is placed is ascending
         zf = min(z1, z2)
-
-        xc = max(x1, x2)  # since the building is placed is ascending
-        zc = max(z1, z2)
-
-        ## get rotation
-        # for n in found_nodes:
-        #     for dir in src.movement.cardinals:
-        #         nx = dir[0]*n.size +
-
         y = self.rel_ground_hm[xf][zf] # temp
-        if src.scheme_utils.place_schematic_in_state(self, bld, xf, y, zf, rot=rot) == False:# rot=0 for facing in x dir. rot=1 is faces -z dir
-            print("returning")
+        status, building_heightmap = src.scheme_utils.place_schematic_in_state(self, bld, xf, y, zf, rot=rot, built_arr=self.built)
+        if status == False:
             return False
-
         # build road from the road to the building
         self.create_road(found_road.center, ctrn_node.center, road_type="None", points=None, leave_lot=False, add_as_road_type=False)
         xmid = int((x2 + x1)/2)
@@ -209,10 +202,14 @@ class State:
         distmax = math.dist((ctrn_node.center[0]-ctrn_dir[0], ctrn_node.center[1]-ctrn_dir[1]), (xmid, zmid))
         # build construction site ground
         for n in found_nodes:
-            # for each of the nodes' tiles, generate random, based on dist
+            # for each of the nodes' tiles, generate random, based on dist. Also, add it to built.
             for dir in src.movement.idirections:
                 x = n.center[0] + dir[0]
                 z = n.center[1] + dir[1]
+                # add to built
+                self.built.add((x,z))
+                # get the heightmap for that location, based on the schematic. traverse up, finding first consective air blocks == agent height
+
                 y = int(self.rel_ground_hm[x][z]) - 1
                 inv_chance = math.dist((x, z), (xmid, zmid))/distmax  # clamp to 0-1
                 if inv_chance == 1.0: # stylistic choice: don't let corners be placed
@@ -223,17 +220,16 @@ class State:
                     self.set_block(x, y, z, block)
         y = self.rel_ground_hm[xf][zf] + 5
         self.set_block(xf, y, zf, "minecraft:diamond_block")
-
         # debug
         for n in found_nodes:
             x = n.center[0]
             z = n.center[1]
             y = self.rel_ground_hm[x][z] + 9
-            self.set_block(x, y, z, "minecraft:iron_block")
+            # self.set_block(x, y, z, "minecraft:iron_block")
         ## remove nodes from construction
         for node in list(found_nodes):
             self.construction.remove(node)
-        print("rot is "+str(rot))
+        # print("rot is "+str(rot))
         return True
 
 
@@ -528,15 +524,20 @@ class State:
     #     self.rel_ground_hm = self.gen_rel_ground_hm(self.abs_ground_hm)
 
     def update_heightmaps(self):
-        area = [self.world_x, self.world_z, self.world_x + self.len_x, self.world_z + self.len_z]
+        x1 = self.world_x
+        z1 = self.world_z
+        x2 = self.end_x
+        z2 = self.end_z
+        area = [x1, z1, x2, z2]
         area = src.my_utils.correct_area(area)
-        worldSlice = http_framework.worldLoader.WorldSlice(area, heightmapOnly=True)
+        worldSlice = http_framework.worldLoader.WorldSlice(area, heightmapOnly=False)
         hm_type = "MOTION_BLOCKING_NO_LEAVES"  # only update one for performance
         for index in range(1,len(worldSlice.heightmaps)+1):
             self.heightmaps[hm_type] = worldSlice.heightmaps[src.my_utils.HEIGHTMAPS(index).name]
         for x in range(len(self.heightmaps[hm_type])):
             for z in range(len(self.heightmaps[hm_type][0])):
-                self.heightmaps[hm_type][x][z] = worldSlice.heightmaps[hm_type][x][z] - 1
+                if (x,z) not in self.built: # ignore buildings
+                    self.heightmaps[hm_type][x][z] = worldSlice.heightmaps[hm_type][x][z] - 1
         self.abs_ground_hm = self.heightmaps[hm_type]
         self.rel_ground_hm = self.gen_rel_ground_hm(self.abs_ground_hm)
         return worldSlice

@@ -20,8 +20,6 @@ def is_log(state, x, y, z):
 
 def cut_tree_at(state, x, y, z, times=1):
     for i in range(times):
-        # if not is_log(state, x, y, z):
-        #     return TaskOutcome.IN_PROGRESS.name
         log_type = get_log_type(state.blocks[x][y][z])
         replacement = "minecraft:air"
         src.states.set_state_block(state, x, y, z, replacement)
@@ -31,11 +29,6 @@ def cut_tree_at(state, x, y, z, times=1):
                   or is_leaf(state.get_adjacent_block(x, y, z, 0, 0, 1)) \
                   or is_leaf(state.get_adjacent_block(x, y, z, 0, 0, -1)):
               flood_kill_leaves(state, x, y + 1, z)
-        # if state.blocks[x][y-1][z] == "minecraft:air":
-        #     src.states.set_state_block(state, x, y, z, replacement)
-        #     new_type = state.determine_type(x, z, state.rel_ground_hm)  # -1 to account for sapling
-        #     state.types[x][z] = new_type
-        #     state.trees.remove((x, z))
         if not is_log(state, x, y - 1, z):  # place sapling
             new_replacement = "minecraft:" + log_type + "_sapling"
             yoff = -1
@@ -48,7 +41,6 @@ def cut_tree_at(state, x, y, z, times=1):
             print("new state is "+str(state.types[x][z]))
             if (x,z) in state.trees:  # prevent sniping
                 state.trees.remove((x,z))
-            # replace types
             return TASK_OUTCOME.SUCCESS.name
         y -= 1
     return TASK_OUTCOME.IN_PROGRESS.name
