@@ -9,6 +9,7 @@ import src.pathfinding
 import src.scheme_utils
 import numpy as np
 from random import choice, random
+from scipy.interpolate import interp1d
 import src.linedrawing
 import src.manipulation
 
@@ -123,7 +124,7 @@ class State:
         found_nodes = set()
 
         # get rotation based on neighboring road
-        found_road = False
+        found_road = None
         face_dir = None
         for dir in src.movement.cardinals:  # maybe make this cardinal only
             nx = ctrn_node.center[0] + dir[0]*ctrn_node.size
@@ -133,38 +134,22 @@ class State:
             neighbor = self.nodes[self.node_pointers[np]]
             if neighbor in self.roads:
                 print("found road!")
-                found_road = True
+                found_road = neighbor
                 face_dir = dir
                 break
-        if found_road == False:
+        if found_road == None:
             return False
         rot = 0
-        # if face_dir[0] == 1:
-        #     rot = 3  # good
-        # if face_dir[0] == -1:
-        #     rot = 1 # good
-        # if face_dir[1] == -1:
-        #     rot = 0
-        # if face_dir[1] == 1:
-        #     rot = 2 # good, but rot blocks doesn't work. same with 1
-        # if face_dir[0] == 1: rot = 2
-        # if face_dir[0] == -1: rot = 1
-        # if face_dir[1] == -1: rot = 0
-        # if face_dir[1] == 1: rot = 3
         if face_dir[0] == 1: rot = 2
         if face_dir[0] == -1: rot = 0
         if face_dir[1] == -1: rot = 1
         if face_dir[1] == 1: rot = 3
-
-        print('face_dir is '+str(face_dir))
-
+        # print('face_dir is '+str(face_dir))
         self.set_block(ctrn_node.center[0], 17, ctrn_node.center[1],"minecraft:emerald_block")
-
-        if rot in [0, 2]:
+        if rot in [1,3]:
             temp = min_nodes_in_x
             min_nodes_in_x = min_nodes_in_z
             min_nodes_in_z = temp
-
         ## find site where x and z are reversed. this rotates
         for dir in src.movement.diagonals:
             if found_ctrn_dir != None:
@@ -186,9 +171,11 @@ class State:
                 break
             else:
                 found_nodes.clear()
-
-        if found_ctrn_dir == None:
+        if found_ctrn_dir == None:  # if there's not enough space, return
             return False
+        # build road from the road to the building
+        self.create_road(found_road.center, ctrn_node.center, road_type="None", points=None, leave_lot=False, add_as_road_type=False)
+
         # debug
         for n in found_nodes:
             x = n.center[0]
@@ -202,33 +189,45 @@ class State:
         z2 = ctrn_node.center[1] + ctrn_dir[1] + ctrn_dir[1] * ctrn_node.size * (min_nodes_in_z - 1)
         # self.set_block(x1, 9, z1, "minecraft:sandstone")
         # self.set_block(x2, 9, z2, "minecraft:sandstone")
-        x = min(x1, x2)  # since the building is placed is ascending
-        z = min(z1, z2)
+        xf = min(x1, x2)  # since the building is placed is ascending
+        zf = min(z1, z2)
+
+        xc = max(x1, x2)  # since the building is placed is ascending
+        zc = max(z1, z2)
+
+        xmid = int((x2 + x1)/2)
+        zmid = int((z2 + z1)/2)
+        distmax = math.dist((ctrn_node.center[0]-ctrn_dir[0], ctrn_node.center[1]-ctrn_dir[1]), (xmid, zmid))
+        print(distmax)
+        # build construction site ground
+        for n in found_nodes:
+            # for each of the nodes' tiles, generate random, based on dist
+            for dir in src.movement.idirections:
+                x = n.center[0] + dir[0]
+                z = n.center[1] + dir[1]
+                y = int(self.rel_ground_hm[x][z]) - 1
+                inv_chance = math.dist((x, z), (xmid, zmid))/distmax  # clamp to 0-1
+                if inv_chance == 1.0: # stylistic choice: don't let corners be placed
+                    continue
+                print("chance is "+str(inv_chance))
+                attenuate = 0.8
+                if random() > inv_chance*attenuate:
+                    block = choice(src.my_utils.ROAD_SETS['default'])
+                    self.set_block(x, y, z, block)
 
         ## get rotation
         # for n in found_nodes:
         #     for dir in src.movement.cardinals:
         #         nx = dir[0]*n.size +
 
-        y = self.rel_ground_hm[x][z] # temp
-        src.scheme_utils.place_schematic_in_state(self, bld, x, y, z, rot=rot) # rot=0 for facing in x dir. rot=1 is faces -z dir
-        y = self.rel_ground_hm[x][z] + 5
-        self.set_block(x, y, z, "minecraft:diamond_block")
-
+        y = self.rel_ground_hm[xf][zf] # temp
+        src.scheme_utils.place_schematic_in_state(self, bld, xf, y, zf, rot=rot) # rot=0 for facing in x dir. rot=1 is faces -z dir
+        y = self.rel_ground_hm[xf][zf] + 5
+        self.set_block(xf, y, zf, "minecraft:diamond_block")
         ## remove nodes from construction
         for node in list(found_nodes):
             self.construction.remove(node)
-
-        print("rot is "+str(rot))
         return True
-        # confirm theres a contsruction node there
-        ## flip building to face road, get flipped lens
-        ## get construction site
-
-
-        ## later, check if contruction site next to road
-
-
 
 
     class Node:
@@ -802,7 +801,7 @@ class State:
         return nodes
 
     # might have to get point2 within the func, rather than pass it in
-    def create_road(self, point1, point2, road_type, points=None, leave_lot=False, correction=5, road_blocks=None, inner_block_rate=1.0, outer_block_rate=0.75, fringe_rate=0.05):
+    def create_road(self, point1, point2, road_type, points=None, leave_lot=False, correction=5, road_blocks=None, inner_block_rate=1.0, outer_block_rate=0.75, fringe_rate=0.05, add_as_road_type = True):
         self.road_nodes.append(self.nodes[self.node_pointers[point1]])
         self.road_nodes.append(self.nodes[self.node_pointers[point2]])
         block_path = []
@@ -848,12 +847,13 @@ class State:
                     break
 
         # do checks
-        road_segment = RoadSegment(self.nodes[point1], self.nodes[point2], middle_nodes, road_type, self.road_segs, state=self)
-        self.road_segs.add(road_segment)
+        if add_as_road_type == True:  # allows us to ignore the small paths from roads to buildings
+            road_segment = RoadSegment(self.nodes[point1], self.nodes[point2], middle_nodes, road_type, self.road_segs, state=self)
+            self.road_segs.add(road_segment)
 
         # place blocks. TODO prolly not right- i think you wanna render road segments
         if road_blocks == None:
-            road_blocks = ["minecraft:gravel", "minecraft:granite", "minecraft:coarse_dirt", "minecraft:grass_path"]
+            road_blocks = src.my_utils.ROAD_SETS['default']
         ## render
         for block in block_path:
             x = block[0]
@@ -897,7 +897,9 @@ class State:
                 road_block = choice(road_blocks)
                 set_state_block(self, x, y, z, road_block)
 
-        self.set_type_road(node_path, src.my_utils.TYPE.MAJOR_ROAD.name)
+        # self.set_type_road(node_path, src.my_utils.TYPE.MAJOR_ROAD.name)
+        if add_as_road_type:
+            self.set_type_road(node_path, road_type)
         return [point1, point2]
 
 

@@ -6,7 +6,7 @@ from enum import Enum
 import src.states
 
 
-def download_area(origin_x, origin_y, origin_z, end_x, end_y, end_z, flexible_tiles=False):
+def download_area(origin_x, origin_y, origin_z, end_x, end_y, end_z, flexible_tiles=False, leave_dark_oak=True):
     print("downloading area")
     block_string = ""
     dir_x = 1
@@ -21,7 +21,12 @@ def download_area(origin_x, origin_y, origin_z, end_x, end_y, end_z, flexible_ti
     if end_z < origin_z:
         dir_z = -1
     # for y in range(origin_y, end_y, 1):
-    woods = ["dark_oak", "oak", "spruce", "birch", "acacia", "jungle"]  # woods that are determined to be switcheable. leaving out oak as an aesthetic cohice
+    woods = []
+    if leave_dark_oak:
+        woods = ["oak", "spruce", "birch", "acacia", "jungle"]  # woods that are determined to be switcheable. leaving out oak as an aesthetic cohice
+    else:
+        woods = ["dark", "oak", "spruce", "birch", "acacia", "jungle"]  # woods that are determined to be switcheable. leaving out oak as an aesthetic cohice
+
     for y in range(end_y, origin_y-dir_y, -dir_y):
         for z in range(origin_z, end_z+dir_z, dir_z):
             for x in range(origin_x, end_x+dir_x, dir_x):
@@ -36,7 +41,7 @@ def download_area(origin_x, origin_y, origin_z, end_x, end_y, end_z, flexible_ti
                         block = "#9stripped__log"
                     elif block[-3:] == 'log':
                         block = '#0_log'  # index 0 is where you want to stick the type right after you remove the #0
-                    elif first_underscore != None and block[:first_underscore] in woods and block[first_underscore:first_underscore+5] != "_door":
+                    elif first_underscore != None and block[:first_underscore] in woods and block[first_underscore:first_underscore+5] != "_door" and block[first_underscore:first_underscore+9] != "_trapdoor":
                         block = '#0'+block[first_underscore:]
 
                 block_string = block_string + block + " "
@@ -59,14 +64,14 @@ class rFacing(Enum):
     west = 1
 
 
-def download_schematic(origin_x, origin_y, origin_z, end_x, end_y, end_z, file_name, flexible_tiles=False):
+def download_schematic(origin_x, origin_y, origin_z, end_x, end_y, end_z, file_name, flexible_tiles=False, leave_dark_oak=True):
     file = open(file_name, "w")
     len_x = abs(origin_x - end_x) + 1
     len_y = abs(origin_y - end_y) + 1
     len_z = abs(origin_z - end_z) + 1
     file.write(str(len_x) + " " + str(len_y) + " " + str(len_z))
     file.write("\n")
-    file.write(download_area(origin_x, origin_y, origin_z, end_x, end_y, end_z, flexible_tiles))
+    file.write(download_area(origin_x, origin_y, origin_z, end_x, end_y, end_z, flexible_tiles, leave_dark_oak))
     file.close()
 
 
@@ -194,7 +199,7 @@ def adjust_property_by_rotation(block, property, longest_len, rot, rot_factor=1,
 
 
 ## where the origin coords are the local coords within state
-def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, dir_x=1, dir_y=-1, dir_z=1, rot=0):
+def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, dir_x=1, dir_y=-1, dir_z=1, rot=0, flex_tile = None):
     size, blocks = get_schematic_parts(file_name)
     length_x, length_y, length_z = size
 
@@ -228,7 +233,16 @@ def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, dir
             xi = XI
             for x in range(origin_x, end_x+1, dir_x):
                 index = yi * length_z * length_x + zi * length_x + xi
-                block = "minecraft:" + blocks[index]
+                block = blocks[index]
+                # check for flex tile
+                if block[0] == '#':
+                    print("before: " + str(block))
+                    insert_pos = int(block[1])
+                    block = block[2:2+insert_pos]+"birch"+block[2+insert_pos:]
+                    print(block)
+                    print("after: "+str(block))
+
+                block = "minecraft:" + block
                 block = adjust_property_by_rotation(block, property="facing=", longest_len=5, rot=rot, shortest_len=4, rot_factor=1)
                 if rot == 0:
                     src.states.set_state_block(state, sx + xi, y, sz + zi, block)

@@ -15,7 +15,7 @@ setblock 308 37 822 minecraft:player_head[rotation=1]{display:{Name:"{\\"text\\"
 """
 
 # I just copy pasted the /data get block when pointed at a head
-example_head_set = """{SkullOwner: {Id: [I; 657576908, -1980940883, 933235114, 513329351], Properties: {textures: [{Value: "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYTBhZDg2NTE4Y2Q0OWNjZmUyODdmZTFkNzM5OTk0NTA1MjFhZDAxODE5ZTVhOGQ5OTg5NTIzMTUyY2IxZjY2ZSJ9fX0="}]}}, x: 320, y: 48, z: 844, id: "minecraft:skull"}"""
+example_head_set = """ {SkullOwner: {Id: [I; -1110806897, 947407934, -1860746532, 1725142738], Properties: {textures: [{Value: "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMTgxYWE3MTI2NzY1NGM0YzE3ZjIzZGQ1NmY5ZjU1NDE3YzZlNjA1YjYwOTUxNTc4ODdmZGVmY2Q1OGJiZTMxNyJ9fX0="}]}}, x: 281, y: 73, z: 722, id: "minecraft:skull"}"""
 head = src.my_utils.get_player_head_block_id("Coal", example_head_set)
 print(head)
 

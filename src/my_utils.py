@@ -5,6 +5,19 @@ import src.agent
 
 # https://stackoverflow.com/questions/34470597/is-there-a-dedicated-way-to-get-the-number-of-items-in-a-python-enum
 
+ROAD_SETS = {
+	'default': ["minecraft:gravel", "minecraft:granite", "minecraft:coarse_dirt", "minecraft:grass_path"]
+}
+
+STRUCTURES = {
+	"med_house": [
+		"med_house_1_flex",
+		"med_house_2_flex",
+		"med_house_3_flex",
+		"med_house_4_flex",
+	]
+}
+
 ROTATION_LOOKUP = {
 	(0, 1): "0",
 	(-1, 1): "45",

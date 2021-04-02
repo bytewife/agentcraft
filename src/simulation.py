@@ -46,10 +46,11 @@ class Simulation:
         #     new_agent.set_motive(src.agent.Agent.Motive.LOGGING)
 
         # building = "market_stall_2"
-        building = "../../../schemes/market_stall_1"
+        # building = "../../../schemes/market_stall_1"
         # building = "../../../schemes/med_house_2"
+        building = "../../../schemes/med_house_2_flex"
         construction_site = random.choice(list(self.state.construction))
-        while self.state.place_building_at(construction_site, building, 8, 6) is False:  # flip the x and z
+        while self.state.place_building_at(construction_site, building, 11,14) is False:  # flip the x and z
             construction_site = random.choice(list(self.state.construction))
 
 
