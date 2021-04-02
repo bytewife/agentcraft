@@ -48,9 +48,13 @@ class Simulation:
         # building = "market_stall_2"
         # building = "../../../schemes/market_stall_1"
         # building = "../../../schemes/med_house_2"
-        building = "../../../schemes/med_house_2_flex"
+        # building = "../../../schemes/church_1_flex"
+        building = "../../../schemes/med_house_4_flex"
         construction_site = random.choice(list(self.state.construction))
-        while self.state.place_building_at(construction_site, building, 11,14) is False:  # flip the x and z
+        f = open(building, "r")
+        size = f.readline()
+        x_size, y_size, z_size = [int(n) for n in size.split(' ')]
+        while self.state.place_building_at(construction_site, building, x_size, z_size) is False:  # flip the x and z
             construction_site = random.choice(list(self.state.construction))
 
 

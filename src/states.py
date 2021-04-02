@@ -140,8 +140,12 @@ class State:
         if found_road == None:
             return False
         rot = 0
-        if face_dir[0] == 1: rot = 2
-        if face_dir[0] == -1: rot = 0
+        if face_dir[0] == 1:
+            rot = 2
+            return False
+        if face_dir[0] == -1:
+            rot = 0
+            return False
         if face_dir[1] == -1: rot = 1
         if face_dir[1] == 1: rot = 3
         # print('face_dir is '+str(face_dir))
@@ -164,6 +168,7 @@ class State:
                     if self.out_of_bounds_Node(nx, nz): break
                     node = self.nodes[(nx,nz)]
                     if not node in self.construction: break
+                    if node in self.roads: break  # don't go over roads
                     tiles += 1
                     found_nodes.add(node)
             if tiles == min_tiles:  # found a spot!
@@ -173,15 +178,7 @@ class State:
                 found_nodes.clear()
         if found_ctrn_dir == None:  # if there's not enough space, return
             return False
-        # build road from the road to the building
-        self.create_road(found_road.center, ctrn_node.center, road_type="None", points=None, leave_lot=False, add_as_road_type=False)
 
-        # debug
-        for n in found_nodes:
-            x = n.center[0]
-            z = n.center[1]
-            y = self.rel_ground_hm[x][z] + 9
-            self.set_block(x, y, z, "minecraft:iron_block")
         ctrn_dir = found_ctrn_dir
         x1 = ctrn_node.center[0] - ctrn_dir[0]  # to uncenter
         z1 = ctrn_node.center[1] - ctrn_dir[1]
@@ -195,10 +192,21 @@ class State:
         xc = max(x1, x2)  # since the building is placed is ascending
         zc = max(z1, z2)
 
+        ## get rotation
+        # for n in found_nodes:
+        #     for dir in src.movement.cardinals:
+        #         nx = dir[0]*n.size +
+
+        y = self.rel_ground_hm[xf][zf] # temp
+        if src.scheme_utils.place_schematic_in_state(self, bld, xf, y, zf, rot=rot) == False:# rot=0 for facing in x dir. rot=1 is faces -z dir
+            print("returning")
+            return False
+
+        # build road from the road to the building
+        self.create_road(found_road.center, ctrn_node.center, road_type="None", points=None, leave_lot=False, add_as_road_type=False)
         xmid = int((x2 + x1)/2)
         zmid = int((z2 + z1)/2)
         distmax = math.dist((ctrn_node.center[0]-ctrn_dir[0], ctrn_node.center[1]-ctrn_dir[1]), (xmid, zmid))
-        print(distmax)
         # build construction site ground
         for n in found_nodes:
             # for each of the nodes' tiles, generate random, based on dist
@@ -209,24 +217,23 @@ class State:
                 inv_chance = math.dist((x, z), (xmid, zmid))/distmax  # clamp to 0-1
                 if inv_chance == 1.0: # stylistic choice: don't let corners be placed
                     continue
-                print("chance is "+str(inv_chance))
                 attenuate = 0.8
                 if random() > inv_chance*attenuate:
                     block = choice(src.my_utils.ROAD_SETS['default'])
                     self.set_block(x, y, z, block)
-
-        ## get rotation
-        # for n in found_nodes:
-        #     for dir in src.movement.cardinals:
-        #         nx = dir[0]*n.size +
-
-        y = self.rel_ground_hm[xf][zf] # temp
-        src.scheme_utils.place_schematic_in_state(self, bld, xf, y, zf, rot=rot) # rot=0 for facing in x dir. rot=1 is faces -z dir
         y = self.rel_ground_hm[xf][zf] + 5
         self.set_block(xf, y, zf, "minecraft:diamond_block")
+
+        # debug
+        for n in found_nodes:
+            x = n.center[0]
+            z = n.center[1]
+            y = self.rel_ground_hm[x][z] + 9
+            self.set_block(x, y, z, "minecraft:iron_block")
         ## remove nodes from construction
         for node in list(found_nodes):
             self.construction.remove(node)
+        print("rot is "+str(rot))
         return True
 
 
@@ -767,7 +774,8 @@ class State:
             RoadSegment(self.nodes[(x1,y1)], self.nodes[(x2,y2)], middle_nodes, src.my_utils.TYPE.MAJOR_ROAD.name, self.road_segs, self))
         for (x, y) in points:
             # adjacent = self.nodes[(x,y)].adjacent
-            adjacent = self.nodes[(x,y)].local  # this is where we increase building range
+            # adjacent = self.nodes[(x,y)].local  # this is where we increase building range
+            adjacent = self.nodes[(x,y)].range  # this is where we increase building range
             adjacent = [s for n in adjacent for s in n.adjacent]  # every node in the road builds buildings around them
             for pt in adjacent:
                 if pt not in points:
