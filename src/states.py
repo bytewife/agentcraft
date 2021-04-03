@@ -55,7 +55,8 @@ class State:
             self.end_x = world_slice.rect[2]
             self.end_z = world_slice.rect[3]
             self.legal_actions = src.movement.gen_all_legal_actions(
-                self.blocks, vertical_ability=self.agent_jump_ability, heightmap=self.rel_ground_hm, actor_height=self.agent_height, unwalkable_blocks=[]
+                self.blocks, vertical_ability=self.agent_jump_ability, heightmap=self.rel_ground_hm,
+                actor_height=self.agent_height, unwalkable_blocks=["minecraft:water", 'minecraft:lava']
             )
             self.pathfinder = src.pathfinding.Pathfinding()
             self.sectors = self.pathfinder.create_sectors(self.heightmaps["MOTION_BLOCKING_NO_LEAVES"],

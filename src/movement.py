@@ -35,10 +35,8 @@ def gen_all_legal_actions(blocks, vertical_ability, heightmap, actor_height, unw
     result = np.full((rx,rz), fill_value=fill, dtype=bitarray.bitarray)
     for x in range(rx):
         for z in range(rz):
-            pass
-            # print(z)
+            # pass
             result[x][z] = get_legal_actions_from_block(blocks, x, z, vertical_ability, heightmap, actor_height, unwalkable_blocks)
-            # ( get_legal_actions_from_block(assets, x, z, vertical_ability, heightmap, actor_height, unwalkable_blocks))
     return result
 
 

@@ -13,6 +13,7 @@ def is_water(state, x, y, z):
     if state.out_of_bounds_3D(x, y, z):
         return False
     block = state.blocks[x][y][z]
+    print(block)
     if not block is None and block[-5:] == 'water':
         return True
     return False

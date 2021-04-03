@@ -117,7 +117,7 @@ class Agent:
     def do_rest_task(self):
         if self.calc_motive() == self.Motive.REST and self.unshared_resources['rest'] < self.rest_max:
             # rest
-            self.unshared_resources['rest'] += 1
+            self.unshared_resources['rest'] += 4
         else:
             self.auto_motive()
 
@@ -129,7 +129,7 @@ class Agent:
             status = self.collect_from_adjacent_spot(self.state, check_func=src.manipulation.is_water, manip_func=src.manipulation.collect_water_at, prosperity_inc=src.my_utils.ACTION_PROSPERITY.WATER) # this may not inc an int
             print(status)
             if status == src.manipulation.TASK_OUTCOME.SUCCESS.name:
-                self.unshared_resources['water'] += 2
+                self.unshared_resources['water'] += 7
                 pass
             elif status == src.manipulation.TASK_OUTCOME.FAILURE.name:  # if no water found
                 self.auto_motive()
@@ -208,7 +208,7 @@ class Agent:
             xo, zo = dir
             bx = self.x + xo
             bz = self.z + zo
-            if bx < 0 or bz < 0 or bx >= state.len_z-1 or bz >= state.len_x-1:
+            if bx < 0 or bz < 0 or bx >= state.len_x-1 or bz >= state.len_z-1:
                 continue
             by = int(state.abs_ground_hm[bx][bz]) - self.state.world_y  # this isn't being updated in heightmap
             if check_func(self.state, bx, by, bz):
