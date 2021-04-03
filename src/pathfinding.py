@@ -12,8 +12,6 @@ class Pathfinding:
     def __init__(self):
         pass
 
-    sectors = []
-    sector_sizes = {}
 
     class Node:
         def __init__(self, pos, g=0, h=0, parent=None, action_to_here=0, action_cost=0, legal_actions=0):
@@ -26,6 +24,8 @@ class Pathfinding:
             self.action_to_here = action_to_here
             self.action_cost = action_cost
             self.legal_actions = legal_actions
+            self.sectors = []
+            self.sector_sizes = {}
 
         def __lt__(self, other):  # required for heapq sort
             return self.f < other.f
@@ -102,14 +102,14 @@ class Pathfinding:
 
     def create_sectors(self, heightmap, legal_actions):
         self.sectors = full_like(heightmap, -1, int)
-        # self.sector_sizes = {}
-        sector = 0
+        self.n_sectors = 0
+        self.sector_sizes = {}
         for x in range(len(legal_actions)):
             for z in range(len(legal_actions[0])):
                 if self.sectors[x][z] == -1:
-                    sector += 1
-                    self.sector_sizes[sector] = 0
-                    self.propagate_sector(x, z, sector, self.sectors, self.sector_sizes, legal_actions)
+                    self.n_sectors +=1
+                    self.sector_sizes[self.n_sectors] = 0
+                    self.propagate_sector(x, z, self.n_sectors, self.sectors, self.sector_sizes, legal_actions)
                 z += 1
             x += 1
         return self.sectors
@@ -148,24 +148,19 @@ class Pathfinding:
                         closed.add(child_pos)
 
 
-    def update_sector_for_block(self,x,z, sectors, sector_sizes, legal_actions):
+    def update_sector_for_block(self,x,z, sectors, sector_sizes, legal_actions, old_legal_actions):
         found_legal_action = False
-        for n in range(len(legal_actions[x][z])):
-            bit = legal_actions[x][z][n]
-            found_legal_action = True
-            if bit is True:
-                dir = src.movement.directions[n]
-                reachable_block = (x+dir[0], z+dir[1])
-                reachable_sector = sectors[reachable_block[0]][ reachable_block[1]]
-                if sectors[x][z] != reachable_sector:
-                    b = sector_sizes[sectors[x][z]]
-                    sector_sizes[sectors[x][z]] -= 1
-                    new_sector = reachable_sector
-                    a = sectors[x][z]
-                    sectors[x][z] = new_sector
-                    self.propagate_sector(x, z, sector=new_sector, sectors=sectors, sector_sizes=sector_sizes, legal_actions=legal_actions, is_redoing=True)
-        if not found_legal_action:
-            sector = len(sector_sizes)
-            self.sector_sizes[sector] = 0
-            self.propagate_sector(x, z, sector, self.sectors, self.sector_sizes, legal_actions)
+        # i think u should do this only if a change is legal actions was found
+        if legal_actions[x][z] != old_legal_actions[x][z]:
+            self.n_sectors += 1
+            self.sector_sizes[self.n_sectors] = 0
+            found_legal_action = False
+            for n in range(len(legal_actions[x][z])):
+                bit = legal_actions[x][z][n]
+                found_legal_action = bit
+                if bit is True:
+                    self.propagate_sector(x, z, sector=self.n_sectors, sectors=sectors, sector_sizes=sector_sizes, legal_actions=legal_actions, is_redoing=True)
+                    break
+            if not found_legal_action:
+                self.propagate_sector(x, z, self.n_sectors, sectors=sectors, sector_sizes=self.sector_sizes, legal_actions=legal_actions, is_redoing=True)  # might not do the last arg
 

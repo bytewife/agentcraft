@@ -57,6 +57,7 @@ def get_legal_actions_from_block(blocks, x, z, vertical_ability, heightmap, acto
 
 
 def check_if_legal_move(blocks, x, y, z, x_offset, z_offset, jump_ability, heightmap, actor_height, unwalkable_blocks):
+    y_max = len(blocks[0]) - 1
     target_x = x + x_offset
     target_z = z + z_offset
     if (target_x < 0 or target_z < 0 or target_x >= len(blocks) or target_z >= len(blocks[0][0])):
@@ -68,7 +69,13 @@ def check_if_legal_move(blocks, x, y, z, x_offset, z_offset, jump_ability, heigh
     if y_diff > jump_ability: return False
     is_legal = True
     for i in range(0, actor_height):
+        open_space = target_y + i
+        if open_space > y_max: return False  # out of bounds
         target = blocks[target_x][target_y + i][target_z]
+        # find [] and remove it
+        if '[' in target:
+            idx = target.index('[')
+            target = target[:idx]
         if not (target in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.AIR.value]):
             is_legal = False
             break

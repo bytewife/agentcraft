@@ -44,6 +44,7 @@ class State:
     ## Create surface grid
     def __init__(self, world_slice=None, blocks_file=None, max_y_offset=tallest_building_height):
         if not world_slice is None:
+            self.rect = world_slice.rect
             self.blocks, self.world_y, self.len_y, self.abs_ground_hm = self.gen_blocks_array(world_slice)
             self.rel_ground_hm = self.gen_rel_ground_hm(self.abs_ground_hm)  # a heightmap based on the state's y values. -1
             self.heightmaps = world_slice.heightmaps
@@ -58,7 +59,6 @@ class State:
                 self.blocks, vertical_ability=self.agent_jump_ability, heightmap=self.rel_ground_hm,
                 actor_height=self.agent_height, unwalkable_blocks=["minecraft:water", 'minecraft:lava']
             )
-            print(self.blocks)
             self.pathfinder = src.pathfinding.Pathfinding()
             self.sectors = self.pathfinder.create_sectors(self.heightmaps["MOTION_BLOCKING_NO_LEAVES"],
                                             self.legal_actions)  # add tihs into State
@@ -69,6 +69,8 @@ class State:
             self.built = set()
             self.built_heightmap = {}
             self.exterior_heightmap = {}
+            self.generated_building = False
+            self.changed_blocks_xz = set()
             print('nodes is '+str(len(self.nodes)))
             print('traffic is '+str(len(self.traffic)))
 
@@ -148,16 +150,12 @@ class State:
         if found_road == None:
             return False
         rot = 0
-        if face_dir[0] == 1:
-            rot = 2
-            return False
-        if face_dir[0] == -1:
-            rot = 0
-            return False
+        if face_dir[0] == 1: rot = 2
+        if face_dir[0] == -1: rot = 0
         if face_dir[1] == -1: rot = 1
         if face_dir[1] == 1: rot = 3
         # print('face_dir is '+str(face_dir))
-        self.set_block(ctrn_node.center[0], 17, ctrn_node.center[1],"minecraft:emerald_block")
+        # self.set_block(ctrn_node.center[0], 17, ctrn_node.center[1],"minecraft:emerald_block")
         if rot in [1,3]:
             temp = min_nodes_in_x
             min_nodes_in_x = min_nodes_in_z
@@ -221,7 +219,7 @@ class State:
                     block = choice(src.my_utils.ROAD_SETS['default'])
                     self.set_block(x, y, z, block)
         y = self.rel_ground_hm[xf][zf] + 5
-        self.set_block(xf, y, zf, "minecraft:diamond_block")
+        # self.set_block(xf, y, zf, "minecraft:diamond_block")
         # debug
         for n in found_nodes:
             x = n.center[0]
@@ -232,6 +230,7 @@ class State:
         for node in list(found_nodes):
             self.construction.remove(node)
         # print("rot is "+str(rot))
+        self.generated_building = True
         return True
 
 
@@ -509,28 +508,33 @@ class State:
     #     self.rel_ground_hm = self.gen_rel_ground_hm(self.abs_ground_hm)
 
     def update_heightmaps(self):
-        # for x in range(len(self.abs_ground_hm)):
+        # for x in range(len(self.abs_ground_hm)):move(blocks, x, y, z, x_offset, z_offset, jump_ability, heightmap, actor_height, unwalkable_blocks):
         #     for z in range(len(self.abs_ground_hm[0])):
         #         set_state_block(self, x, self.rel_ground_hm[x][z], z, 'minecraft:hay_block')
-        x1 = self.world_x
-        z1 = self.world_z
-        x2 = self.end_x
-        z2 = self.end_z
-        area = [x1, z1, x2, z2]
-        area = src.my_utils.correct_area(area)
-        worldSlice = http_framework.worldLoader.WorldSlice(area, heightmapOnly=False)
+        worldSlice = http_framework.worldLoader.WorldSlice(self.rect, heightmapOnly=False)
         hm_type = "MOTION_BLOCKING_NO_LEAVES"  # only update one for performance
         for index in range(1,len(worldSlice.heightmaps)+1):
             self.heightmaps[hm_type] = worldSlice.heightmaps[src.my_utils.HEIGHTMAPS(index).name]
         for x in range(len(self.heightmaps[hm_type])):
             for z in range(len(self.heightmaps[hm_type][0])):
-                if (x,z) in self.built: # ignore buildings
-                    self.heightmaps[hm_type][x][z] = self.built_heightmap[(x,z)]
+                if (x,z) in self.built_heightmap: # ignore buildings
+                    y = self.built_heightmap[(x,z)]
+                    self.heightmaps[hm_type][x][z] = y + self.world_y
+                    self.rel_ground_hm[x][z] = y
+
                 elif (x,z) in self.exterior_heightmap:
-                    self.heightmaps[hm_type][x][z] = self.exterior_heightmap[(x,z)]
+                    y = self.exterior_heightmap[(x,z)]
+                    self.heightmaps[hm_type][x][z] = self.exterior_heightmap[(x,z)] + self.world_y
+                    self.rel_ground_hm[x][z] = y
                 else:
-                    self.heightmaps[hm_type][x][z] = worldSlice.heightmaps[hm_type][x][z] - 1
+                    y = worldSlice.heightmaps[hm_type][x][z] - 1
+                    self.heightmaps[hm_type][x][z] = y
+                    self.rel_ground_hm[x][z] = y + 1 - self.world_y # need to recheck this
         self.abs_ground_hm = self.heightmaps[hm_type]
+        # for x in range(len(abs_ground_hm)):
+        #     for z in range(len(abs_ground_hm[0])):
+        #         state_adjusted_y = int(abs_ground_hm[x][z]) - self.world_y + 1  # + self.heightmap_offset
+        #         result[x].append(state_adjusted_y)
         return worldSlice
 
 
@@ -546,7 +550,6 @@ class State:
                 if type == "WATER":
                     self.water.append((x,z))
                 types[x][z] = type  # each block is a list of types. The node needs to chek its assets
-        print(types)
         print("done initializing types")
         return types
 
@@ -599,15 +602,16 @@ class State:
     def render(self):
         i = 0
         n_blocks = len(self.changed_blocks)
+        old_legal_actions = self.legal_actions.copy()
         for position, block in self.changed_blocks.items():
-            state_x, state_y, state_z = src.my_utils.convert_key_to_coords(position)
-            http_framework.interfaceUtils.placeBlockBatched(self.world_x + state_x, self.world_y + state_y, self.world_z + state_z, block, n_blocks)
-            # http_framework.interfaceUtils.setBlock(self.world_x + state_x, self.world_y + state_y, self.world_z + state_z, block)
+            x,y,z = position
+            http_framework.interfaceUtils.placeBlockBatched(self.world_x + x, self.world_y + y, self.world_z + z, block, n_blocks)
+            # http_framwork.interfaceUtils.setBlock(self.world_x + state_x, self.world_y + state_y, self.world_z + state_z, block)
             i += 1
         self.update_heightmaps()  # must wait until all assets are placed
-        for position, block in self.changed_blocks.items():
-            state_x, state_y, state_z = src.my_utils.convert_key_to_coords(position)
-            self.update_block_info(state_x, state_z)  # Must occur after new assets have been placed
+        for position in self.changed_blocks_xz:
+            x,z = position
+            self.update_block_info(x, z, old_legal_actions)  # Must occur after new assets have been placed. Also, only the surface should run it.
         self.changed_blocks.clear()
         if i > 0:
             print(str(i)+" assets rendered")
@@ -617,7 +621,7 @@ class State:
 
 
     # is this state x
-    def update_block_info(self, x, z):  # this might be expensive if you use this repeatedly in a group
+    def update_block_info(self, x, z, old_legal_actions):  # this might be expensive if you use this repeatedly in a group
         for xo in range(-1, 2):
             for zo in range(-1, 2):
                 bx = x + xo
@@ -627,9 +631,11 @@ class State:
                 self.legal_actions[bx][bz] = src.movement.get_legal_actions_from_block(self.blocks, bx, bz, self.agent_jump_ability,
                                                                                    self.rel_ground_hm, self.agent_height,
                                                                                    self.unwalkable_blocks)
+
+        # if x z not in closed_for_propagation
         self.pathfinder.update_sector_for_block(x, z, self.sectors,
                                                 sector_sizes=self.pathfinder.sector_sizes,
-                                                legal_actions=self.legal_actions)
+                                                legal_actions=self.legal_actions, old_legal_actions=old_legal_actions)
 
 
     def get_adjacent_block(self, x_origin, y_origin, z_origin, x_off, y_off, z_off):
@@ -776,7 +782,7 @@ class State:
         p1 = (x1, y1)
         p2 = (x2, y2)
         self.init_lots(*p1, *p2)  # main street is a lot
-        self.create_road(point1=p1, point2=p2, road_type=src.my_utils.TYPE.MAJOR_ROAD.name)
+        self.create_road(node_pos1=p1, node_pos2=p2, road_type=src.my_utils.TYPE.MAJOR_ROAD.name)
         return [p1, p2]
 
 
@@ -802,12 +808,12 @@ class State:
         return nodes
 
     # might have to get point2 within the func, rather than pass it in
-    def create_road(self, point1, point2, road_type, points=None, leave_lot=False, correction=5, road_blocks=None, inner_block_rate=1.0, outer_block_rate=0.75, fringe_rate=0.05, add_as_road_type = True):
-        self.road_nodes.append(self.nodes[self.node_pointers[point1]])
-        self.road_nodes.append(self.nodes[self.node_pointers[point2]])
+    def create_road(self, node_pos1, node_pos2, road_type, points=None, leave_lot=False, correction=5, road_blocks=None, inner_block_rate=1.0, outer_block_rate=0.75, fringe_rate=0.05, add_as_road_type = True):
+        self.road_nodes.append(self.nodes[self.node_pointers[node_pos1]])
+        self.road_nodes.append(self.nodes[self.node_pointers[node_pos2]])
         block_path = []
         if points == None:
-            block_path = src.linedrawing.get_line(point1, point2) # inclusive
+            block_path = src.linedrawing.get_line(node_pos1, node_pos2) # inclusive
         else:
             block_path = points
         # add road segnmets
@@ -832,21 +838,21 @@ class State:
         check1 = True
         check2 = True
         if check1:
-            n1 = self.nodes[point1]
+            n1 = self.nodes[node_pos1]
             for rs in self.road_segs:
-                if point1 in rs.nodes:  # if the road is in roads already, split it off
+                if node_pos1 in rs.nodes:  # if the road is in roads already, split it off
                     rs.split(n1, self.road_segs, self.road_nodes, state=self)  # split RoadSegment
                     break
         if check2:
-            n2 = self.nodes[point2]
+            n2 = self.nodes[node_pos2]
             for rs in self.road_segs:
-                if point2 in rs.nodes:
+                if node_pos2 in rs.nodes:
                     rs.split(n2, self.road_segs, self.road_nodes, state=self)
                     break
 
         # do checks
         if add_as_road_type == True:  # allows us to ignore the small paths from roads to buildings
-            road_segment = RoadSegment(self.nodes[point1], self.nodes[point2], middle_nodes, road_type, self.road_segs, state=self)
+            road_segment = RoadSegment(self.nodes[node_pos1], self.nodes[node_pos2], middle_nodes, road_type, self.road_segs, state=self)
             self.road_segs.add(road_segment)
 
         # place assets. TODO prolly not right- i think you wanna render road segments
@@ -898,7 +904,7 @@ class State:
         # self.set_type_road(node_path, src.my_utils.TYPE.MAJOR_ROAD.name)
         if add_as_road_type:
             self.set_type_road(node_path, road_type)
-        return [point1, point2]
+        return [node_pos1, node_pos2]
 
 
     # def init_main_st(self, water_pts):
@@ -1053,8 +1059,8 @@ class State:
 
 def set_state_block(state, x, y, z, block_name):
     state.blocks[x][y][z] = block_name
-    key = src.my_utils.convert_coords_to_key(x, y, z)
-    state.changed_blocks[key] = block_name
+    state.changed_blocks_xz.add((x,z))
+    state.changed_blocks[(x,y,z)] = block_name
 
 
 class RoadSegment:

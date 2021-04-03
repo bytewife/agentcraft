@@ -46,7 +46,7 @@ class Simulation:
                 result = self.state.init_main_st()
 
         # build a house
-        building = "../../../schemes/"+random.choice(src.my_utils.STRUCTURES['all'])
+        building = "../../../schemes/"+random.choice(src.my_utils.STRUCTURES['small'])
         construction_site = random.choice(list(self.state.construction))
         f = open(building, "r")
         size = f.readline()
@@ -152,8 +152,8 @@ class Simulation:
 
     def update_agents(self):
         for agent in self.agents:
-            agent.unshared_resources['rest'] -= agent.rest_rate
-            agent.unshared_resources['water'] += agent.thirst_rate
+            agent.unshared_resources['rest'] += agent.rest_dec_rate
+            agent.unshared_resources['water'] += agent.water_dec_rate
             agent.follow_path(state=self.state, walkable_heightmap=self.state.rel_ground_hm)
             # agent.move_in_state()
             agent.render()

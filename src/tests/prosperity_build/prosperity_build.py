@@ -16,10 +16,10 @@ from enum import Enum
 # z1 = 46
 # x2 = 152
 # z2 = 144
-x1 = -12
-z1 = 157
-x2 = -74
-z2 = 226
+x1 = 0
+z1 = 0
+x2 = 63
+z2 = 69
 
 area = [x1,z1,x2,z2]
 area = src.my_utils.correct_area(area)
@@ -32,7 +32,7 @@ clean_agents = "kill @e[type=minecraft:armor_stand,x={},y=64,z={},distance=..100
 http_framework.interfaceUtils.runCommand(clean_agents)
 
 # sim = src.simulation.Simulation(area, rendering_step_duration=0.0)
-sim = src.simulation.Simulation(area, rendering_step_duration=0.1)
+sim = src.simulation.Simulation(area, rendering_step_duration=0.2)
 # sim.step(1)
 ## ROADS
 # for r in sim.state.roads:

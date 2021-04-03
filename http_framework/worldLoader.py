@@ -37,7 +37,7 @@ class CachedSection:
 
 class WorldSlice:
     """**Contains information on a slice of the world.**"""
-    # TODO format this to assets
+    # TODO don't retrieve while placing structure.
 
     def __init__(self, rect, heightmapTypes=["MOTION_BLOCKING", "MOTION_BLOCKING_NO_LEAVES", "OCEAN_FLOOR", "WORLD_SURFACE"], heightmapOnly = False, heightmapOnlyType="MOTION_BLOCKING_NO_LEAVES"):
         self.rect = rect

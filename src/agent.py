@@ -44,14 +44,16 @@ class Agent:
         self.favorite_item = ""
         self.head = head
         self.water_max = 100
-        self.thirst_rate = -1 # lose this per turn
+        self.water_dec_rate = -0.5 # lose this per turn
+        self.water_inc_rate = 10
         self.thirst_thresh = 50
-        self.rest_rate = -0.5
+        self.rest_dec_rate = -0.5
+        self.rest_inc_rate = 1
         self.rest_thresh = 30
         self.rest_max = 100
         self.unshared_resources = {
-            "water": self.water_max * 0.49,
-            "rest": self.rest_max * 0.49
+            "water": self.water_max * 0.9,
+            "rest": self.rest_max * 0.1
         }
 
 
@@ -117,7 +119,7 @@ class Agent:
     def do_rest_task(self):
         if self.calc_motive() == self.Motive.REST and self.unshared_resources['rest'] < self.rest_max:
             # rest
-            self.unshared_resources['rest'] += 4
+            self.unshared_resources['rest'] += self.rest_inc_rate
         else:
             self.auto_motive()
 
@@ -129,7 +131,7 @@ class Agent:
             status = self.collect_from_adjacent_spot(self.state, check_func=src.manipulation.is_water, manip_func=src.manipulation.collect_water_at, prosperity_inc=src.my_utils.ACTION_PROSPERITY.WATER) # this may not inc an int
             print(status)
             if status == src.manipulation.TASK_OUTCOME.SUCCESS.name:
-                self.unshared_resources['water'] += 7
+                self.unshared_resources['water'] += self.water_inc_rate
                 pass
             elif status == src.manipulation.TASK_OUTCOME.FAILURE.name:  # if no water found
                 self.auto_motive()
@@ -166,18 +168,18 @@ class Agent:
         if self.motive in src.my_utils.ACTION_ITEMS:
             self.current_action_item = choice(src.my_utils.ACTION_ITEMS[self.motive])
         if new_motive.name == self.Motive.REST.name:
-            self.set_path_to_nearest_spot(self.state.built_heightmap.keys(), 30, 10, 5, search_neighbors_instead=False)
+            self.set_path_to_nearest_spot(list(self.state.built_heightmap.keys()), 30, 10, 5, search_neighbors_instead=False)
         elif new_motive.name == self.Motive.WATER.name:
             self.set_path_to_nearest_spot(self.state.water, 15, 10, 5, search_neighbors_instead=True)
         elif new_motive.name == self.Motive.LOGGING.name:
             self.set_path_to_nearest_spot(self.state.trees, 15, 10, 5, search_neighbors_instead=True)
 
 
-    def set_path_to_nearest_spot(self, search_array, starting_search_radius, max_iterations, radius_inc=1, search_neighbors_instead=True):
+    def set_path_to_nearest_spot(self, search_array, starting_search_radius, max_iterations, radius_inc=1, search_neighbors_instead=True, default_to_current=False):
         closed = set()
         for i in range(max_iterations):
             spots = src.movement.find_nearest(self.x, self.z, search_array, starting_search_radius+radius_inc*i, 1, radius_inc)
-            if spots is []: continue
+            if spots is [] or spots is None: continue
             while len(spots) > 0:
                 chosen_spot = choice(spots)
                 spots.remove(chosen_spot)
@@ -199,7 +201,10 @@ class Agent:
                         return
                     closed.add(chosen_spot)
         print("could not a spot!")
-        self.auto_motive()
+        if default_to_current == True:
+            self.set_path([])
+        else:
+            self.auto_motive()  # remove this later
 
 
     def collect_from_adjacent_spot(self, state, check_func, manip_func, prosperity_inc):
@@ -208,12 +213,13 @@ class Agent:
             xo, zo = dir
             bx = self.x + xo
             bz = self.z + zo
-            if bx < 0 or bz < 0 or bx >= state.len_x-1 or bz >= state.len_z-1:
+            if self.state.out_of_bounds_Node(bx, bz):
                 continue
             by = int(state.abs_ground_hm[bx][bz]) - self.state.world_y  # this isn't being updated in heightmap
             if check_func(self.state, bx, by, bz):
                 status = manip_func(self.state, bx, by, bz)
-                state.nodes[state.node_pointers[bx][bz]].add_prosperity(prosperity_inc)
+                node = state.nodes[state.node_pointers[bx][bz]]
+                node.add_prosperity(prosperity_inc)
                 if status == src.manipulation.TASK_OUTCOME.SUCCESS.name or status == src.manipulation.TASK_OUTCOME.IN_PROGRESS.name:
                     print("resources is now "+str(src.agent.Agent.shared_resources['oak_log']))
                     break  # cut one at a time

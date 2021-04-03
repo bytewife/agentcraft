@@ -214,7 +214,7 @@ def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, bui
     length_x, length_y, length_z = size
 
     sx = sz = ex = ez = 0
-    end_x, end_y, end_z = origin_x+length_x, origin_y+length_y, origin_z+length_z
+    end_x, end_y, end_z = origin_x+length_x - 1, origin_y+length_y -1 , origin_z+length_z - 1
     sx = origin_x
     sz = origin_z
     xz_coords = []
@@ -264,6 +264,7 @@ def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, bui
             print("origin_y is "+str(origin_y))
             print("where y is "+str(y))
             if y - 1 == origin_y or abs(x-origin_x) < 2 or abs(x-ex) < 2 or abs(z-origin_z) < 2 or abs(z-ez) < 2:
+                print("1 an exterior is "+str((x,z)))
                 exterior_heightmap[(x,z)] = y - 1
             else:
                 building_heightmap[(x,z)] = y - agent_height + 1
@@ -276,7 +277,7 @@ def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, bui
             for x in range(origin_x, end_x+1, dir_x):
                 index = yi * length_z * length_x + zi * length_x + xi
                 if index >= len(blocks):
-                    return False
+                    return False, [], []
                 block = blocks[index]
                 use_head = False
                 # check for flex tile
@@ -329,15 +330,15 @@ def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, bui
         yi -= 1
 
     for key in height_traversal:
-        exterior_heightmap[key] = end_y-1 # or should this be -1?
+        print("2 an exterior is "+str(key))
+        exterior_heightmap[key] = end_y+1 # or should this be -1?
 
-    for coord,y in building_heightmap.items():
-        x, z = coord
-        src.states.set_state_block(state, x, y, z, "oak_sign")
-    for coord,y in exterior_heightmap.items():
-        x, z = coord
-        src.states.set_state_block(state, x, y, z, "dark_oak_sign")
-    # exit(1)
+    # for coord,y in building_heightmap.items():
+    #     x, z = coord
+    #     src.states.set_state_block(state, x, y, z, "oak_sign")
+    # for coord,y in exterior_heightmap.items():
+    #     x, z = coord
+    #     src.states.set_state_block(state, x, y, z, "dark_oak_sign")
     return True, building_heightmap, exterior_heightmap
 
 
