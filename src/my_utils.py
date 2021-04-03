@@ -47,11 +47,14 @@ ROTATION_LOOKUP = {
 	(1, 1): "315",
 }
 
-ACTION_ITEMS = { "LOGGING": ["iron_axe"] }
+ACTION_ITEMS = { "REST": ["clock", "white_tulip", "white_wool", "white_bed"],
+				 "LOGGING": ["iron_axe", "gold axe", "stone_axe"],
+				 "WATER": ["glass_bottle"]}
 
 
 class ACTION_PROSPERITY():
 	LOGGING = 10
+	WATER = 10
 
 
 class TYPE(Enum):
@@ -100,7 +103,7 @@ class TYPE_TILES:
 			"minecraft:sand"
 			"minecraft:coarse_dirt",
 			"minecraft:dirt",
-			"minecraft:oak_sapling",
+			# "minecraft:oak_sapling",
 		},
 		TYPE.BROWN.value: {  # BROWN
 			"minecraft:gravel",

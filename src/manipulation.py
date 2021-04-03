@@ -9,6 +9,15 @@ class TASK_OUTCOME(Enum):
     REDO = 3
 
 
+def is_water(state, x, y, z):
+    if state.out_of_bounds_3D(x, y, z):
+        return False
+    block = state.blocks[x][y][z]
+    if not block is None and block[-5:] == 'water':
+        return True
+    return False
+
+
 def is_log(state, x, y, z):
     if state.out_of_bounds_3D(x, y, z):
         return False
@@ -16,6 +25,11 @@ def is_log(state, x, y, z):
     if not block is None and block[-3:] == 'log':
         return True
     return False
+
+def collect_water_at(state, x, y, z, times=1):
+    for i in range(times):
+        pass
+    return TASK_OUTCOME.SUCCESS.name  # basically always return success if found
 
 
 def cut_tree_at(state, x, y, z, times=1):

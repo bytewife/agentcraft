@@ -81,7 +81,12 @@ def check_if_legal_move(blocks, x, y, z, x_offset, z_offset, jump_ability, heigh
 
 def adjacents(state, x, z):
     adjacents = []
-    for dir in directions:
+    for dir in diagonals:  # was directions.
+        ax, az = x+dir[0], z+dir[1]
+        if state.out_of_bounds_2D(ax, az):
+            continue
+        adjacents.append((ax, az))
+    for dir in cardinals:  # was directions.
         ax, az = x+dir[0], z+dir[1]
         if state.out_of_bounds_2D(ax, az):
             continue

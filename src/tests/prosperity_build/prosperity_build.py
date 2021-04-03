@@ -32,32 +32,30 @@ clean_agents = "kill @e[type=minecraft:armor_stand,x={},y=64,z={},distance=..100
 http_framework.interfaceUtils.runCommand(clean_agents)
 
 # sim = src.simulation.Simulation(area, rendering_step_duration=0.0)
-sim = src.simulation.Simulation(area, rendering_step_duration=0.0)
-sim.step(1)
+sim = src.simulation.Simulation(area, rendering_step_duration=0.1)
+# sim.step(1)
 ## ROADS
-for r in sim.state.roads:
-    if r in sim.state.construction:
-        # sim.state.construction.discard(r)
-        pass
-    x = r.center[0]
-    z = r.center[1]
-    y = sim.state.rel_ground_hm[x][z] + 1
+# for r in sim.state.roads:
+#     if r in sim.state.construction:
+#         # sim.state.construction.discard(r)
+#         pass
+#     x = r.center[0]
+#     z = r.center[1]
+#     y = sim.state.rel_ground_hm[x][z] + 1
     # sim.state.set_block(x,y,z,"minecraft:redstone_block")
 
 ## CONSTRUCTION
-for b in sim.state.construction:
-    x = b.center[0]
-    z = b.center[1]
-    y = sim.state.rel_ground_hm[x][z] + 1
-    sim.state.set_block(x,y,z,"minecraft:gold_block")
-    if src.my_utils.TYPE.WATER.name in b.get_type():
-        pass
+# for b in sim.state.construction:
+#     x = b.center[0]
+#     z = b.center[1]
+#     y = sim.state.rel_ground_hm[x][z] + 1
+#     # sim.state.set_block(x,y,z,"minecraft:gold_block")
+#     if src.my_utils.TYPE.WATER.name in b.get_type():
+#         pass
         # print("water found!")
-
-##
 
 
 print("road_segs")
 print(sim.state.road_segs)
-sim.step(40)
+sim.step(100)
 print(src.agent.Agent.shared_resources)

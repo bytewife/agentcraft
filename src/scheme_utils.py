@@ -250,17 +250,23 @@ def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, bui
 
     height_traversal = { coord:deque('' for n in range(agent_height)) for coord in xz_coords}  # if open space found, reomve from this
     building_heightmap = {}  # where the values will be stored when found
+    exterior_heightmap = {}  # this is the outside of a building. I won't be able to get it 100% accurate, but I can get it good enough.
 
-    def traverse_up_to_air(x, y, z, block, building_heightmap, height_traversal, air_amt=2):
+    # where building heightmap is the inside of a building, exterior is the outside of a building, and height_traversal is a cache for checking the open space
+    def traverse_up_to_air(x, y, z, block, building_heightmap, height_traversal, exterior_heightmap, air_amt=2):
         nonlocal length_x,length_y,length_z
+        nonlocal ex, end_y, ez
+        nonlocal origin_x, origin_y, origin_z
         if (x,z) not in height_traversal: return
         height_traversal[(x,z)].pop()
-        # print(block)
         height_traversal[(x,z)].appendleft(block)
-        # print(height_traversal[(x,z)])
         if all(b == "minecraft:air[]" for b in height_traversal[(x,z)]) or '_door' in height_traversal[(x,z)][-1] or "_carpet" in height_traversal[(x,z)][-1]:
-            building_heightmap[(x,z)] = y - agent_height + 1
-            # print(building_heightmap)
+            print("origin_y is "+str(origin_y))
+            print("where y is "+str(y))
+            if y - 1 == origin_y or abs(x-origin_x) < 2 or abs(x-ex) < 2 or abs(z-origin_z) < 2 or abs(z-ez) < 2:
+                exterior_heightmap[(x,z)] = y - 1
+            else:
+                building_heightmap[(x,z)] = y - agent_height + 1
             height_traversal.pop((x,z))
 
     for y in range(origin_y, end_y+1, -dir_y):
@@ -289,7 +295,7 @@ def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, bui
                         src.states.set_state_block(state, bx, by, bz, block)
                     else:
                         http_framework.interfaceUtils.setBlockWithData(bx + state.world_x, by + state.world_y, bz + state.world_z, block)
-                    traverse_up_to_air(bx, by, bz, block, building_heightmap, height_traversal, agent_height)
+                    traverse_up_to_air(bx, by, bz, block, building_heightmap, height_traversal, exterior_heightmap, agent_height)
                 if rot == 1:
                     bx = sx + zi
                     by = y
@@ -298,7 +304,7 @@ def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, bui
                         src.states.set_state_block(state, bx, by, bz, block)
                     else:
                         http_framework.interfaceUtils.setBlockWithData(bx + state.world_x, by + state.world_y, bz + state.world_z, block)
-                    traverse_up_to_air(bx, by, bz, block, building_heightmap, height_traversal, agent_height)
+                    traverse_up_to_air(bx, by, bz, block, building_heightmap, height_traversal, exterior_heightmap, agent_height)
                 if rot == 2:
                     bx = ex - xi
                     by = y
@@ -307,7 +313,7 @@ def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, bui
                         src.states.set_state_block(state, bx, by, bz, block)
                     else:
                         http_framework.interfaceUtils.setBlockWithData(bx + state.world_x, by + state.world_y, bz + state.world_z, block)
-                    traverse_up_to_air(bx, by, bz, block, building_heightmap, height_traversal, agent_height)
+                    traverse_up_to_air(bx, by, bz, block, building_heightmap, height_traversal, exterior_heightmap, agent_height)
                 if rot == 3:
                     bx = ex - zi
                     by = y
@@ -316,23 +322,23 @@ def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, bui
                         src.states.set_state_block(state, bx, by, bz, block)
                     else:
                         http_framework.interfaceUtils.setBlockWithData(bx + state.world_x, by + state.world_y, bz + state.world_z, block)
-                    traverse_up_to_air(bx, by, bz, block, building_heightmap, height_traversal, agent_height)
+                    traverse_up_to_air(bx, by, bz, block, building_heightmap, height_traversal, exterior_heightmap, agent_height)
                 i+=1
                 xi += 1
             zi += 1
         yi -= 1
 
     for key in height_traversal:
-        building_heightmap[key] = end_y-1 # or should this be -1?
+        exterior_heightmap[key] = end_y-1 # or should this be -1?
 
-    print(str(i)+" schematic assets placed")
-    print("done placing schematic")
-    print("building heightmap is ")
-    # for coord,y in building_heightmap.items():
-    #     x, z = coord
-    #     src.states.set_state_block(state, x, y, z, "oak_sign")
+    for coord,y in building_heightmap.items():
+        x, z = coord
+        src.states.set_state_block(state, x, y, z, "oak_sign")
+    for coord,y in exterior_heightmap.items():
+        x, z = coord
+        src.states.set_state_block(state, x, y, z, "dark_oak_sign")
     # exit(1)
-    return True, building_heightmap
+    return True, building_heightmap, exterior_heightmap
 
 
 def get_schematic_parts(file_name):

@@ -14,6 +14,8 @@ class Agent:
         LOGGING = 0
         BUILD = 1
         IDLE = 2
+        WATER = 3
+        REST = 4
 
     shared_resources = {
         "oak_log": 0,
@@ -40,10 +42,32 @@ class Agent:
         self.motive = motive
         self.current_action_item = ""
         self.favorite_item = ""
-        self.unshared_resources = {
-            "water": 0
-        }
         self.head = head
+        self.water_max = 100
+        self.thirst_rate = -1 # lose this per turn
+        self.thirst_thresh = 50
+        self.rest_rate = -0.5
+        self.rest_thresh = 30
+        self.rest_max = 100
+        self.unshared_resources = {
+            "water": self.water_max * 0.49,
+            "rest": self.rest_max * 0.49
+        }
+
+
+    def auto_motive(self):
+        new_motive = self.calc_motive()
+        print(self.name+"'s new motive is "+new_motive.name)
+        self.set_motive(new_motive)
+
+
+    def calc_motive(self):
+        if self.unshared_resources['rest'] < self.rest_thresh:
+            return self.Motive.REST
+        if self.unshared_resources['water'] < self.thirst_thresh:
+            return self.Motive.WATER
+        else:
+            return self.Motive.LOGGING
 
 
     # 3D movement is a stretch goal
@@ -58,8 +82,8 @@ class Agent:
         self.y = walkable_heightmap[new_x][new_z]
 
 
-    def get_nearby_trees(self, starting_search_radius, max_iterations, radius_inc=1):
-        return src.movement.find_nearest(self.x, self.z, self.state.trees, starting_search_radius, max_iterations, radius_inc)
+    def get_nearby_spots(self, search_array, starting_search_radius, max_iterations, radius_inc=1):
+        return src.movement.find_nearest(self.x, self.z, search_array, starting_search_radius, max_iterations, radius_inc)
 
 
     def teleport(self, target_x, target_z, walkable_heightmap):
@@ -78,32 +102,62 @@ class Agent:
 
 
     def follow_path(self, state, walkable_heightmap):
-        if len(self.path) < 1:
-            if self.motive == self.Motive.LOGGING.name:
-                status = self.log_adjacent_tree(state)
-                if status == src.manipulation.TASK_OUTCOME.SUCCESS.name:
-                    print("finding another tree!")
-                    # lets log another tree for now
-                    self.set_motive(src.agent.Agent.Motive.LOGGING)
-                    return
-                elif status == src.manipulation.TASK_OUTCOME.FAILURE.name:  # if they got sniped
-                    print("tree sniped")
-                    # find another instead
-                    self.set_motive(src.agent.Agent.Motive.LOGGING)
-                    # udate this tree
-                    for dir in src.movement.directions:
-                        point = (dir[0]+self.x, dir[1]+self.z)
-                        if state.out_of_bounds_2D(*point): continue
-                        self.state.update_block_info(*point)
-                    return
-                else:
-                    # self.set_motive(src.agent.Agent.Motive.LOGGING)
-                    return
-        else:
+        if len(self.path) > 0:
             new_pos = self.path.pop()
             self.move_self(*new_pos, state=state, walkable_heightmap=walkable_heightmap)
+        else:
+            if self.motive == self.Motive.REST.name:
+                self.do_rest_task()
+            if self.motive == self.Motive.WATER.name:
+                self.do_water_task()
+            elif self.motive == self.Motive.LOGGING.name:
+                self.do_log_task()
 
 
+    def do_rest_task(self):
+        if self.calc_motive() == self.Motive.REST and self.unshared_resources['rest'] < self.rest_max:
+            # rest
+            self.unshared_resources['rest'] += 1
+        else:
+            self.auto_motive()
+
+
+    def do_water_task(self):
+        print(self.name+"'s water is "+str(self.unshared_resources['water']))
+        if self.calc_motive() == self.Motive.WATER and self.unshared_resources['water'] < self.water_max:
+            # keep collecting water
+            status = self.collect_from_adjacent_spot(self.state, check_func=src.manipulation.is_water, manip_func=src.manipulation.collect_water_at, prosperity_inc=src.my_utils.ACTION_PROSPERITY.WATER) # this may not inc an int
+            print(status)
+            if status == src.manipulation.TASK_OUTCOME.SUCCESS.name:
+                self.unshared_resources['water'] += 2
+                pass
+            elif status == src.manipulation.TASK_OUTCOME.FAILURE.name:  # if no water found
+                self.auto_motive()
+        else:
+            self.auto_motive()
+
+
+    def do_log_task(self):
+        status = self.collect_from_adjacent_spot(self.state, check_func=src.manipulation.is_log, manip_func=src.manipulation.cut_tree_at, prosperity_inc=src.my_utils.ACTION_PROSPERITY.LOGGING)
+        if status == src.manipulation.TASK_OUTCOME.SUCCESS.name:
+            src.agent.Agent.shared_resources['oak_log'] += 1
+            print("finding another tree!")
+            self.auto_motive()
+        elif status == src.manipulation.TASK_OUTCOME.FAILURE.name:  # if they got sniped
+            print("tree sniped")
+            # udate this tree
+            for dir in src.movement.directions:
+                point = (dir[0] + self.x, dir[1] + self.z)
+                if self.state.out_of_bounds_2D(*point): continue
+                self.state.update_block_info(*point)
+            self.auto_motive()
+        else:
+            # do nothing (continue logging)
+            src.agent.Agent.shared_resources['oak_log'] += 1
+            pass
+
+
+    # prepares for motive
     def set_motive(self, new_motive : Enum):
         tree_search_radius = 10
         radius_increase = 5
@@ -111,34 +165,44 @@ class Agent:
         self.motive = new_motive.name
         if self.motive in src.my_utils.ACTION_ITEMS:
             self.current_action_item = choice(src.my_utils.ACTION_ITEMS[self.motive])
-        if new_motive.name == self.Motive.LOGGING.name:
-            closed = set()
-            for inc in range(radius_increase_increments):
-                trees = self.get_nearby_trees(starting_search_radius=tree_search_radius+radius_increase*inc,
-                                              radius_inc=1,
-                                              max_iterations=1)
-                print("trees is "+str(trees))
-                if trees is None: continue
-                while len(trees) > 0:
-                    chosen_tree = choice(trees)
-                    trees.remove(chosen_tree)
-                    if chosen_tree in closed:
-                        continue
-                    # see if theres a path to an adjacent tile
-                    for pos in src.movement.adjacents(self.state, *chosen_tree):
-                        if self.state.sectors[pos[0], pos[1]] ==   \
-                        self.state.sectors[self.x][self.z]:
+        if new_motive.name == self.Motive.REST.name:
+            self.set_path_to_nearest_spot(self.state.built_heightmap.keys(), 30, 10, 5, search_neighbors_instead=False)
+        elif new_motive.name == self.Motive.WATER.name:
+            self.set_path_to_nearest_spot(self.state.water, 15, 10, 5, search_neighbors_instead=True)
+        elif new_motive.name == self.Motive.LOGGING.name:
+            self.set_path_to_nearest_spot(self.state.trees, 15, 10, 5, search_neighbors_instead=True)
+
+
+    def set_path_to_nearest_spot(self, search_array, starting_search_radius, max_iterations, radius_inc=1, search_neighbors_instead=True):
+        closed = set()
+        for i in range(max_iterations):
+            spots = src.movement.find_nearest(self.x, self.z, search_array, starting_search_radius+radius_inc*i, 1, radius_inc)
+            if spots is []: continue
+            while len(spots) > 0:
+                chosen_spot = choice(spots)
+                spots.remove(chosen_spot)
+                if chosen_spot in closed:
+                    continue
+                # see if theres a path to an adjacent tile
+                if search_neighbors_instead == True:
+                    for pos in src.movement.adjacents(self.state, *chosen_spot):
+                        if self.state.sectors[pos[0], pos[1]] == self.state.sectors[self.x][self.z]:
                             path = self.state.pathfinder.get_path((self.x, self.z), pos, self.state.len_x, self.state.len_z, self.state.legal_actions)
                             self.set_path(path)
                             return
-                    closed.add(chosen_tree)
-            # DO_RAND_WALK
-            print("could not find trees!")
-            self.set_motive(self.Motive.IDLE)
-            exit(1)
+                    closed.add(chosen_spot)
+                else:
+                    if self.state.sectors[chosen_spot[0]][chosen_spot[1]] == self.state.sectors[self.x][self.z]:
+                        path = self.state.pathfinder.get_path((self.x, self.z), (chosen_spot[0], chosen_spot[1]), self.state.len_x, self.state.len_z,
+                                                              self.state.legal_actions)
+                        self.set_path(path)
+                        return
+                    closed.add(chosen_spot)
+        print("could not a spot!")
+        self.auto_motive()
 
 
-    def log_adjacent_tree(self, state):
+    def collect_from_adjacent_spot(self, state, check_func, manip_func, prosperity_inc):
         status = src.manipulation.TASK_OUTCOME.FAILURE.name
         for dir in src.movement.directions:
             xo, zo = dir
@@ -147,15 +211,12 @@ class Agent:
             if bx < 0 or bz < 0 or bx >= state.len_z-1 or bz >= state.len_x-1:
                 continue
             by = int(state.abs_ground_hm[bx][bz]) - self.state.world_y  # this isn't being updated in heightmap
-            if src.manipulation.is_log(self.state, bx, by, bz):
-                status = src.manipulation.cut_tree_at(self.state, bx, by, bz)
-                state.nodes[state.node_pointers[bx][bz]].add_prosperity(src.my_utils.ACTION_PROSPERITY.LOGGING)
-                if status == src.manipulation.TASK_OUTCOME.SUCCESS.name:
-                    # increase resoruces
-                    src.agent.Agent.shared_resources['oak_log'] += 1
+            if check_func(self.state, bx, by, bz):
+                status = manip_func(self.state, bx, by, bz)
+                state.nodes[state.node_pointers[bx][bz]].add_prosperity(prosperity_inc)
+                if status == src.manipulation.TASK_OUTCOME.SUCCESS.name or status == src.manipulation.TASK_OUTCOME.IN_PROGRESS.name:
                     print("resources is now "+str(src.agent.Agent.shared_resources['oak_log']))
-                break  # cut one at a time
-        print("logging status is "+status+" with ")
+                    break  # cut one at a time
         return status  # someone sniped this tree.
 
 
@@ -194,7 +255,6 @@ RightArm:[348f,67f,0f]}}\
             hand2="apple",
             head_tilt="350")  # this can be related to resources! 330 is high, 400 is low
         http_framework.interfaceUtils.runCommand(spawn_cmd)
-        print(self.head)
 
     # def set_model(self, block):
     #     self.model = block

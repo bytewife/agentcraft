@@ -66,6 +66,7 @@ class State:
             self.updateFlags = np.zeros((self.len_x, self.len_z))
             self.built = set()
             self.built_heightmap = {}
+            self.exterior_heightmap = {}
             print('nodes is '+str(len(self.nodes)))
             print('traffic is '+str(len(self.traffic)))
 
@@ -192,9 +193,11 @@ class State:
         xf = min(x1, x2)  # since the building is placed is ascending
         zf = min(z1, z2)
         y = self.rel_ground_hm[xf][zf] # temp
-        status, building_heightmap = src.scheme_utils.place_schematic_in_state(self, bld, xf, y, zf, rot=rot, built_arr=self.built)
+        status, building_heightmap, exterior_heightmap = src.scheme_utils.place_schematic_in_state(self, bld, xf, y, zf, rot=rot, built_arr=self.built)
         if status == False:
             return False
+        self.built_heightmap.update(building_heightmap)
+        self.exterior_heightmap.update(exterior_heightmap)
         # build road from the road to the building
         self.create_road(found_road.center, ctrn_node.center, road_type="None", points=None, leave_lot=False, add_as_road_type=False)
         xmid = int((x2 + x1)/2)
@@ -207,9 +210,6 @@ class State:
                 x = n.center[0] + dir[0]
                 z = n.center[1] + dir[1]
                 # add to built
-                self.built.add((x,z))
-                # get the heightmap for that location, based on the schematic. traverse up, finding first consective air assets == agent height
-
                 y = int(self.rel_ground_hm[x][z]) - 1
                 inv_chance = math.dist((x, z), (xmid, zmid))/distmax  # clamp to 0-1
                 if inv_chance == 1.0: # stylistic choice: don't let corners be placed
@@ -252,23 +252,6 @@ class State:
             self.adjacent_radius = 1
             self.state = state
             # self.type = set()  # to cache type()
-
-
-        # def local_prosperity(self):
-        #     prosperity = 0
-        #     for x in range(-self.locality_radius, self.locality_radius + 1):
-        #         for z in range(-self.locality_radius, self.locality_radius + 1):
-        #             nx = (self.center[0]) + x * self.size
-        #             nz = (self.center[1]) + z * self.size
-        #             print(str((nx,nz)))
-        #             # nx = self.center[0] + x
-        #             # nz = self.center[1] + x
-        #             if self.state.out_of_bounds_Node(nx, nz): continue
-        #             prosperity += self.state.prosperity[nx][nz]  # each block has a single type
-        #     for t in self.mask_type:
-        #         prosperity.append(t)
-        #     return prosperity
-        #
 
         # the tiles' types + mask_type (like building or roads
         def get_type(self):
@@ -524,6 +507,9 @@ class State:
     #     self.rel_ground_hm = self.gen_rel_ground_hm(self.abs_ground_hm)
 
     def update_heightmaps(self):
+        for x in range(len(self.abs_ground_hm)):
+            for z in range(len(self.abs_ground_hm[0])):
+                set_state_block(self, x, self.rel_ground_hm[x][z], z, 'minecraft:hay_block')
         x1 = self.world_x
         z1 = self.world_z
         x2 = self.end_x
@@ -536,10 +522,13 @@ class State:
             self.heightmaps[hm_type] = worldSlice.heightmaps[src.my_utils.HEIGHTMAPS(index).name]
         for x in range(len(self.heightmaps[hm_type])):
             for z in range(len(self.heightmaps[hm_type][0])):
-                if (x,z) not in self.built: # ignore buildings
+                if (x,z) in self.built: # ignore buildings
+                    self.heightmaps[hm_type][x][z] = self.built_heightmap[(x,z)]
+                elif (x,z) in self.exterior_heightmap:
+                    self.heightmaps[hm_type][x][z] = self.exterior_heightmap[(x,z)]
+                else:
                     self.heightmaps[hm_type][x][z] = worldSlice.heightmaps[hm_type][x][z] - 1
         self.abs_ground_hm = self.heightmaps[hm_type]
-        self.rel_ground_hm = self.gen_rel_ground_hm(self.abs_ground_hm)
         return worldSlice
 
 
@@ -555,6 +544,7 @@ class State:
                 if type == "WATER":
                     self.water.append((x,z))
                 types[x][z] = type  # each block is a list of types. The node needs to chek its assets
+        print(types)
         print("done initializing types")
         return types
 
@@ -814,9 +804,6 @@ class State:
         self.road_nodes.append(self.nodes[self.node_pointers[point1]])
         self.road_nodes.append(self.nodes[self.node_pointers[point2]])
         block_path = []
-        print("point1 is "+str(point1))
-        print("point2 is "+str(point2))
-        print("points is "+str(points))
         if points == None:
             block_path = src.linedrawing.get_line(point1, point2) # inclusive
         else:
@@ -1022,7 +1009,6 @@ class State:
             return None, None
         dists = [math.hypot(n.center[0] - x, n.center[1] - z) for n in nodes]
         node2 = nodes[dists.index(min(dists))]
-        print("node center is "+str(node2.center[0]))
         (x2, z2) = (node2.center[0], node2.center[1])
         xthr = 2   # TODO tweak these
         zthr = 2
