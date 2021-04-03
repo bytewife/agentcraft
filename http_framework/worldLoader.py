@@ -37,7 +37,7 @@ class CachedSection:
 
 class WorldSlice:
     """**Contains information on a slice of the world.**"""
-    # TODO format this to blocks
+    # TODO format this to assets
 
     def __init__(self, rect, heightmapTypes=["MOTION_BLOCKING", "MOTION_BLOCKING_NO_LEAVES", "OCEAN_FLOOR", "WORLD_SURFACE"], heightmapOnly = False, heightmapOnlyType="MOTION_BLOCKING_NO_LEAVES"):
         self.rect = rect
@@ -165,7 +165,7 @@ class WorldSlice:
             return blockCompound["Name"].value
 
 
-    ### Returns an array of the y-coordinates of the highest blocks, increased by 1.
+    ### Returns an array of the y-coordinates of the highest assets, increased by 1.
     ### To get the ground, set y_offset to -1
     def get_heightmap(self, heightmap_type="MOTION_BLOCKING_NO_LEAVES", y_offset=0):
         heightmap = self.heightmaps[heightmap_type]

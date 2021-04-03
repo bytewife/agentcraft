@@ -49,7 +49,7 @@ def visualize_topography(rect, state, state_heightmap, state_y):
     for x in range(rect[2]):
         for z in range(rect[3]):
             for dy in range(3):
-            # check up to 5 blocks below the heightmap
+            # check up to 5 assets below the heightmap
                 # calculate absolute coordinates
                 # dx = rect[0] + dx
                 # dz = rect[1] + dz
@@ -68,18 +68,18 @@ def visualize_topography(rect, state, state_heightmap, state_y):
                 #####
 
                 if blockID in blockColors.TRANSPARENT:
-                    # transparent blocks are ignored
+                    # transparent assets are ignored
                     continue
                 else:
                     if blockID not in palette:
-                        # unknown blocks remembered for debug purposes
+                        # unknown assets remembered for debug purposes
                         unknownBlocks.add(blockID)
                     else:
                         topcolor[(x, z)] = palette[blockID]
                     break
 
     if len(unknownBlocks) > 0:
-        print("Unknown blocks: " + str(unknownBlocks))
+        print("Unknown assets: " + str(unknownBlocks))
 
         # separate the color map into three separate color channels
     topcolor = cv2.merge(((topcolor) & 0xff, (topcolor >> 8)

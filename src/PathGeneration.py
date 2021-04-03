@@ -170,7 +170,7 @@ class PathGenerator:
 
 
     def mapGround(self):
-        print("Mapping ground blocks")
+        print("Mapping ground assets")
         ground_map = np.full_like(self.grid, 0)
         for xi in range(self.width):
             for zi in range(self.depth):
@@ -204,7 +204,7 @@ class PathGenerator:
                 self.generatePath()
             return calc
 
-    # Set ground blocks on path to path blocks
+    # Set ground assets on path to path assets
     def generatePath(self):
         paved = np.full_like(self.ground, False)
         for xi in range(len(self.path)):

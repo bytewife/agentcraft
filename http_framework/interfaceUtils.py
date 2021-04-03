@@ -1,10 +1,10 @@
 # ! /usr/bin/python3
-"""### Provide tools for placing and getting blocks and more.
+"""### Provide tools for placing and getting assets and more.
 This module contains functions to:
 * Request the build area as defined in-world
 * Run Minecraft commands
 * Get the name of a block at a particular coordinate
-* Place blocks in the world
+* Place assets in the world
 """
 __all__ = ['requestBuildArea', 'runCommand',
            'setBlock', 'getBlock',

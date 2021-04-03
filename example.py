@@ -6,7 +6,7 @@ from src.http.worldLoader import WorldSlice
 # x position, z position, x size, z size
 area = (0, 0, 128, 128) # default build area
 
-# Do we send blocks in batches to speed up the generation process?
+# Do we send assets in batches to speed up the generation process?
 USE_BATCHING = True
 
 # see if a build area has been specified
@@ -41,7 +41,7 @@ heightmap = mapUtils.calcGoodHeightmap(worldSlice)
 def heightAt(heightmap, x, z):
     return heightmap[(x - area[0], z - area[1])]
 
-# a wrapper function for setting blocks
+# a wrapper function for setting assets
 def setBlock(x, y, z, block):
     if USE_BATCHING:
         interfaceUtils.placeBlockBatched(x, y, z, block, 100)
@@ -148,5 +148,5 @@ for i in range(100):
 
 
 if USE_BATCHING:
-    # we need to send remaining blocks in the buffer at the end of the program, when using batching
+    # we need to send remaining assets in the buffer at the end of the program, when using batching
     interfaceUtils.sendBlocks()

@@ -24,7 +24,7 @@ class Agent:
         "jungle_log": 0,
     }
 
-    def __init__(self, state, state_x, state_z, walkable_heightmap, name,
+    def __init__(self, state, state_x, state_z, walkable_heightmap, name, head,
                  parent_1=None, parent_2=None, model="minecraft:carved_pumpkin", motive=Motive.LOGGING.name):
 
         self.x = self.rendered_x = state_x
@@ -43,6 +43,7 @@ class Agent:
         self.unshared_resources = {
             "water": 0
         }
+        self.head = head
 
 
     # 3D movement is a stretch goal
@@ -169,7 +170,7 @@ mall:{is_small}, CustomName: '{{"text":"{name}", "color":"customcolor", "bold":f
 ArmorItems:[{{id:"{boots}",Count:1b}},\
 {{id:"{lower_armor}",Count:1b}},\
 {{id:"{upper_armor}",Count:1b}},\
-{{id:"player_head",Count:1b,tag:{{SkullOwner:{{Id:"401c89f6-384e-473d-b448-1c73a342aed9",Properties:{{textures:[{{Value:"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvOTVhZWY4ZDczYzZiM2I5N2Q3YjU3MTZmY2EyMTVmNWViYTY3OTkyMTJkMTFlYjYzZTE1ODg5NDBkMWUyMWI3MyJ9fX0="}}]}}}}}}}}],\
+{{id:"player_head",Count:1b,tag:{{{head}}}}}],\
 HandItems:[{{id:"{hand1}", Count:1b}},{{id:"{hand2}", Count:1b}}],\
 Pose:{{Head:[{head_tilt}f,10f,0f], \
 LeftLeg:[3f,10f,0f], \
@@ -178,12 +179,14 @@ LeftArm:[348f,308f,0f], \
 RightArm:[348f,67f,0f]}}\
 }}\
 """.format(
+
             x=self.x+self.state.world_x,
             y=self.y+self.state.world_y,
             z=self.z+self.state.world_z,
             rot=src.my_utils.ROTATION_LOOKUP[(self.dx, self.dz)],
             name=self.name,
             is_small="false",
+            head=self.head,
             boots="leather_boots",
             upper_armor="leather_chestplate",
             lower_armor="leather_leggings",
@@ -191,6 +194,7 @@ RightArm:[348f,67f,0f]}}\
             hand2="apple",
             head_tilt="350")  # this can be related to resources! 330 is high, 400 is low
         http_framework.interfaceUtils.runCommand(spawn_cmd)
+        print(self.head)
 
     # def set_model(self, block):
     #     self.model = block

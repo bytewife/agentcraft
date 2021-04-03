@@ -17,7 +17,7 @@ class State:
 
     tallest_building_height = 30
     changed_blocks = {}
-    blocks = []  # 3D Array of all the blocks in the state
+    blocks = []  # 3D Array of all the assets in the state
     abs_ground_hm = []
     rel_ground_hm = [] # TODO create function for this. Agents will be armor stands, and they can be updated in real time
     trees = []
@@ -90,7 +90,7 @@ class State:
     def gen_nodes(self, len_x, len_z, node_size):
         if len_x < 0 or len_z < 0:
             print("Lengths cannot be <0")
-        node_size = 3  # in blocks
+        node_size = 3  # in assets
         nodes_in_x = int(len_x / node_size)
         nodes_in_z = int(len_z / node_size)
         node_count = nodes_in_x * nodes_in_z
@@ -208,7 +208,7 @@ class State:
                 z = n.center[1] + dir[1]
                 # add to built
                 self.built.add((x,z))
-                # get the heightmap for that location, based on the schematic. traverse up, finding first consective air blocks == agent height
+                # get the heightmap for that location, based on the schematic. traverse up, finding first consective air assets == agent height
 
                 y = int(self.rel_ground_hm[x][z]) - 1
                 inv_chance = math.dist((x, z), (xmid, zmid))/distmax  # clamp to 0-1
@@ -239,7 +239,7 @@ class State:
         def __init__(self, state, center, types, size):
             self.center = center
             self.size = size
-            # self.local_prosperity = 0  # sum of all of its blocks
+            # self.local_prosperity = 0  # sum of all of its assets
             self.mask_type = set()
             self.mask_type.update(types)
             self.neighbors = set()
@@ -554,7 +554,7 @@ class State:
                     self.trees.append((x, z))
                 if type == "WATER":
                     self.water.append((x,z))
-                types[x][z] = type  # each block is a list of types. The node needs to chek its blocks
+                types[x][z] = type  # each block is a list of types. The node needs to chek its assets
         print("done initializing types")
         return types
 
@@ -581,7 +581,7 @@ class State:
             f.write(to_write)
             i += 1
         f.close()
-        print(str(i)+" blocks saved")
+        print(str(i)+" assets saved")
 
 
     def load_state(self, save_file):
@@ -600,7 +600,7 @@ class State:
             i += 1
         f.close()
         self.changed_blocks.clear()
-        print(str(i)+" blocks loaded")
+        print(str(i)+" assets loaded")
 
 
     # NOTE: you need to get heihtmaps after you place block info. they should be last
@@ -612,13 +612,13 @@ class State:
             http_framework.interfaceUtils.placeBlockBatched(self.world_x + state_x, self.world_y + state_y, self.world_z + state_z, block, n_blocks)
             # http_framework.interfaceUtils.setBlock(self.world_x + state_x, self.world_y + state_y, self.world_z + state_z, block)
             i += 1
-        self.update_heightmaps()  # must wait until all blocks are placed
+        self.update_heightmaps()  # must wait until all assets are placed
         for position, block in self.changed_blocks.items():
             state_x, state_y, state_z = src.my_utils.convert_key_to_coords(position)
-            self.update_block_info(state_x, state_z)  # Must occur after new blocks have been placed
+            self.update_block_info(state_x, state_z)  # Must occur after new assets have been placed
         self.changed_blocks.clear()
         if i > 0:
-            print(str(i)+" blocks rendered")
+            print(str(i)+" assets rendered")
 
 
     ## do we wanna cache tree locations? I don't want them to cut down buildings lol
@@ -687,7 +687,7 @@ class State:
             else False
 
     def out_of_bounds_Node(self, x, z):
-        if x < 0 or z < 0 or  x > self.last_node_pointer_x or z > self.last_node_pointer_z: # the problem is that some blocks don't point to a tile.
+        if x < 0 or z < 0 or  x > self.last_node_pointer_x or z > self.last_node_pointer_z: # the problem is that some assets don't point to a tile.
             return True
         return False
 
@@ -860,7 +860,7 @@ class State:
             road_segment = RoadSegment(self.nodes[point1], self.nodes[point2], middle_nodes, road_type, self.road_segs, state=self)
             self.road_segs.add(road_segment)
 
-        # place blocks. TODO prolly not right- i think you wanna render road segments
+        # place assets. TODO prolly not right- i think you wanna render road segments
         if road_blocks == None:
             road_blocks = src.my_utils.ROAD_SETS['default']
         ## render

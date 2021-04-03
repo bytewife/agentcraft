@@ -133,14 +133,14 @@ def place_schematic_in_world(file_name, origin_x, origin_y, origin_z, dir_x=1, d
                 xi += 1
             zi += 1
         yi -= 1
-    print(str(i) + " schematic blocks placed")
+    print(str(i) + " schematic assets placed")
     print("done placing schematic")
-    # size, blocks = get_schematic_parts(file_name)
+    # size, assets = get_schematic_parts(file_name)
     # length_x, length_y, length_z = size
     # length_x = int(length_x)
     # length_y = int(length_y)
     # length_z = int(length_z)
-    # n_blocks = len(blocks)
+    # n_blocks = len(assets)
     # end_x = origin_x + int(length_x) - 1
     # end_y = origin_y + int(length_y) - 1
     # end_z = origin_z + int(length_z) - 1
@@ -158,7 +158,7 @@ def place_schematic_in_world(file_name, origin_x, origin_y, origin_z, dir_x=1, d
     #         xi = XI
     #         for x in range(origin_x, end_x+1, dir_x):
     #             index =yi*length_z*length_x + zi*length_x + xi
-    #             block = "minecraft:"+blocks[index]
+    #             block = "minecraft:"+assets[index]
     #             http_framework.interfaceUtils.placeBlockBatched(x, y, z, block, n_blocks)#, n_blocks-1)
     #             xi += 1
     #         zi += 1
@@ -260,7 +260,7 @@ def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, bui
         # print(height_traversal[(x,z)])
         if all(b == "minecraft:air[]" for b in height_traversal[(x,z)]) or '_door' in height_traversal[(x,z)][-1] or "_carpet" in height_traversal[(x,z)][-1]:
             building_heightmap[(x,z)] = y - agent_height + 1
-            print(building_heightmap)
+            # print(building_heightmap)
             height_traversal.pop((x,z))
 
     for y in range(origin_y, end_y+1, -dir_y):
@@ -325,12 +325,12 @@ def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, bui
     for key in height_traversal:
         building_heightmap[key] = end_y-1 # or should this be -1?
 
-    print(str(i)+" schematic blocks placed")
+    print(str(i)+" schematic assets placed")
     print("done placing schematic")
     print("building heightmap is ")
-    for coord,y in building_heightmap.items():
-        x, z = coord
-        src.states.set_state_block(state, x, y, z, "oak_sign")
+    # for coord,y in building_heightmap.items():
+    #     x, z = coord
+    #     src.states.set_state_block(state, x, y, z, "oak_sign")
     # exit(1)
     return True, building_heightmap
 

@@ -1,6 +1,6 @@
 
 #! /usr/bin/python3
-"""### Store lists of all the blocks in minecraft and their appropriate map colours."""
+"""### Store lists of all the assets in minecraft and their appropriate map colours."""
 __all__ = ['VERSION', 'TRANSPARENT', 'PALETTE']
 # __version__
 
@@ -305,19 +305,19 @@ def verifyPaletteBlocks():
             print("Cannot verify " + block)
         counter += 1
         passed.append(block)
-        print(str(counter) + " blocks verified.", end='\r')
+        print(str(counter) + " assets verified.", end='\r')
     interfaceUtils.setBlock(0, 0, 0, 'air')
     print()
     print("Scan complete.")
     if badcounter > 0:
         print(
-            "{}/{} blocks duplicate or could not be verified.".format(badcounter, counter))
+            "{}/{} assets duplicate or could not be verified.".format(badcounter, counter))
         print("Please check you are running on Minecraft " + VERSION)
     else:
-        print("All blocks successfully verified.")
+        print("All assets successfully verified.")
     print()
 
 
-# running the file directly does a test of all the blocks, to make sure they all exists in the minecraft version used
+# running the file directly does a test of all the assets, to make sure they all exists in the minecraft version used
 if __name__ == "__main__":
     verifyPaletteBlocks()

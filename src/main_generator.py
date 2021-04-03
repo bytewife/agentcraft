@@ -68,7 +68,7 @@ sim.add_agent(agent)
 
 ###
 # state_coords = sim.state.world_to_state((9, 63, 18))
-# legal_actions = get_all_legal_actions(sim.state.blocks, 2, sim.state.walkable_heightmap, 2, [])
+# legal_actions = get_all_legal_actions(sim.state.assets, 2, sim.state.walkable_heightmap, 2, [])
 # sim.update_agents()
 # sim.state.render()
 # get_path(0, 0, 5, 5)

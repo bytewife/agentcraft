@@ -29,6 +29,11 @@ class Simulation:
         self.prosperity = 0
         self.phase2threshold = 100
         self.phase3threshold = 200
+        # parse heads
+        f = open("../../../assets/agent_heads.out.txt")
+        self.agent_heads = f.readlines()
+        self.agent_heads = [h.rstrip('\n') for h in self.agent_heads]
+        f.close()
 
         if run_start:
             self.start()
@@ -54,7 +59,8 @@ class Simulation:
 
         # spawn agents at main street endpoints
         for agent_pos in result:
-            new_agent = src.agent.Agent(self.state, *agent_pos, walkable_heightmap=self.state.rel_ground_hm, name=names.get_first_name())
+            head = random.choice(self.agent_heads)
+            new_agent = src.agent.Agent(self.state, *agent_pos, walkable_heightmap=self.state.rel_ground_hm, name=names.get_first_name(), head=head)
             self.add_agent(new_agent)
             new_agent.set_motive(src.agent.Agent.Motive.LOGGING)
 
