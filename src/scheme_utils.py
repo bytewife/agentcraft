@@ -174,7 +174,6 @@ def adjust_property_by_rotation(block, property, longest_len, rot, rot_factor=1,
         curr_dir = None
         start_i = facing_i + index
         facing_substr = block[start_i:start_i + longest_len]  # len of "facing="
-        print("facing substr is "+facing_substr)
         # find dir
         for dir in Facing:
             if dir.name in facing_substr:
@@ -221,7 +220,7 @@ def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, bui
     if rot in [0, 2]:
         ex = end_x
         ez = end_z
-        xz_coords = [(x, z) for z in range(origin_z, end_z) for x in range(origin_x, end_x)]
+        xz_coords = [(x, z) for z in range(origin_z, end_z+1) for x in range(origin_x, end_x+1)]
     elif rot in [1, 3]:
         ex = origin_x+length_z-1
         ez = origin_z+length_x-1
@@ -249,6 +248,7 @@ def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, bui
     total = length_x * length_y * length_z
 
     height_traversal = { coord:deque('' for n in range(agent_height)) for coord in xz_coords}  # if open space found, reomve from this
+    print(xz_coords)
     building_heightmap = {}  # where the values will be stored when found
     exterior_heightmap = {}  # this is the outside of a building. I won't be able to get it 100% accurate, but I can get it good enough.
 
@@ -260,11 +260,8 @@ def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, bui
         if (x,z) not in height_traversal: return
         height_traversal[(x,z)].pop()
         height_traversal[(x,z)].appendleft(block)
-        if all(b == "minecraft:air[]" for b in height_traversal[(x,z)]) or '_door' in height_traversal[(x,z)][-1] or "_carpet" in height_traversal[(x,z)][-1]:
-            print("origin_y is "+str(origin_y))
-            print("where y is "+str(y))
+        if all(b == "minecraft:air[]" for b in height_traversal[(x,z)]) or '_door' in list(height_traversal[(x,z)])[-1] or "_carpet" in list(height_traversal[(x,z)])[-1]:
             if y - 1 == origin_y or abs(x-origin_x) < 2 or abs(x-ex) < 2 or abs(z-origin_z) < 2 or abs(z-ez) < 2:
-                print("1 an exterior is "+str((x,z)))
                 exterior_heightmap[(x,z)] = y - 1
             else:
                 building_heightmap[(x,z)] = y - agent_height + 1
@@ -330,7 +327,6 @@ def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, bui
         yi -= 1
 
     for key in height_traversal:
-        print("2 an exterior is "+str(key))
         exterior_heightmap[key] = end_y+1 # or should this be -1?
 
     # for coord,y in building_heightmap.items():

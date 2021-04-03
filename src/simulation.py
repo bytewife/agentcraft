@@ -57,6 +57,7 @@ class Simulation:
             construction_site = random.choice(list(self.state.construction))
             i+=1
 
+        self.state.render()  # check if this affects agent pahs. it seems to.
         # spawn agents at main street endpoints
         for agent_pos in result:
             head = random.choice(self.agent_heads)
@@ -157,3 +158,4 @@ class Simulation:
             agent.follow_path(state=self.state, walkable_heightmap=self.state.rel_ground_hm)
             # agent.move_in_state()
             agent.render()
+            # print("agent is in "+str(self.state.sectors[agent.x][agent.z]))

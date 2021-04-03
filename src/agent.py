@@ -84,10 +84,6 @@ class Agent:
         self.y = walkable_heightmap[new_x][new_z]
 
 
-    def get_nearby_spots(self, search_array, starting_search_radius, max_iterations, radius_inc=1):
-        return src.movement.find_nearest(self.x, self.z, search_array, starting_search_radius, max_iterations, radius_inc)
-
-
     def teleport(self, target_x, target_z, walkable_heightmap):
         if (target_x < 0 or target_z < 0 or target_x >= self.state.len_x or target_z >= self.state.len_z):
             print(self.name + " tried to move out of bounds!")
@@ -179,6 +175,7 @@ class Agent:
         closed = set()
         for i in range(max_iterations):
             spots = src.movement.find_nearest(self.x, self.z, search_array, starting_search_radius+radius_inc*i, 1, radius_inc)
+            print("spots are "+str(spots))
             if spots is [] or spots is None: continue
             while len(spots) > 0:
                 chosen_spot = choice(spots)

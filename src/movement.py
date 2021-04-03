@@ -76,7 +76,7 @@ def check_if_legal_move(blocks, x, y, z, x_offset, z_offset, jump_ability, heigh
         if '[' in target:
             idx = target.index('[')
             target = target[:idx]
-        if not (target in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.AIR.value]):
+        if not (target in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.PASSTHROUGH.value]):
             is_legal = False
             break
     if is_legal:

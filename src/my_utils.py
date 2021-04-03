@@ -69,6 +69,7 @@ class TYPE(Enum):
 	CITY_GARDEN = 9
 	HIGHWAY = 10
 	AIR = 11
+	PASSTHROUGH = 12
 
 
 class HEIGHTMAPS(Enum):
@@ -131,6 +132,44 @@ class TYPE_TILES:
 		TYPE.AIR.value: {
 			"minecraft:air",
 			"minecraft:cave_air"
+		},
+        TYPE.PASSTHROUGH.value: {
+            "minecraft:air",
+            "minecraft:cave_air",
+			"minecraft:oak_leaves",
+			"minecraft:spruce_leaves",
+			"minecraft:birch_leaves",
+			"minecraft:jungle_leaves",
+			"minecraft:acacia_leaves",
+			"minecraft:spruce_door",
+			"minecraft:oak_door",
+			"minecraft:birch_door",
+			"minecraft:acacia_door",
+			"minecraft:jungle_door",
+			"minecraft:dark_oak_door",
+			"minecraft:grass",
+			"minecraft:oak_sapling",
+			"minecraft:spruce_sapling",
+			"minecraft:birch_sapling",
+			"minecraft:acacia_sapling",
+			"minecraft:jungle_sapling",
+			"minecraft:dark_oak_sapling",
+			"minecraft:white_carpet",
+			"minecraft:orange_carpet",
+			"minecraft:magenta_carpet",
+			"minecraft:light_blue_carpet",
+			"minecraft:yellow_carpet",
+			"minecraft:lime_carpet",
+			"minecraft:pink_carpet",
+			"minecraft:gray_carpet",
+			"minecraft:light_gray_carpet",
+			"minecraft:cyan_carpet",
+			"minecraft:purple_carpet",
+			"minecraft:blue_carpet",
+			"minecraft:brown_carpet",
+			"minecraft:green_carpet",
+			"minecraft:red_carpet",
+			"minecraft:black_carpet",
 		}
 	}
 

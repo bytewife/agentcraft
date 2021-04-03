@@ -111,7 +111,7 @@ x2 = 2
 y2 = 66
 z2 = 2
 
-file_name = "../schemes/Sector_test_1"
+file_name = "../schemes/Sector_test_2"
 src.scheme_utils.download_schematic(x1, y1, z1, x2, y2, z2, file_name)
 # src.scheme_utils.download_schematic(x1, y1, z1, x2, y2, z2, file_name+"_flex", flexible_tiles=True, leave_dark_oak=False)
 # src.scheme_utils.download_schematic(x1, y1, z1, x2, y2, z2, file_name+"_flex_keep_dark", flexible_tiles=True, leave_dark_oak=True)

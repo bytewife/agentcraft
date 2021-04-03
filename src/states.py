@@ -197,6 +197,7 @@ class State:
         if status == False:
             return False
         self.built_heightmap.update(building_heightmap)
+        print(self.built_heightmap)
         self.exterior_heightmap.update(exterior_heightmap)
         # build road from the road to the building
         self.create_road(found_road.center, ctrn_node.center, road_type="None", points=None, leave_lot=False, add_as_road_type=False)
