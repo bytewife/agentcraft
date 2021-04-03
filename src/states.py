@@ -58,6 +58,7 @@ class State:
                 self.blocks, vertical_ability=self.agent_jump_ability, heightmap=self.rel_ground_hm,
                 actor_height=self.agent_height, unwalkable_blocks=["minecraft:water", 'minecraft:lava']
             )
+            print(self.blocks)
             self.pathfinder = src.pathfinding.Pathfinding()
             self.sectors = self.pathfinder.create_sectors(self.heightmaps["MOTION_BLOCKING_NO_LEAVES"],
                                             self.legal_actions)  # add tihs into State
@@ -508,9 +509,9 @@ class State:
     #     self.rel_ground_hm = self.gen_rel_ground_hm(self.abs_ground_hm)
 
     def update_heightmaps(self):
-        for x in range(len(self.abs_ground_hm)):
-            for z in range(len(self.abs_ground_hm[0])):
-                set_state_block(self, x, self.rel_ground_hm[x][z], z, 'minecraft:hay_block')
+        # for x in range(len(self.abs_ground_hm)):
+        #     for z in range(len(self.abs_ground_hm[0])):
+        #         set_state_block(self, x, self.rel_ground_hm[x][z], z, 'minecraft:hay_block')
         x1 = self.world_x
         z1 = self.world_z
         x2 = self.end_x
