@@ -64,7 +64,7 @@ class Simulation:
             i+=1
 
 
-        self.state.render()  # check if this affects agent pahs. it seems to.
+        self.state.step()  # check if this affects agent pahs. it seems to.
         # spawn agents at main street endpoints
         for agent_pos in result:
             head = random.choice(self.agent_heads)
@@ -74,7 +74,7 @@ class Simulation:
 
 
 
-    def step(self, times=1):
+    def step(self, times=1, is_rendering=True):
         ##########
 
         for i in range(times):
@@ -84,9 +84,12 @@ class Simulation:
             if p > self.phase3threshold:
                 self.phase = 3
             self.handle_nodes()
-            self.update_agents()
-            self.state.render()
-            time.sleep(self.rendering_step_duration)
+            self.update_agents(is_rendering)
+            self.state.step(is_rendering)
+            time.sleep(self.rendering_step_duration * is_rendering)
+        if not self.is_rendering_each_step:  # render just the end
+            self.state.step(is_rendering=True, use_total_changed_blocks=True)
+
 
 
     def handle_nodes(self):
@@ -126,7 +129,7 @@ class Simulation:
                     # print("built major normal road")
                     self.state.append_road(point=(i, j), road_type=src.my_utils.TYPE.MAJOR_ROAD.name, correction=self.corNum)
             if node.local_prosperity > self.buNum and road_found_near:
-                print("prosperity fulfilled; creating building")
+                # print("prosperity fulfilled; creating building")
                 self.state.set_type_building(node.local) # wait, the local is a building?
 
             # if self.phase >= 2:
@@ -159,11 +162,12 @@ class Simulation:
         self.agents.add(agent)
         agent.auto_motive()
 
-    def update_agents(self):
+    def update_agents(self, is_rendering=True):
         for agent in self.agents:
             agent.unshared_resources['rest'] += agent.rest_dec_rate
             agent.unshared_resources['water'] += agent.water_dec_rate
             agent.follow_path(state=self.state, walkable_heightmap=self.state.rel_ground_hm)
             # agent.move_in_state()
-            agent.render()
+            if is_rendering:
+                agent.render()
             # print("agent is in "+str(self.state.sectors[agent.x][agent.z]))

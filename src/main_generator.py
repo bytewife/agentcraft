@@ -89,7 +89,7 @@ print(sim.state.blocks[0][yb][5])
 print("walkable is ")
 print(sim.state.rel_ground_hm[0][5])
 src.manipulation.cut_tree_at(sim.state, 0, yb, 5)
-sim.state.render()
+sim.state.step()
 print("walkable is ")
 print(sim.state.rel_ground_hm[0][5])
 # recompute sector after cutting it down at 0, 5

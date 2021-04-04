@@ -428,7 +428,6 @@ class Agent:
                 node = state.nodes[state.node_pointers[bx][bz]]
                 node.add_prosperity(prosperity_inc)
                 if status == src.manipulation.TASK_OUTCOME.SUCCESS.name or status == src.manipulation.TASK_OUTCOME.IN_PROGRESS.name:
-                    print("resources is now "+str(src.agent.Agent.shared_resources['oak_log']))
                     break  # cut one at a time
         return status  # someone sniped this tree.
 

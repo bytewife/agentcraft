@@ -74,6 +74,8 @@ class State:
             self.exterior_heightmap = {}
             self.generated_building = False
             self.changed_blocks_xz = set()
+            self.total_changed_blocks = {}
+            self.total_changed_blocks_xz = set()
             self.phase = 1
             print('nodes is '+str(len(self.nodes)))
             print('traffic is '+str(len(self.traffic)))
@@ -518,35 +520,62 @@ class State:
     #     # self.abs_ground_hm[x][z] = self.heightmaps["MOTION_BLOCKING_NO_LEAVES"][x][z]
     #     self.rel_ground_hm = self.gen_rel_ground_hm(self.abs_ground_hm)
 
-    def update_heightmaps(self):
-        # for x in range(len(self.abs_ground_hm)):move(blocks, x, y, z, x_offset, z_offset, jump_ability, heightmap, actor_height, unwalkable_blocks):
-        #     for z in range(len(self.abs_ground_hm[0])):
-        #         set_state_block(self, x, self.rel_ground_hm[x][z], z, 'minecraft:hay_block')
-        worldSlice = http_framework.worldLoader.WorldSlice(self.rect, heightmapOnly=False)
-        hm_type = "MOTION_BLOCKING_NO_LEAVES"  # only update one for performance
-        for index in range(1,len(worldSlice.heightmaps)+1):
-            self.heightmaps[hm_type] = worldSlice.heightmaps[src.my_utils.HEIGHTMAPS(index).name]
-        for x in range(len(self.heightmaps[hm_type])):
-            for z in range(len(self.heightmaps[hm_type][0])):
-                if (x,z) in self.built_heightmap: # ignore buildings
-                    y = self.built_heightmap[(x,z)]
-                    self.heightmaps[hm_type][x][z] = y + self.world_y
-                    self.rel_ground_hm[x][z] = y
+    # def update_heightmaps(self):
+    #     # for x in range(len(self.abs_ground_hm)):move(blocks, x, y, z, x_offset, z_offset, jump_ability, heightmap, actor_height, unwalkable_blocks):
+    #     #     for z in range(len(self.abs_ground_hm[0])):
+    #     #         set_state_block(self, x, self.rel_ground_hm[x][z], z, 'minecraft:hay_block')
+    #     worldSlice = http_framework.worldLoader.WorldSlice(self.rect, heightmapOnly=False)
+    #     hm_type = "MOTION_BLOCKING_NO_LEAVES"  # only update one for performance
+    #     for index in range(1,len(worldSlice.heightmaps)+1):
+    #         self.heightmaps[hm_type] = worldSlice.heightmaps[src.my_utils.HEIGHTMAPS(index).name]
+    #     for x in range(len(self.heightmaps[hm_type])):
+    #         for z in range(len(self.heightmaps[hm_type][0])):
+    #             if (x,z) in self.built_heightmap: # ignore buildings
+    #                 y = self.built_heightmap[(x,z)]
+    #                 self.heightmaps[hm_type][x][z] = y + self.world_y
+    #                 self.rel_ground_hm[x][z] = y
+    #
+    #             elif (x,z) in self.exterior_heightmap:
+    #                 y = self.exterior_heightmap[(x,z)]
+    #                 self.heightmaps[hm_type][x][z] = self.exterior_heightmap[(x,z)] + self.world_y
+    #                 self.rel_ground_hm[x][z] = y
+    #             else:
+    #                 y = worldSlice.heightmaps[hm_type][x][z] - 1
+    #                 self.heightmaps[hm_type][x][z] = y
+    #                 self.rel_ground_hm[x][z] = y + 1 - self.world_y # need to recheck this
+    #     self.abs_ground_hm = self.heightmaps[hm_type]
+    #     # for x in range(len(abs_ground_hm)):
+    #     #     for z in range(len(abs_ground_hm[0])):
+    #     #         state_adjusted_y = int(abs_ground_hm[x][z]) - self.world_y + 1  # + self.heightmap_offset
+    #     #         result[x].append(state_adjusted_y)
+    #     return worldSlice
 
+    def update_heightmaps(self):
+        for x in range(len(self.abs_ground_hm)):
+            for z in range(len(self.abs_ground_hm[0])):
+                if (x,z) in self.built_heightmap: # ignore buildings
+                    y = self.built_heightmap[(x,z)] - 1
+                    self.abs_ground_hm[x][z] = y + self.world_y
+                    self.rel_ground_hm[x][z] = y + 1
                 elif (x,z) in self.exterior_heightmap:
-                    y = self.exterior_heightmap[(x,z)]
-                    self.heightmaps[hm_type][x][z] = self.exterior_heightmap[(x,z)] + self.world_y
+                    y = self.exterior_heightmap[(x,z)] - 1
+                    self.abs_ground_hm[x][z] = y + self.world_y
+                    self.rel_ground_hm[x][z] = y + 1
+                else:  # traverse down to find first non passable block
+                    y = self.traverse_down_till_block(x, z) + 1
+                    self.abs_ground_hm[x][z] = y + self.world_y - 1
                     self.rel_ground_hm[x][z] = y
-                else:
-                    y = worldSlice.heightmaps[hm_type][x][z] - 1
-                    self.heightmaps[hm_type][x][z] = y
-                    self.rel_ground_hm[x][z] = y + 1 - self.world_y # need to recheck this
-        self.abs_ground_hm = self.heightmaps[hm_type]
-        # for x in range(len(abs_ground_hm)):
-        #     for z in range(len(abs_ground_hm[0])):
-        #         state_adjusted_y = int(abs_ground_hm[x][z]) - self.world_y + 1  # + self.heightmap_offset
-        #         result[x].append(state_adjusted_y)
-        return worldSlice
+        return
+
+
+    def traverse_down_till_block(self,x,z):
+        y = len(self.blocks[0])-1  # start from top
+        while y > 0:
+            block = self.blocks[x][y][z]
+            if not block in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.PASSTHROUGH.value]:
+                break
+            y-=1
+        return y
 
 
     def gen_types(self, heightmap):
@@ -610,20 +639,27 @@ class State:
 
 
     # NOTE: you need to get heihtmaps after you place block info. they should be last
-    def render(self):
+    def step(self, is_rendering=True,use_total_changed_blocks=False):
         i = 0
-        n_blocks = len(self.changed_blocks)
+        changed_arr = self.changed_blocks
+        changed_arr_xz = self.changed_blocks_xz
+        if use_total_changed_blocks:
+            changed_arr = self.total_changed_blocks
+            changed_arr_xz = self.total_changed_blocks_xz
+        n_blocks = len(changed_arr)
         self.old_legal_actions = self.legal_actions.copy()
-        for position, block in self.changed_blocks.items():
+        for position, block in changed_arr.items():
             x,y,z = position
-            http_framework.interfaceUtils.placeBlockBatched(self.world_x + x, self.world_y + y, self.world_z + z, block, n_blocks)
+            if is_rendering == True:
+                http_framework.interfaceUtils.placeBlockBatched(self.world_x + x, self.world_y + y, self.world_z + z, block, n_blocks)
             # http_framwork.interfaceUtils.setBlock(self.world_x + state_x, self.world_y + state_y, self.world_z + state_z, block)
             i += 1
         self.update_heightmaps()  # must wait until all assets are placed
-        for position in self.changed_blocks_xz:
+        for position in changed_arr_xz:
             x,z = position
             self.update_block_info(x, z)  # Must occur after new assets have been placed. Also, only the surface should run it.
-        self.changed_blocks.clear()
+        changed_arr.clear()
+        changed_arr_xz.clear()
         if i > 0:
             print(str(i)+" assets rendered")
 
@@ -1071,7 +1107,9 @@ class State:
 def set_state_block(state, x, y, z, block_name):
     state.blocks[x][y][z] = block_name
     state.changed_blocks_xz.add((x,z))
+    state.total_changed_blocks_xz.add((x,z))
     state.changed_blocks[(x,y,z)] = block_name
+    state.total_changed_blocks[(x,y,z)] = block_name
 
 
 class RoadSegment:

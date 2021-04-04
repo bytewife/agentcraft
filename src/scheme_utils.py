@@ -252,7 +252,6 @@ def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, bui
     building_heightmap = {}  # where the values will be stored when found
     exterior_heightmap = {}  # this is the outside of a building. I won't be able to get it 100% accurate, but I can get it good enough.
 
-
     # where building heightmap is the inside of a building, exterior is the outside of a building, and height_traversal is a cache for checking the open space
     def traverse_up_to_air(x, y, z, block, building_heightmap, height_traversal, exterior_heightmap, air_amt=2):
         nonlocal length_x,length_y,length_z
@@ -262,10 +261,10 @@ def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, bui
         height_traversal[(x,z)].pop()
         height_traversal[(x,z)].appendleft(block)
         if all(b == "minecraft:air[]" for b in height_traversal[(x,z)]) or '_door' in list(height_traversal[(x,z)])[-1] or "_carpet" in list(height_traversal[(x,z)])[-1]:
-            if y - 1 == origin_y or abs(x-origin_x) < 2 or abs(x-ex) < 2 or abs(z-origin_z) < 2 or abs(z-ez) < 2:
-                exterior_heightmap[(x,z)] = y - 1
-            else:
-                building_heightmap[(x,z)] = y - agent_height + 1
+            # if y - 1 == origin_y or abs(x-origin_x) < 2 or abs(x-ex) < 2 or abs(z-origin_z) < 2 or abs(z-ez) < 2:
+            exterior_heightmap[(x,z)] = y - 1
+            # else:
+            building_heightmap[(x,z)] = y - agent_height + 1
             height_traversal.pop((x,z))
 
     for y in range(origin_y, end_y+1, -dir_y):
@@ -328,7 +327,7 @@ def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, bui
         yi -= 1
 
     for key in height_traversal:
-        exterior_heightmap[key] = end_y+1 # or should this be -1?
+        exterior_heightmap[key] = end_y # or should this be -1?
 
     # for coord,y in building_heightmap.items():
     #     x, z = coord

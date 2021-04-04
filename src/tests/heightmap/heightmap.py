@@ -46,13 +46,13 @@ print(sim.state.heightmaps["MOTION_BLOCKING_NO_LEAVES"][x][z])
 print(sim.state.abs_ground_hm[x][z])
 print(sim.state.rel_ground_hm[x][z])
 src.states.set_state_block(sim.state, x, 1, z, "minecraft:air")
-sim.state.render()
+sim.state.step()
 print ("afters (should be 1 lower.:")
 print(sim.state.heightmaps["MOTION_BLOCKING_NO_LEAVES"][x][z])
 print(sim.state.abs_ground_hm[x][z])
 print(sim.state.rel_ground_hm[x][z])
 src.states.set_state_block(sim.state, x, 1, z, "minecraft:diorite")
-sim.state.render()
+sim.state.step()
 # update sectors
 
 # store in file

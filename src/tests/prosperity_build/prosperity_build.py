@@ -32,7 +32,7 @@ clean_agents = "kill @e[type=minecraft:armor_stand,x={},y=64,z={},distance=..100
 http_framework.interfaceUtils.runCommand(clean_agents)
 
 # sim = src.simulation.Simulation(area, rendering_step_duration=0.0)
-sim = src.simulation.Simulation(area, rendering_step_duration=0.2)
+sim = src.simulation.Simulation(area, rendering_step_duration=0.2, is_rendering_each_step=False)
 # sim.step(1)
 ## ROADS
 # for r in sim.state.roads:
@@ -60,3 +60,5 @@ print(sim.state.road_segs)
 sim.step(200)
 print(sim.state.sectors)
 print(src.agent.Agent.shared_resources)
+# sim.is_rendering_each_step = True
+sim.step(is_rendering=False)

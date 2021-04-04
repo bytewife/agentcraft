@@ -24,21 +24,29 @@ clean_agents = "kill @e[type=minecraft:armor_stand,x={},y=64,z={},distance=..100
 http_framework.interfaceUtils.runCommand(clean_agents)
 building = '../../../schemes/Sector_test_2'
 sim = src.simulation.Simulation(area, rendering_step_duration=0.2, run_start=False)
+
+print("before abs heightmap is ")
+print(sim.state.abs_ground_hm)
+print("before rel heightmap is ")
+print(sim.state.rel_ground_hm)
+
 f = open(building, "r")
 r = f.readline().split(' ')
 sim.state.create_road((4,1), (4,1), road_type=src.my_utils.TYPE.MAJOR_ROAD.name)
 sim.state.construction.add(sim.state.nodes[sim.state.node_pointers[(1,1)]])
 
-print(sim.state.construction)
+# print(sim.state.construction)
 i = 0
 build_tries = 300
-while sim.state.place_building_at(sim.state.nodes[sim.state.node_pointers[(0,0)]], building, int(r[0]), int(r[2])) is False and i < build_tries:  # flip the x and z construction_site = random.choice(list(sim.state.construction))
+while sim.state.place_building_at(sim.state.nodes[sim.state.node_pointers[(0,0)]], building, int(r[0]), int(r[2]), "oak") is False and i < build_tries:  # flip the x and z construction_site = random.choice(list(sim.state.construction))
     i+=1
 sim.step(1)
 
 print("legal actions are ")
 print(sim.state.legal_actions)
-print("heightmap is ")
+print("after abs heightmap is ")
+print(sim.state.abs_ground_hm)
+print("after rel heightmap is ")
 print(sim.state.rel_ground_hm)
 print("sectors are")
 print(sim.state.sectors)
