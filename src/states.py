@@ -201,7 +201,7 @@ class State:
         ## remove nodes from construction
         for node in list(found_nodes):
             self.construction.remove(node)
-        # print("rot is "+str(rot))
+            self.built.add(node)
         self.generated_building = True
         return True
 

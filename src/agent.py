@@ -75,10 +75,19 @@ class Agent:
             construction_site = choice(list(self.state.construction))
             result = self.check_build_spot(construction_site, building_file, x_size, z_size, wood_type)
             if result != None:
+                # check if any of the nodes are in built
+                if result[1] in self.state.built:
+                    continue
+                not_in_built = True
+                for node in result[2]:
+                    if node in self.state.built:
+                        not_in_built = False
+                        break
                 # see if found road is in same sector
-                nx, nz  = result[0].center
-                if self.state.sectors[self.x][self.z] == self.state.sectors[nx][nz]:
-                    return result
+                if not_in_built:
+                    nx, nz = result[0].center
+                    if self.state.sectors[self.x][self.z] == self.state.sectors[nx][nz]:
+                        return result
             i += 1
         return None
         # self.construction_site = construction_site
