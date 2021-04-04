@@ -10,7 +10,7 @@ import names
 class Simulation:
 
     # with names? Let's look after ensembles and other's data scructure for max flexibility
-    def __init__(self, XZXZ, run_start=True, phase=0, maNum=5, miNum=400, byNum= 2000, brNum=1000, buNum=10, pDecay=0.75, tDecay=0.25, corNum=5, times=1, is_rendering_each_step=True, rendering_step_duration=0.8):
+    def __init__(self, XZXZ, run_start=True, phase=0, maNum=5, miNum=400, byNum= 2000, brNum=1000, buNum=10, pDecay=0.98, tDecay=0.25, corNum=5, times=1, is_rendering_each_step=True, rendering_step_duration=0.8):
         self.agents = set()
         self.world_slice = http_framework.worldLoader.WorldSlice(XZXZ)
         self.state = src.states.State(self.world_slice)
@@ -46,16 +46,23 @@ class Simulation:
                 result = self.state.init_main_st()
 
         # build a house
-        building = "../../../schemes/"+random.choice(src.my_utils.STRUCTURES['small'])
-        construction_site = random.choice(list(self.state.construction))
+        building = "../../../schemes/"+random.choice(src.my_utils.STRUCTURES['small'])[0]
         f = open(building, "r")
         size = f.readline()
         x_size, y_size, z_size = [int(n) for n in size.split(' ')]
+
+        construction_site = random.choice(list(self.state.construction))
+        nearest_tree_pos = self.state.get_nearest_tree(*construction_site.center)[0]
+        wood_type = self.state.blocks[nearest_tree_pos[0]]\
+            [self.state.rel_ground_hm[nearest_tree_pos[0]][nearest_tree_pos[1]]]\
+            [nearest_tree_pos[1]]
+        wood = src.my_utils.get_wood_type(wood_type)
         i = 0
         build_tries = 300
-        while self.state.place_building_at(construction_site, building, x_size, z_size) is False and i < build_tries:  # flip the x and z
+        while self.state.place_building_at(construction_site, building, x_size, z_size, wood) is False and i < build_tries:  # flip the x and z
             construction_site = random.choice(list(self.state.construction))
             i+=1
+
 
         self.state.render()  # check if this affects agent pahs. it seems to.
         # spawn agents at main street endpoints
@@ -64,6 +71,7 @@ class Simulation:
             new_agent = src.agent.Agent(self.state, *agent_pos, walkable_heightmap=self.state.rel_ground_hm, name=names.get_first_name(), head=head)
             self.add_agent(new_agent)
             # new_agent.set_motive(src.agent.Agent.Motive.LOGGING)
+
 
 
     def step(self, times=1):

@@ -18,8 +18,6 @@ class State:
     tallest_building_height = 30
     changed_blocks = {}
     blocks = []  # 3D Array of all the assets in the state
-    abs_ground_hm = []
-    rel_ground_hm = [] # TODO create function for this. Agents will be armor stands, and they can be updated in real time
     trees = []
     water = []
     world_y = 0
@@ -28,7 +26,7 @@ class State:
     len_x = 0
     len_y = 0
     len_z = 0
-    unwalkable_blocks = []
+    unwalkable_blocks = ['minecraft:water', 'minecraft:lava']
     agent_height = 2
     agent_jump_ability = 2
     heightmap_offset = -1
@@ -39,14 +37,19 @@ class State:
     construction = set()  # nodes where buildings can be placed
     lots = set()
 
+    build_minimum_phase_1 = 2
+    build_minimum_phase_2 = 30
+    build_minimum_phase_3 = 50
 
 
     ## Create surface grid
     def __init__(self, world_slice=None, blocks_file=None, max_y_offset=tallest_building_height):
         if not world_slice is None:
             self.rect = world_slice.rect
+            self.world_slice = world_slice
             self.blocks, self.world_y, self.len_y, self.abs_ground_hm = self.gen_blocks_array(world_slice)
             self.rel_ground_hm = self.gen_rel_ground_hm(self.abs_ground_hm)  # a heightmap based on the state's y values. -1
+            self.static_ground_hm = self.rel_ground_hm.copy()  # use this for placing roads
             self.heightmaps = world_slice.heightmaps
             self.types = self.gen_types(self.rel_ground_hm)  # 2D array. Exclude leaves because it would be hard to determine tree positions
             self.world_x = world_slice.rect[0]
@@ -71,6 +74,7 @@ class State:
             self.exterior_heightmap = {}
             self.generated_building = False
             self.changed_blocks_xz = set()
+            self.phase = 1
             print('nodes is '+str(len(self.nodes)))
             print('traffic is '+str(len(self.traffic)))
 
@@ -91,39 +95,7 @@ class State:
             self.len_x, self.len_y, self.len_z, self.blocks = parse_blocks_file(blocks_file)
 
 
-    # note: not every block has a node. These will point to None
-    def gen_nodes(self, len_x, len_z, node_size):
-        if len_x < 0 or len_z < 0:
-            print("Lengths cannot be <0")
-        node_size = 3  # in assets
-        nodes_in_x = int(len_x / node_size)
-        nodes_in_z = int(len_z / node_size)
-        node_count = nodes_in_x * nodes_in_z
-        self.last_node_pointer_x = nodes_in_x * node_size - 1  # TODO verify the -1
-        self.last_node_pointer_z = nodes_in_z * node_size - 1
-        nodes = {}  # contains coord pointing to data struct
-        node_pointers = np.full((len_x,len_z), None)
-        for x in range(nodes_in_x):
-            for z in range(nodes_in_z):
-                cx = x*node_size+1
-                cz = z*node_size+1
-                node = self.Node(self, center=(cx, cz), types=[src.my_utils.TYPE.BROWN.name], size=self.node_size)  # TODO change type
-                nodes[(cx, cz)] = node
-                node_pointers[cx][cz] = (cx, cz)
-                for dir in src.movement.directions:
-                    nx = cx + dir[0]
-                    nz = cz + dir[1]
-                    node_pointers[nx][nz] = (cx, cz)
-        for node in nodes.values():
-            node.adjacent = node.gen_adjacent(nodes, node_pointers, self)
-            node.neighbors = node.gen_neighbors(nodes, node_pointers, self)
-            # node = node.gen_local()
-            node.local = node.gen_local(nodes, node_pointers, self)
-            node.range, node.water_resources, node.resource_neighbors = node.gen_range(nodes, node_pointers, self)
-        return nodes, node_pointers
-
-
-    def place_building_at(self, ctrn_node, bld, bld_lenx, bld_lenz):
+    def place_building_at(self, ctrn_node, bld, bld_lenx, bld_lenz, wood_type):
         # check if theres adequate space by getting nodes, and move the building to center it if theres extra space
         # if not ctrn_node in self.construction: return
         # for every orientation of this node+neighbors whose lenx and lenz are the min space required to place building at
@@ -143,7 +115,6 @@ class State:
             np = (nx, nz)
             neighbor = self.nodes[self.node_pointers[np]]
             if neighbor in self.roads:
-                print("found road!")
                 found_road = neighbor
                 face_dir = dir
                 break
@@ -193,7 +164,7 @@ class State:
         xf = min(x1, x2)  # since the building is placed is ascending
         zf = min(z1, z2)
         y = self.rel_ground_hm[xf][zf] # temp
-        status, building_heightmap, exterior_heightmap = src.scheme_utils.place_schematic_in_state(self, bld, xf, y, zf, rot=rot, built_arr=self.built)
+        status, building_heightmap, exterior_heightmap = src.scheme_utils.place_schematic_in_state(self, bld, xf, y, zf, rot=rot, built_arr=self.built, wood_type=wood_type)
         if status == False:
             return False
         self.built_heightmap.update(building_heightmap)
@@ -233,6 +204,45 @@ class State:
         # print("rot is "+str(rot))
         self.generated_building = True
         return True
+
+
+    def get_nearest_tree(self,x,z):
+        return src.movement.find_nearest(x,z,self.trees, 5, 30, 10)
+
+
+    # note: not every block has a node. These will point to None
+    def gen_nodes(self, len_x, len_z, node_size):
+        if len_x < 0 or len_z < 0:
+            print("Lengths cannot be <0")
+        node_size = 3  # in assets
+        nodes_in_x = int(len_x / node_size)
+        nodes_in_z = int(len_z / node_size)
+        node_count = nodes_in_x * nodes_in_z
+        self.last_node_pointer_x = nodes_in_x * node_size - 1  # TODO verify the -1
+        self.last_node_pointer_z = nodes_in_z * node_size - 1
+        nodes = {}  # contains coord pointing to data struct
+        node_pointers = np.full((len_x,len_z), None)
+        for x in range(nodes_in_x):
+            for z in range(nodes_in_z):
+                cx = x*node_size+1
+                cz = z*node_size+1
+                node = self.Node(self, center=(cx, cz), types=[src.my_utils.TYPE.BROWN.name], size=self.node_size)  # TODO change type
+                nodes[(cx, cz)] = node
+                node_pointers[cx][cz] = (cx, cz)
+                for dir in src.movement.directions:
+                    nx = cx + dir[0]
+                    nz = cz + dir[1]
+                    node_pointers[nx][nz] = (cx, cz)
+        for node in nodes.values():
+            node.adjacent = node.gen_adjacent(nodes, node_pointers, self)
+            node.neighbors = node.gen_neighbors(nodes, node_pointers, self)
+            # node = node.gen_local()
+            node.local = node.gen_local(nodes, node_pointers, self)
+            node.range, node.water_resources, node.resource_neighbors = node.gen_range(nodes, node_pointers, self)
+        return nodes, node_pointers
+
+
+
 
 
     class Node:
@@ -603,7 +613,7 @@ class State:
     def render(self):
         i = 0
         n_blocks = len(self.changed_blocks)
-        old_legal_actions = self.legal_actions.copy()
+        self.old_legal_actions = self.legal_actions.copy()
         for position, block in self.changed_blocks.items():
             x,y,z = position
             http_framework.interfaceUtils.placeBlockBatched(self.world_x + x, self.world_y + y, self.world_z + z, block, n_blocks)
@@ -612,7 +622,7 @@ class State:
         self.update_heightmaps()  # must wait until all assets are placed
         for position in self.changed_blocks_xz:
             x,z = position
-            self.update_block_info(x, z, old_legal_actions)  # Must occur after new assets have been placed. Also, only the surface should run it.
+            self.update_block_info(x, z)  # Must occur after new assets have been placed. Also, only the surface should run it.
         self.changed_blocks.clear()
         if i > 0:
             print(str(i)+" assets rendered")
@@ -622,7 +632,7 @@ class State:
 
 
     # is this state x
-    def update_block_info(self, x, z, old_legal_actions):  # this might be expensive if you use this repeatedly in a group
+    def update_block_info(self, x, z):  # this might be expensive if you use this repeatedly in a group
         for xo in range(-1, 2):
             for zo in range(-1, 2):
                 bx = x + xo
@@ -636,7 +646,7 @@ class State:
         # if x z not in closed_for_propagation
         self.pathfinder.update_sector_for_block(x, z, self.sectors,
                                                 sector_sizes=self.pathfinder.sector_sizes,
-                                                legal_actions=self.legal_actions, old_legal_actions=old_legal_actions)
+                                                legal_actions=self.legal_actions, old_legal_actions=self.old_legal_actions)
 
 
     def get_adjacent_block(self, x_origin, y_origin, z_origin, x_off, y_off, z_off):
@@ -699,12 +709,13 @@ class State:
 
     def set_type_building(self, nodes):
         for node in nodes:
-            if src.my_utils.TYPE.GREEN.name in node.get_type() or \
-                    src.my_utils.TYPE.BROWN.name in node.type or \
-                    src.my_utils.TYPE.TREE.name in node.type:
-                node.clear_type(self)
-                node.add_type(src.my_utils.TYPE.BUILDING.name)
-                self.construction.add(node)
+            if not node in self.built:
+                if src.my_utils.TYPE.GREEN.name in node.get_type() or \
+                        src.my_utils.TYPE.BROWN.name in node.type or \
+                        src.my_utils.TYPE.TREE.name in node.type:
+                    node.clear_type(self)
+                    node.add_type(src.my_utils.TYPE.BUILDING.name)
+                    self.construction.add(node)
 
 
     def set_type_road(self, node_points, road_type):
@@ -863,8 +874,7 @@ class State:
         for block in block_path:
             x = block[0]
             z = block[1]
-            y = int(self.rel_ground_hm[x][z]) - 1
-            block  =self.blocks[x][y][z]
+            y = int(self.static_ground_hm[x][z]) - 1
             if self.blocks[x][y][z] == "minecraft:water" or src.manipulation.is_log(self, x, y, z):
                 continue
             if random() < inner_block_rate:
@@ -894,7 +904,7 @@ class State:
         for block in aux_path:
             x = block[0]
             z = block[1]
-            y = int(self.rel_ground_hm[x][z]) - 1
+            y = int(self.static_ground_hm[x][z]) - 1
             block = self.blocks[x][y][z]
             if self.blocks[x][y][z] == "minecraft:water" or src.manipulation.is_log(self, x, y, z):
                 continue
@@ -1164,3 +1174,5 @@ class Lot:
 
     def get_nodes(self):
         return self.nodes
+
+

@@ -27,6 +27,9 @@ def is_log(state, x, y, z):
         return True
     return False
 
+
+
+
 def collect_water_at(state, x, y, z, times=1):
     for i in range(times):
         pass

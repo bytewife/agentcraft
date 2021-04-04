@@ -11,28 +11,24 @@ ROAD_SETS = {
 
 STRUCTURES = {
     "decor": [
-		"cart_1_flex",
+		( "cart_1_flex", 10 ),
+		( "market_stall_1_flex", 15 ),
+		( "market_stall_2_flex", 15 ),
 	],
 	"small": [
-		"small_house_1_flex",
-		"small_house_2_flex",
+		( "small_house_1_flex", 20 ),
+		( "small_house_2_flex", 20 ),
 	],
 	"med": [
-		"med_house_1_flex",
-		"med_house_2_flex",
-		"med_house_3_flex",
-		"med_house_4_flex",
+		("med_house_1_flex", 30),
+		("med_house_2_flex", 30),
+		("med_house_3_flex", 30),
+		("med_house_4_flex", 30),
 	],
 	"large": [
-		"church_1_flex",
-		"church_2_flex",
-	],
-	"all": [
-		"med_house_1_flex",
-		"med_house_2_flex",
-		"med_house_4_flex",
-        "market_stall_1_flex",
-		"market_stall_2_flex",
+		("church_1_flex", 40),
+		("church_2_flex", 35),
+		("castle_1_flex", 50),
 	],
 }
 
@@ -47,9 +43,13 @@ ROTATION_LOOKUP = {
 	(1, 1): "315",
 }
 
-ACTION_ITEMS = { "REST": ["clock", "white_tulip", "white_wool", "white_bed"],
+AGENT_ITEMS = {"REST": ["clock", "white_tulip", "white_wool", "white_bed"],
 				 "LOGGING": ["iron_axe", "gold axe", "stone_axe"],
-				 "WATER": ["glass_bottle"]}
+				 "WATER": ["glass_bottle", 'bucket'],
+				 "BUILD": ["iron_shovel", "stone_shovel", "gold_shovel"],
+			     "FAVORITE": ['apple', 'bread', 'melon_slice', 'golden_apple', 'book', 'diamond', 'emerald', 'nautilus_shell', 'cornflower'
+							  , 'bamboo', 'torch', 'sunflower', 'zombie_head', 'ladder', 'poppy', 'warped_fungus']}
+
 
 
 class ACTION_PROSPERITY():
@@ -141,6 +141,12 @@ class TYPE_TILES:
 			"minecraft:birch_leaves",
 			"minecraft:jungle_leaves",
 			"minecraft:acacia_leaves",
+			"minecraft:spruce_sign",
+			"minecraft:oak_sign",
+			"minecraft:birch_sign",
+			"minecraft:acacia_sign",
+			"minecraft:jungle_sign",
+			"minecraft:dark_oak_sign",
 			"minecraft:spruce_door",
 			"minecraft:oak_door",
 			"minecraft:birch_door",
@@ -170,6 +176,8 @@ class TYPE_TILES:
 			"minecraft:green_carpet",
 			"minecraft:red_carpet",
 			"minecraft:black_carpet",
+			"minecraft:player_head",
+			"minecraft:flower_pot",
 		}
 	}
 
@@ -208,5 +216,21 @@ def get_player_head_block_id(name, SkullOwnerSet, rotation="1"):
 		.format(rotation, name, prop)
 	return command
 
+
+def get_wood_type(block):
+    type = "oak"
+    if 'oak' in block:
+        type = 'oak'
+    elif 'birch' in block:
+        type = 'birch'
+    elif 'spruce' in block:
+        type = 'spruce'
+    elif 'acacia' in block:
+        type = 'acacia'
+    elif 'jungle' in block:
+        type = 'jungle'
+    elif 'dark_oak' in block:
+        type = 'dark_oak'
+    return type
 
 

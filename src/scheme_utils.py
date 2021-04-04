@@ -208,7 +208,7 @@ def adjust_property_by_rotation(block, property, longest_len, rot, rot_factor=1,
 
 
 ## where the origin coords are the local coords within state
-def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, built_arr, dir_x=1, dir_y=-1, dir_z=1, rot=0, flex_tile = None):
+def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, built_arr, dir_x=1, dir_y=-1, dir_z=1, rot=0, flex_tile = None, wood_type="spruce"):
     size, blocks = get_schematic_parts(file_name)
     length_x, length_y, length_z = size
 
@@ -252,6 +252,7 @@ def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, bui
     building_heightmap = {}  # where the values will be stored when found
     exterior_heightmap = {}  # this is the outside of a building. I won't be able to get it 100% accurate, but I can get it good enough.
 
+
     # where building heightmap is the inside of a building, exterior is the outside of a building, and height_traversal is a cache for checking the open space
     def traverse_up_to_air(x, y, z, block, building_heightmap, height_traversal, exterior_heightmap, air_amt=2):
         nonlocal length_x,length_y,length_z
@@ -280,7 +281,7 @@ def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, bui
                 # check for flex tile
                 if block[0] == '#':
                     insert_pos = int(block[1])
-                    block = block[2:2+insert_pos]+"birch"+block[2+insert_pos:]
+                    block = block[2:2+insert_pos]+wood_type+block[2+insert_pos:]
                 elif block[:11] == "player_head":
                     use_head = True
                 block = "minecraft:" + block

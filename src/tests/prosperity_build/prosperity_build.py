@@ -57,6 +57,6 @@ sim = src.simulation.Simulation(area, rendering_step_duration=0.2)
 
 print("road_segs")
 print(sim.state.road_segs)
-sim.step(20)
+sim.step(200)
 print(sim.state.sectors)
 print(src.agent.Agent.shared_resources)
