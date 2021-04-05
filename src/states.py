@@ -19,6 +19,7 @@ class State:
     changed_blocks = {}
     blocks = []  # 3D Array of all the assets in the state
     trees = []
+    saplings = []
     water = []
     world_y = 0
     world_x = 0
@@ -49,7 +50,7 @@ class State:
             self.world_slice = world_slice
             self.blocks, self.world_y, self.len_y, self.abs_ground_hm = self.gen_blocks_array(world_slice)
             self.rel_ground_hm = self.gen_rel_ground_hm(self.abs_ground_hm)  # a heightmap based on the state's y values. -1
-            self.static_ground_hm = self.rel_ground_hm.copy()  # use this for placing roads
+            self.static_ground_hm = np.copy(self.rel_ground_hm)  # use this for placing roads
             self.heightmaps = world_slice.heightmaps
             self.types = self.gen_types(self.rel_ground_hm)  # 2D array. Exclude leaves because it would be hard to determine tree positions
             self.world_x = world_slice.rect[0]
@@ -270,10 +271,11 @@ class State:
         # the tiles' types + mask_type (like building or roads
         def get_type(self):
             all_types = set()
-            for x in range(-self.size, self.size+1):
-                for z in range(-self.size, self.size+1):
+            radius = math.ceil(self.size/2)
+            for x in range(-radius, radius+1):
+                for z in range(-radius, radius+1):
                     nx = self.center[0] + x
-                    nz = self.center[1] + x
+                    nz = self.center[1] + z
                     if self.state.out_of_bounds_Node(nx, nz): continue
                     all_types.add(self.state.types[nx][nz])  # each block has a single type
             for t in self.mask_type:
@@ -501,55 +503,6 @@ class State:
         #         new_type = "TREE"
         self.types[x][z] = new_type
 
-
-    ## hope this isn't too expensive. may need to limit area if it is
-    # def update_heightmaps(self, x, z):
-    #     x_to = x + 1
-    #     z_to = z + 1
-    #     area = [x + self.world_x, z + self.world_z, x_to + self.world_x, z_to + self.world_z]
-    #     area = src.my_utils.correct_area(area)
-    #     worldSlice = http_framework.worldLoader.WorldSlice(area, heightmapOnly=True)
-    #     hm_type = "MOTION_BLOCKING_NO_LEAVES"  # only update one for performance
-    #     for index in range(1,len(worldSlice.heightmaps)+1):
-    #         name = src.my_utils.Heightmaps(index).name
-    #         new_y = int(worldSlice.heightmaps[name][0][0]) - 1
-    #         self.heightmaps[name][x][z] = new_y
-    #     hm_base = self.heightmaps[hm_type]
-    #     state_adjusted_y = int(hm_base[x][z])
-    #     self.abs_ground_hm[x][z] = state_adjusted_y
-    #     # self.abs_ground_hm[x][z] = self.heightmaps["MOTION_BLOCKING_NO_LEAVES"][x][z]
-    #     self.rel_ground_hm = self.gen_rel_ground_hm(self.abs_ground_hm)
-
-    # def update_heightmaps(self):
-    #     # for x in range(len(self.abs_ground_hm)):move(blocks, x, y, z, x_offset, z_offset, jump_ability, heightmap, actor_height, unwalkable_blocks):
-    #     #     for z in range(len(self.abs_ground_hm[0])):
-    #     #         set_state_block(self, x, self.rel_ground_hm[x][z], z, 'minecraft:hay_block')
-    #     worldSlice = http_framework.worldLoader.WorldSlice(self.rect, heightmapOnly=False)
-    #     hm_type = "MOTION_BLOCKING_NO_LEAVES"  # only update one for performance
-    #     for index in range(1,len(worldSlice.heightmaps)+1):
-    #         self.heightmaps[hm_type] = worldSlice.heightmaps[src.my_utils.HEIGHTMAPS(index).name]
-    #     for x in range(len(self.heightmaps[hm_type])):
-    #         for z in range(len(self.heightmaps[hm_type][0])):
-    #             if (x,z) in self.built_heightmap: # ignore buildings
-    #                 y = self.built_heightmap[(x,z)]
-    #                 self.heightmaps[hm_type][x][z] = y + self.world_y
-    #                 self.rel_ground_hm[x][z] = y
-    #
-    #             elif (x,z) in self.exterior_heightmap:
-    #                 y = self.exterior_heightmap[(x,z)]
-    #                 self.heightmaps[hm_type][x][z] = self.exterior_heightmap[(x,z)] + self.world_y
-    #                 self.rel_ground_hm[x][z] = y
-    #             else:
-    #                 y = worldSlice.heightmaps[hm_type][x][z] - 1
-    #                 self.heightmaps[hm_type][x][z] = y
-    #                 self.rel_ground_hm[x][z] = y + 1 - self.world_y # need to recheck this
-    #     self.abs_ground_hm = self.heightmaps[hm_type]
-    #     # for x in range(len(abs_ground_hm)):
-    #     #     for z in range(len(abs_ground_hm[0])):
-    #     #         state_adjusted_y = int(abs_ground_hm[x][z]) - self.world_y + 1  # + self.heightmap_offset
-    #     #         result[x].append(state_adjusted_y)
-    #     return worldSlice
-
     def update_heightmaps(self):
         for x in range(len(self.abs_ground_hm)):
             for z in range(len(self.abs_ground_hm[0])):
@@ -565,6 +518,9 @@ class State:
                     y = self.traverse_down_till_block(x, z) + 1
                     self.abs_ground_hm[x][z] = y + self.world_y - 1
                     self.rel_ground_hm[x][z] = y
+                curr_height = self.rel_ground_hm[x][z]
+                if self.static_ground_hm[x][z] > curr_height:
+                    self.static_ground_hm[x][z] = curr_height
         return
 
 

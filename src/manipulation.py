@@ -9,6 +9,36 @@ class TASK_OUTCOME(Enum):
     REDO = 3
 
 
+def grow_tree_at(state, x, y, z, times=1):
+    growth_rate = 2
+    y = state.rel_ground_hm[x][z]
+    # get sapling type, or if that fails get nearest log type because sometimes there's no sapling here.
+    type = ''
+    if is_sapling(state, x, y - 1, z):
+        type = state[x][y-1][z][:-8]  # I hope it's not "minecraft:..."
+    elif is_log(state, x, y - 1, z):  # get log underneath instead
+        type = state.blocks[x][y-1][z]
+    else:  # get nearest log instead
+        x, z = state.get_nearest_tree(x, z)
+        type = state.blocks[x][y-1][z]
+    for i in range(growth_rate+1):
+        log = type+'_log'
+        print(log)
+        state.set[x][y][z] = log
+        y+=1
+
+
+
+def is_sapling(state, x, y, z):
+    if state.out_of_bounds_3D(x, y, z):
+        return False
+    block = state.blocks[x][y][z]
+    if not block is None and block[-7:] == 'sapling':
+        return True
+    return False
+
+
+
 def is_water(state, x, y, z):
     if state.out_of_bounds_3D(x, y, z):
         return False
@@ -57,8 +87,9 @@ def cut_tree_at(state, x, y, z, times=1):
             new_type = state.determine_type(x, z, state.rel_ground_hm, yoff) # -1 to account for sapling
             state.types[x][z] = new_type
             print("new state is "+str(state.types[x][z]))
-            if (x,z) in state.trees:  # prevent sniping
+            if (x,z) in state.trees:  # when sniped
                 state.trees.remove((x,z))
+            state.saplings.append((x,z))
             return TASK_OUTCOME.SUCCESS.name
         y -= 1
     return TASK_OUTCOME.IN_PROGRESS.name

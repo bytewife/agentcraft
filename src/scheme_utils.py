@@ -285,42 +285,27 @@ def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, bui
                     use_head = True
                 block = "minecraft:" + block
                 block = adjust_property_by_rotation(block, property="facing=", longest_len=5, rot=rot, shortest_len=4, rot_factor=1)
+                by = y
+                bx = None
+                bz = None
                 if rot == 0:
                     bx = sx + xi
-                    by = y
                     bz = sz + zi
-                    if use_head == False:
-                        src.states.set_state_block(state, bx, by, bz, block)
-                    else:
-                        http_framework.interfaceUtils.setBlockWithData(bx + state.world_x, by + state.world_y, bz + state.world_z, block)
-                    traverse_up_to_air(bx, by, bz, block, building_heightmap, height_traversal, exterior_heightmap, agent_height)
                 if rot == 1:
                     bx = sx + zi
-                    by = y
                     bz = sz + xi
-                    if use_head == False:
-                        src.states.set_state_block(state, bx, by, bz, block)
-                    else:
-                        http_framework.interfaceUtils.setBlockWithData(bx + state.world_x, by + state.world_y, bz + state.world_z, block)
-                    traverse_up_to_air(bx, by, bz, block, building_heightmap, height_traversal, exterior_heightmap, agent_height)
                 if rot == 2:
                     bx = ex - xi
-                    by = y
                     bz = ez - zi
-                    if use_head == False:
-                        src.states.set_state_block(state, bx, by, bz, block)
-                    else:
-                        http_framework.interfaceUtils.setBlockWithData(bx + state.world_x, by + state.world_y, bz + state.world_z, block)
-                    traverse_up_to_air(bx, by, bz, block, building_heightmap, height_traversal, exterior_heightmap, agent_height)
                 if rot == 3:
                     bx = ex - zi
-                    by = y
                     bz = ez - xi
-                    if use_head == False:
-                        src.states.set_state_block(state, bx, by, bz, block)
-                    else:
-                        http_framework.interfaceUtils.setBlockWithData(bx + state.world_x, by + state.world_y, bz + state.world_z, block)
-                    traverse_up_to_air(bx, by, bz, block, building_heightmap, height_traversal, exterior_heightmap, agent_height)
+                # trim leaves
+                if src.manipulation.is_leaf(state.blocks[bx][by][bz]):
+                    src.manipulation.flood_kill_leaves(state, bx, by, bz)
+                if use_head == False:
+                    src.states.set_state_block(state, bx, by, bz, block)
+                traverse_up_to_air(bx, by, bz, block, building_heightmap, height_traversal, exterior_heightmap, agent_height)
                 i+=1
                 xi += 1
             zi += 1

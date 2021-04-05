@@ -18,7 +18,7 @@ from enum import Enum
 # z2 = 144
 x1 = 0
 z1 = 0
-x2 = 63
+x2 = 62
 z2 = 69
 
 area = [x1,z1,x2,z2]
@@ -32,7 +32,7 @@ clean_agents = "kill @e[type=minecraft:armor_stand,x={},y=64,z={},distance=..100
 http_framework.interfaceUtils.runCommand(clean_agents)
 
 # sim = src.simulation.Simulation(area, rendering_step_duration=0.0)
-sim = src.simulation.Simulation(area, rendering_step_duration=0.2, is_rendering_each_step=False)
+sim = src.simulation.Simulation(area, rendering_step_duration=0.0, is_rendering_each_step=False)
 # sim.step(1)
 ## ROADS
 # for r in sim.state.roads:
@@ -57,8 +57,9 @@ sim = src.simulation.Simulation(area, rendering_step_duration=0.2, is_rendering_
 
 print("road_segs")
 print(sim.state.road_segs)
-sim.step(200)
-print(sim.state.sectors)
+sim.step(200, is_rendering=True)
+# print(sim.state.static_ground_hm)
+# print(sim.state.sectors)
 print(src.agent.Agent.shared_resources)
 # sim.is_rendering_each_step = True
-sim.step(is_rendering=False)
+# sim.step(is_rendering=True)

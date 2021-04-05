@@ -1,5 +1,7 @@
+import math
+
 from scipy.spatial import KDTree
-from random import choice, random
+from random import choice, random, choices
 from enum import Enum
 import src.pathfinding
 import src.states
@@ -18,6 +20,7 @@ class Agent:
         IDLE = 2
         WATER = 3
         REST = 4
+        REPLENISH_TREE = 5
 
     shared_resources = {
         "oak_log": 0,
@@ -62,6 +65,8 @@ class Agent:
         self.build_params = set()
         self.building_material = ''
         self.build_cost = 0
+        self.tree_grow_iteration = 0
+        self.tree_grow_iterations_max = 3
 
 
     def find_build_location(self, building_file, wood_type):
@@ -164,7 +169,18 @@ class Agent:
         z2 = ctrn_node.center[1] + ctrn_dir[1] + ctrn_dir[1] * ctrn_node.size * (min_nodes_in_z - 1)
         xf = min(x1, x2)  # since the building is placed is ascending
         zf = min(z1, z2)
-        y = self.state.rel_ground_hm[xf][zf]  # temp
+        # find lowest y
+        lowest_y = 255
+        radius = math.ceil(ctrn_node.size / 2)
+        for node in found_nodes.union({ctrn_node}):
+            for x in range(-radius, radius + 1):
+                for z in range(-radius, radius + 1):
+                    nx = node.center[0] + x
+                    nz = node.center[1] + z
+                    by = lowest_y = self.state.rel_ground_hm[nx][nz]
+                    if self.state.rel_ground_hm[x][z] < lowest_y:
+                        lowest_y = by
+        y = lowest_y  # This should be the lowest y in the
         status, building_heightmap, exterior_heightmap = src.scheme_utils.place_schematic_in_state(self.state, bld, xf, y, zf,
                                                                                                    rot=rot,
                                                                                                    built_arr=self.state.built,
@@ -223,7 +239,10 @@ class Agent:
         elif self.has_enough_to_build(self.state.phase):
             return self.Motive.BUILD
         else:
-            return self.Motive.LOGGING
+            actions = (self.Motive.LOGGING, self.Motive.REPLENISH_TREE)
+            weights = (10, 3)
+            choice = choices(actions, weights, k=1)
+            return choice[0]
 
 
     def has_enough_to_build(self, phase):
@@ -307,6 +326,35 @@ class Agent:
                 self.auto_motive()
             elif self.motive == self.Motive.LOGGING.name:
                 self.do_log_task()
+            elif self.motive == self.Motive.REPLENISH_TREE.name:
+                self.do_replenish_tree_task()
+            elif self.motive == self.Motive.IDLE.name:
+                self.do_idle_task()
+
+
+    def do_replenish_tree_task(self):
+        if self.tree_grow_iteration <= self.tree_grow_iterations_max:
+            def is_in_state_saplings(state, x, y, z):
+                return state.blocks[x][y][z] in state.saplings
+            status = self.collect_from_adjacent_spot(self.state, check_func=is_in_state_saplings, manip_func=src.manipulation.grow_tree_at, prosperity_inc=src.my_utils.ACTION_PROSPERITY.REPLENISH_TREE)
+            self.tree_grow_iteration+=1
+        else:
+            self.tree_grow_iteration = 0
+            saps = set(self.state.saplings)
+            for dir in src.movement.directions:  # remove sapling from state, add to trees instead
+                x,z = (dir[0] + self.x, dir[1] + self.z)
+                if self.state.out_of_bounds_2D(x,z): continue
+                self.state.update_block_info(x,z)
+                if (x,z) in saps:
+                    self.state.saplings.remove((x,z))
+                if src.manipulation.is_log(self.state, x, self.state.rel_ground_hm[x][z], z):
+                    self.state.trees.append((x,z))
+            self.set_motive(self.Motive.IDLE)
+
+
+
+    def do_idle_task(self):
+        self.auto_motive()
 
 
     def do_rest_task(self):
@@ -314,7 +362,7 @@ class Agent:
             # rest
             self.unshared_resources['rest'] += self.rest_inc_rate
         else:
-            self.auto_motive()
+            self.set_motive(self.Motive.IDLE)
 
 
     def do_water_task(self):
@@ -327,9 +375,9 @@ class Agent:
                 self.unshared_resources['water'] += self.water_inc_rate
                 pass
             elif status == src.manipulation.TASK_OUTCOME.FAILURE.name:  # if no water found
-                self.auto_motive()
+                self.set_motive(self.Motive.IDLE)
         else:
-            self.auto_motive()
+            self.set_motive(self.Motive.IDLE)
 
 
     def do_log_task(self):
@@ -337,7 +385,7 @@ class Agent:
         if status == src.manipulation.TASK_OUTCOME.SUCCESS.name:
             src.agent.Agent.shared_resources['oak_log'] += 1
             print("finding another tree!")
-            self.auto_motive()
+            self.set_motive(self.Motive.IDLE)
         elif status == src.manipulation.TASK_OUTCOME.FAILURE.name:  # if they got sniped
             print("tree sniped")
             # udate this tree
@@ -345,7 +393,7 @@ class Agent:
                 point = (dir[0] + self.x, dir[1] + self.z)
                 if self.state.out_of_bounds_2D(*point): continue
                 self.state.update_block_info(*point)
-            self.auto_motive()
+            self.set_motive(self.Motive.IDLE)
         else:
             # do nothing (continue logging)
             src.agent.Agent.shared_resources['oak_log'] += 1
@@ -363,7 +411,7 @@ class Agent:
         if new_motive.name == self.Motive.REST.name:
             self.set_path_to_nearest_spot(list(self.state.built_heightmap.keys()), 30, 10, 5, search_neighbors_instead=False)
         elif new_motive.name == self.Motive.WATER.name:
-            self.set_path_to_nearest_spot(self.state.water, 15, 10, 5, search_neighbors_instead=True)
+            self.set_path_to_nearest_spot(self.state.water, 10, 10, 20, search_neighbors_instead=True)
         elif new_motive.name == self.Motive.BUILD.name:
             building, cost = self.get_appropriate_build(self.state.phase)
             result = self.find_build_location(building, self.building_material[:-4])
@@ -379,7 +427,13 @@ class Agent:
             else:
                 self.auto_motive()
         elif new_motive.name == self.Motive.LOGGING.name:
-            self.set_path_to_nearest_spot(self.state.trees, 15, 10, 5, search_neighbors_instead=True)
+            self.set_path_to_nearest_spot(self.state.trees, 15, 10, 8, search_neighbors_instead=True)
+            if len(self.path) < 1:  # if no trees were found
+                self.set_motive(self.Motive.REPLENISH_TREE)
+        elif new_motive.name == self.Motive.REPLENISH_TREE:
+            self.set_path_to_nearest_spot(self.state.saplings, 15, 10, 8, search_neighbors_instead=True)
+        elif new_motive.name == self.Motive.IDLE.name: # just let it go into follow_path
+            pass
 
 
     def set_path_to_nearest_spot(self, search_array, starting_search_radius, max_iterations, radius_inc=1, search_neighbors_instead=True, default_to_current=False):
@@ -411,7 +465,7 @@ class Agent:
         if default_to_current == True:
             self.set_path([])
         else:
-            self.auto_motive()  # remove this later
+            pass
 
 
     def collect_from_adjacent_spot(self, state, check_func, manip_func, prosperity_inc):
