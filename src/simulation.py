@@ -158,9 +158,10 @@ class Simulation:
                             self.state.set_type_building(lot)
 
 
-    def add_agent(self, agent : src.agent.Agent):
+    def add_agent(self, agent : src.agent.Agent, use_auto_motive=True):
         self.agents.add(agent)
-        agent.auto_motive()
+        if use_auto_motive:
+            agent.auto_motive()
 
     def update_agents(self, is_rendering=True):
         for agent in self.agents:

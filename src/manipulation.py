@@ -1,7 +1,8 @@
 import src.my_utils
 import src.states
 from enum import Enum
-
+from random import randint, random
+import math
 class TASK_OUTCOME(Enum):
     FAILURE = 0
     SUCCESS = 1
@@ -10,7 +11,7 @@ class TASK_OUTCOME(Enum):
 
 
 def grow_tree_at(state, x, y, z, times=1):
-    growth_rate = 2
+    growth_rate = 1
     y = state.rel_ground_hm[x][z]
     # get sapling type, or if that fails get nearest log type because sometimes there's no sapling here.
     type = ''
@@ -18,14 +19,39 @@ def grow_tree_at(state, x, y, z, times=1):
         type = state[x][y-1][z][:-8]  # I hope it's not "minecraft:..."
     elif is_log(state, x, y - 1, z):  # get log underneath instead
         type = state.blocks[x][y-1][z]
-    else:  # get nearest log instead
+    elif state.get_nearest_tree(x, z):  # get nearest log instead
         x, z = state.get_nearest_tree(x, z)
         type = state.blocks[x][y-1][z]
-    for i in range(growth_rate+1):
-        log = type+'_log'
-        print(log)
-        state.set[x][y][z] = log
-        y+=1
+    else:
+        type = "oak_log"
+    for i in range(growth_rate):
+        src.states.set_state_block(state, x, y+i, z, type)
+
+
+# A lorax-y, wind-swept style
+def grow_leaves(state, x, tree_y, z, type, leaves_height):
+    leaves_height
+    # create lorax-y trees, where the middle circles are largest or randomized
+    xto = x + randint(-1,1)
+    zto = z + randint(-1,1)
+    xoff = randint(-2,2)
+    zoff = randint(-2,2)
+    xfrom = x + xoff
+    zfrom = z + zoff
+    r = tree_y - leaves_height
+    for y in range(r+1, tree_y + 1):
+        idx = y - r + 1
+        x = int( (((xto - xfrom)/r) * idx) + xfrom)
+        z = int( (((zto - zfrom)/r) * idx) + zfrom)
+        rad = randint(1,3)
+        for lx in range(x-rad, xto+rad+1):
+            for lz in range(z - rad, zto + rad + 1):
+                if state.out_of_bounds_2D(lx, lz):
+                    continue
+                dist = math.dist((lx,lz), (x,z))
+                if dist <= rad and not state.out_of_bounds_3D(lx,y,lz) and state.blocks[lx][y][lz] in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.PASSTHROUGH.value]:
+                    src.states.set_state_block(state, lx, y, lz, type)
+
 
 
 
@@ -105,7 +131,7 @@ def do_recur_on_adjacent(state, x, y, z, target_block_checker, recur_func, forwa
 
 def flood_kill_leaves(state, leaf_x, leaf_y, leaf_z):
     def leaf_to_air(blocks, x, y, z):
-        blocks[x][y][z] = 'minecraft:air'
+        src.states.set_state_block(x,y,z, 'minecraft:air')
         src.states.set_state_block(state, x, y, z, 'minecraft:air')
     do_recur_on_adjacent(state, leaf_x, leaf_y, leaf_z, is_leaf, do_recur_on_adjacent, leaf_to_air)
 

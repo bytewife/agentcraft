@@ -1,7 +1,7 @@
 import math
 
 from scipy.spatial import KDTree
-from random import choice, random, choices
+from random import choice, random, choices, randint
 from enum import Enum
 import src.pathfinding
 import src.states
@@ -34,7 +34,7 @@ class Agent:
 
 
     def __init__(self, state, state_x, state_z, walkable_heightmap, name, head,
-                 parent_1=None, parent_2=None, model="minecraft:carved_pumpkin", motive=Motive.LOGGING.name):
+                 parent_1=None, parent_2=None, motive=Motive.LOGGING.name):
 
         self.x = self.rendered_x = state_x
         self.z = self.rendered_z = state_z
@@ -43,7 +43,6 @@ class Agent:
         self.name = name
         self.parent_1 = parent_1
         self.parent_2 = parent_2
-        self.model = model
         self.state = state
         self.path = []
         self.motive = motive
@@ -66,7 +65,8 @@ class Agent:
         self.building_material = ''
         self.build_cost = 0
         self.tree_grow_iteration = 0
-        self.tree_grow_iterations_max = 3
+        self.tree_grow_iterations_max = randint(3,5)
+        self.tree_leaves_height = randint(5,7)
 
 
     def find_build_location(self, building_file, wood_type):
@@ -333,9 +333,9 @@ class Agent:
 
 
     def do_replenish_tree_task(self):
-        if self.tree_grow_iteration <= self.tree_grow_iterations_max:
-            def is_in_state_saplings(state, x, y, z):
-                return state.blocks[x][y][z] in state.saplings
+        def is_in_state_saplings(state, x, y, z):
+            return (x,z) in state.saplings
+        if self.tree_grow_iteration < self.tree_grow_iterations_max+self.tree_leaves_height - 1:
             status = self.collect_from_adjacent_spot(self.state, check_func=is_in_state_saplings, manip_func=src.manipulation.grow_tree_at, prosperity_inc=src.my_utils.ACTION_PROSPERITY.REPLENISH_TREE)
             self.tree_grow_iteration+=1
         else:
@@ -347,10 +347,11 @@ class Agent:
                 self.state.update_block_info(x,z)
                 if (x,z) in saps:
                     self.state.saplings.remove((x,z))
+                    # grow leaves there
+                    src.manipulation.grow_leaves(self.state, x, self.state.rel_ground_hm[x][z], z, 'minecraft:oak_leaves[distance=7]', leaves_height=self.tree_leaves_height)
                 if src.manipulation.is_log(self.state, x, self.state.rel_ground_hm[x][z], z):
                     self.state.trees.append((x,z))
             self.set_motive(self.Motive.IDLE)
-
 
 
     def do_idle_task(self):
@@ -461,7 +462,7 @@ class Agent:
                         self.set_path(path)
                         return
                     closed.add(chosen_spot)
-        print("could not a spot!")
+        print("could not find a spot!")
         if default_to_current == True:
             self.set_path([])
         else:
@@ -521,6 +522,3 @@ RightArm:[348f,67f,0f]}}\
             hand2=self.favorite_item,
             head_tilt="350")  # this can be related to resources! 330 is high, 400 is low
         http_framework.interfaceUtils.runCommand(spawn_cmd)
-
-    # def set_model(self, block):
-    #     self.model = block
