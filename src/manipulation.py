@@ -17,9 +17,9 @@ def grow_tree_at(state, x, y, z, times=1):
     # get sapling type, or if that fails get nearest log type because sometimes there's no sapling here.
     type = ''
     if is_sapling(state, x, y, z):
-        type = state.blocks[x][y][z][:-8]  # I hope it's not "minecraft:..."
+        type = state.blocks[x][y][z][:-8] + "_log"  # I hope it's not "minecraft:..."
     elif is_log(state, x, y, z):  # get log underneath instead
-        type = state.blocks[x][y][z][:-4]
+        type = state.blocks[x][y][z]
     elif state.get_nearest_tree(x, z):  # get nearest log instead
         i = 0
         max = 20
@@ -36,7 +36,7 @@ def grow_tree_at(state, x, y, z, times=1):
         type = "oak_log"
     for i in range(growth_rate):
         print("placing "+type+" at "+state.blocks[x][y+i][z])
-        src.states.set_state_block(state, x, y+i-1, z, type)
+        src.states.set_state_block(state, x, y, z, type)
 
 
 

@@ -30,6 +30,7 @@ class Agent:
         "acacia_log": 0,
         "jungle_log": 0,
     }
+    max_turns_staying_still = 10
 
 
 
@@ -67,6 +68,7 @@ class Agent:
         self.tree_grow_iteration = 0
         self.tree_grow_iterations_max = randint(3,5)
         self.tree_leaves_height = randint(5,7)
+        self.turns_staying_still = 0
 
 
     def find_build_location(self, building_file, wood_type):
@@ -149,6 +151,8 @@ class Agent:
                     if not node in self.state.construction: break
                     if node in self.state.roads: break  # don't go over roads
                     if node in self.state.built: break  # don't build over buildings
+                    if any(tile in self.state.water for tile in node.get_tiles()):
+                        break # don't build on water
                     tiles += 1
                     found_nodes.add(node)
             if tiles == min_tiles:  # found a spot!
@@ -179,8 +183,8 @@ class Agent:
                     nx = node.center[0] + x
                     nz = node.center[1] + z
                     if self.state.out_of_bounds_Node(nx, nz): continue
-                    by = lowest_y = self.state.rel_ground_hm[nx][nz]
-                    if self.state.rel_ground_hm[x][z] < lowest_y:
+                    by = self.state.rel_ground_hm[nx][nz]
+                    if by < lowest_y:
                         lowest_y = by
         y = lowest_y  # This should be the lowest y in the
         status, building_heightmap, exterior_heightmap = src.scheme_utils.place_schematic_in_state(self.state, bld, xf, y, zf,
@@ -319,9 +323,11 @@ class Agent:
 
 
     def follow_path(self, state, walkable_heightmap):
+        dx = dz = 0
         if len(self.path) > 0:
-            new_pos = self.path.pop()
-            self.move_self(*new_pos, state=state, walkable_heightmap=walkable_heightmap)
+            dx, dz = self.path.pop()
+            self.move_self(dx, dz, state=state, walkable_heightmap=walkable_heightmap)
+            self.turns_staying_still = 0
         else:
             if self.motive == self.Motive.REST.name:
                 self.do_rest_task()
@@ -339,8 +345,17 @@ class Agent:
                 self.do_replenish_tree_task()
             elif self.motive == self.Motive.IDLE.name:
                 self.do_idle_task()
+        if self.turns_staying_still > Agent.max_turns_staying_still:  # _move in random direction if still for too long
+            n = choice(src.movement.directions)
+            nx = self.x + n[0]
+            nz = self.z + n[1]
+            self.move_self(nx, nz, state=state, walkable_heightmap=walkable_heightmap)
+            self.turns_staying_still = 0
+        if dx == 0 and dz == 0:
+            self.turns_staying_still += 1
 
 
+            
     def do_replenish_tree_task(self):
         def is_in_state_saplings(state, x, y, z):
             return (x,z) in state.saplings
