@@ -19,7 +19,7 @@ from enum import Enum
 x1 = 0
 z1 = 0
 x2 = 62
-z2 = 69
+z2 = 65
 
 area = [x1,z1,x2,z2]
 area = src.my_utils.correct_area(area)
@@ -57,9 +57,12 @@ sim = src.simulation.Simulation(area, rendering_step_duration=0.0, is_rendering_
 
 print("road_segs")
 print(sim.state.road_segs)
-sim.step(200, is_rendering=True)
+sim.step(600, is_rendering=True)
 # print(sim.state.static_ground_hm)
 # print(sim.state.sectors)
 print(src.agent.Agent.shared_resources)
+print("semibends is "+str(sim.state.semibends))
+print("bends is "+str(sim.state.bends))
+print("bendcoint is "+str(sim.state.bendcount))
 # sim.is_rendering_each_step = True
 # sim.step(is_rendering=True)

@@ -55,7 +55,7 @@ class Agent:
         self.water_inc_rate = 10
         self.thirst_thresh = 50
         self.rest_dec_rate = -0.25
-        self.rest_inc_rate = 1
+        self.rest_inc_rate = 2
         self.rest_thresh = 30
         self.rest_max = 100
         self.unshared_resources = {
@@ -151,8 +151,8 @@ class Agent:
                     if not node in self.state.construction: break
                     if node in self.state.roads: break  # don't go over roads
                     if node in self.state.built: break  # don't build over buildings
-                    if any(tile in self.state.water for tile in node.get_tiles()):
-                        break # don't build on water
+                    for tile in node.get_tiles():
+                        if tile in self.state.water: continue
                     tiles += 1
                     found_nodes.add(node)
             if tiles == min_tiles:  # found a spot!
@@ -217,7 +217,6 @@ class Agent:
                     block = choice(src.my_utils.ROAD_SETS['default'])
                     self.state.set_block(x, y, z, block)
         y = self.state.rel_ground_hm[xf][zf] + 5
-        # self.set_block(xf, y, zf, "minecraft:diamond_block")
         # debug
         for n in found_nodes:
             x = n.center[0]
@@ -253,7 +252,7 @@ class Agent:
             return self.Motive.BUILD
         else:
             actions = (self.Motive.LOGGING, self.Motive.REPLENISH_TREE)
-            weights = (10, 3)
+            weights = (10, 1)
             choice = choices(actions, weights, k=1)
             return choice[0]
 
@@ -300,8 +299,8 @@ class Agent:
         if new_x < 0 or new_z < 0 or new_x >= state.len_x or new_z >= state.len_z:
             print(self.name + " tried to move out of bounds!")
             return
-        self.dx = new_x - self.x
-        self.dz = new_z - self.z
+        self.dx = (new_x - self.x) #& -1
+        self.dz = (new_z - self.z) #& -1
         self.x = new_x
         self.z = new_z
         self.y = walkable_heightmap[new_x][new_z]
@@ -324,31 +323,37 @@ class Agent:
 
     def follow_path(self, state, walkable_heightmap):
         dx = dz = 0
+        status = False
         if len(self.path) > 0:
             dx, dz = self.path.pop()
             self.move_self(dx, dz, state=state, walkable_heightmap=walkable_heightmap)
             self.turns_staying_still = 0
         else:
             if self.motive == self.Motive.REST.name:
-                self.do_rest_task()
+                status = self.do_rest_task()
             if self.motive == self.Motive.WATER.name:
-                self.do_water_task()
+                status = self.do_water_task()
             if self.motive == self.Motive.BUILD.name:
                 if self.build_params is None:
                     print("failed to get to build spot")
                 else:
                     self.do_build_task(*self.build_params)
-                self.do_idle_task()
+                status = self.do_idle_task()
             elif self.motive == self.Motive.LOGGING.name:
-                self.do_log_task()
+                status = self.do_log_task()
             elif self.motive == self.Motive.REPLENISH_TREE.name:
-                self.do_replenish_tree_task()
+                status = self.do_replenish_tree_task()
             elif self.motive == self.Motive.IDLE.name:
-                self.do_idle_task()
-        if self.turns_staying_still > Agent.max_turns_staying_still:  # _move in random direction if still for too long
-            n = choice(src.movement.directions)
-            nx = self.x + n[0]
-            nz = self.z + n[1]
+                status = self.do_idle_task()
+        if self.turns_staying_still > Agent.max_turns_staying_still and status is False:  # _move in random direction if still for too long
+            print("stayed still too long and now moving!")
+            nx = nz = 1
+            for dir in src.movement.directions:
+                nx = self.x + dir[0]
+                nz = self.z + dir[1]
+                ny = self.state.rel_ground_hm[nx][nz]
+                if ny < self.state.rel_ground_hm[self.x][self.z]:
+                    break
             self.move_self(nx, nz, state=state, walkable_heightmap=walkable_heightmap)
             self.turns_staying_still = 0
         if dx == 0 and dz == 0:
@@ -364,6 +369,7 @@ class Agent:
             self.tree_grow_iteration+=1
             if status == src.manipulation.TASK_OUTCOME.FAILURE.name:
                 self.tree_grow_iteration = 999   # so that they can go into else loop next run
+            return True
         else:
             self.tree_grow_iteration = 0
             saps = set(self.state.saplings)
@@ -384,18 +390,21 @@ class Agent:
                 if src.manipulation.is_log(self.state, x, self.state.rel_ground_hm[x][z]-1, z):
                     self.state.trees.append((x,z))
             self.set_motive(self.Motive.IDLE)
+            return False
 
 
     def do_idle_task(self):
         self.auto_motive()
+        return False
 
 
     def do_rest_task(self):
-        if self.calc_motive() == self.Motive.REST and self.unshared_resources['rest'] < self.rest_max:
-            # rest
+        if self.unshared_resources['rest'] < self.rest_max: # self.calc_motive() == self.Motive.REST:
             self.unshared_resources['rest'] += self.rest_inc_rate
+            return True
         else:
             self.set_motive(self.Motive.IDLE)
+            return False
 
 
     def do_water_task(self):
@@ -403,13 +412,20 @@ class Agent:
         if self.calc_motive() == self.Motive.WATER and self.unshared_resources['water'] < self.water_max:
             # keep collecting water
             status = self.collect_from_adjacent_spot(self.state, check_func=src.manipulation.is_water, manip_func=src.manipulation.collect_water_at, prosperity_inc=src.my_utils.ACTION_PROSPERITY.WATER) # this may not inc an int
+            print('status is '+status)
             if status == src.manipulation.TASK_OUTCOME.SUCCESS.name:
+                print("collected water!")
                 self.unshared_resources['water'] += self.water_inc_rate
-                pass
+                return True
             elif status == src.manipulation.TASK_OUTCOME.FAILURE.name:  # if no water found
+                print("did not collect water!")
                 self.set_motive(self.Motive.IDLE)
+                return False
+            return True  # in prograss
         else:
+            print("idling from water")
             self.set_motive(self.Motive.IDLE)
+            return True
 
 
     def do_log_task(self):
@@ -418,6 +434,7 @@ class Agent:
             src.agent.Agent.shared_resources['oak_log'] += 1
             print("finding another tree!")
             self.set_motive(self.Motive.IDLE)
+            return True
         elif status == src.manipulation.TASK_OUTCOME.FAILURE.name:  # if they got sniped
             print("tree sniped")
             # udate this tree
@@ -426,10 +443,11 @@ class Agent:
                 if self.state.out_of_bounds_2D(*point): continue
                 self.state.update_block_info(*point)
             self.set_motive(self.Motive.IDLE)
+            return False
         else:
             # do nothing (continue logging)
             src.agent.Agent.shared_resources['oak_log'] += 1
-            pass
+            return True
 
 
     # prepares for motive
@@ -441,7 +459,7 @@ class Agent:
         if self.motive in src.my_utils.AGENT_ITEMS:
             self.current_action_item = choice(src.my_utils.AGENT_ITEMS[self.motive])
         if new_motive.name == self.Motive.REST.name:
-            self.set_path_to_nearest_spot(list(self.state.built_heightmap.keys()), 30, 10, 5, search_neighbors_instead=False)
+            self.set_path_to_nearest_spot(list(self.state.built_heightmap.keys()), 30, 10, 20, search_neighbors_instead=False)
         elif new_motive.name == self.Motive.WATER.name:
             self.set_path_to_nearest_spot(self.state.water, 10, 10, 20, search_neighbors_instead=True)
         elif new_motive.name == self.Motive.BUILD.name:
@@ -460,11 +478,11 @@ class Agent:
                 # there are no build spots. so let's do something else
                 self.set_motive(self.Motive.LOGGING)
         elif new_motive.name == self.Motive.LOGGING.name:
-            self.set_path_to_nearest_spot(self.state.trees, 20, 10, 8, search_neighbors_instead=True)
+            self.set_path_to_nearest_spot(self.state.trees, 20, 10, 20, search_neighbors_instead=True)
             if len(self.path) < 1:  # if no trees were found
                 self.set_motive(self.Motive.REPLENISH_TREE)
         elif new_motive.name == self.Motive.REPLENISH_TREE.name:
-            self.set_path_to_nearest_spot(self.state.saplings, 15, 10, 8, search_neighbors_instead=True)
+            self.set_path_to_nearest_spot(self.state.saplings, 15, 10, 20, search_neighbors_instead=True)
         elif new_motive.name == self.Motive.IDLE.name: # just let it go into follow_path
             pass
 
@@ -494,8 +512,6 @@ class Agent:
                         self.set_path(path)
                         return
                     closed.add(chosen_spot)
-        print("water is ")
-        print(self.state.water)
         print(self.name+" could not find a spot!")
         self.set_path([])
 
@@ -543,7 +559,7 @@ RightArm:[348f,67f,0f]}}\
             x=self.x+self.state.world_x,
             y=self.y+self.state.world_y,
             z=self.z+self.state.world_z,
-            rot=src.my_utils.ROTATION_LOOKUP[(self.dx, self.dz)],
+            rot=src.my_utils.ROTATION_LOOKUP[max(min(self.dx, 1), -1, -1), max(min(self.dz, 1), -1)],
             name=self.name,
             is_small="false",
             head=self.head,

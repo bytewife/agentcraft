@@ -261,10 +261,10 @@ def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, bui
         height_traversal[(x,z)].pop()
         height_traversal[(x,z)].appendleft(block)
         if all(b == "minecraft:air[]" for b in height_traversal[(x,z)]) or '_door' in list(height_traversal[(x,z)])[-1] or "_carpet" in list(height_traversal[(x,z)])[-1]:
-            # if y - 1 == origin_y or abs(x-origin_x) < 2 or abs(x-ex) < 2 or abs(z-origin_z) < 2 or abs(z-ez) < 2:
-            exterior_heightmap[(x,z)] = y - 1
-            # else:
-            building_heightmap[(x,z)] = y - agent_height + 1
+            if y - 1 == origin_y or abs(x - origin_x) < 3 or abs(x - ex) < 3 or abs(z - origin_z) < 3 or abs( z - ez) < 3:
+                exterior_heightmap[(x,z)] = y - 1
+            else:
+                building_heightmap[(x,z)] = y - agent_height + 1
             height_traversal.pop((x,z))
 
     for y in range(origin_y, end_y+1, -dir_y):

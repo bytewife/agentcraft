@@ -41,9 +41,15 @@ ROTATION_LOOKUP = {
 	(1, -1): "225",
 	(1, 0): "270",
 	(1, 1): "315",
+	(0, 0): "0",
 }
 
-AGENT_ITEMS = {"REST": ["clock", "white_tulip", "white_wool", "white_bed"], "LOGGING": ["iron_axe", "gold_axe", "stone_axe"], "WATER": ["glass_bottle", 'bucket'], "BUILD": ["iron_shovel", "stone_shovel", "gold_shovel"], "FAVORITE": ['apple', 'bread', 'melon_slice', 'golden_apple', 'book', 'diamond', 'emerald', 'nautilus_shell', 'cornflower', 'bamboo', 'torch', 'sunflower', 'zombie_head', 'ladder', 'poppy', 'warped_fungus']}
+AGENT_ITEMS = {"REST": ["clock", "white_tulip", "white_wool", "white_bed"],
+			   "LOGGING": ["iron_axe", "gold_axe", "stone_axe"],
+			   "WATER": ["glass_bottle", 'bucket'],
+			   "BUILD": ["iron_shovel", "stone_shovel", "gold_shovel"],
+			   "FAVORITE": ['apple', 'bread', 'melon_slice', 'golden_apple', 'book', 'diamond', 'emerald', 'nautilus_shell', 'cornflower', 'bamboo', 'torch', 'sunflower', 'zombie_head', 'ladder', 'poppy', 'warped_fungus'],
+			   "REPLENISH": ['bone_meal']}
 
 
 

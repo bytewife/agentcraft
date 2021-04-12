@@ -54,7 +54,6 @@ class State:
             self.heightmaps = world_slice.heightmaps
             self.types = self.gen_types(self.rel_ground_hm)  # 2D array. Exclude leaves because it would be hard to determine tree positions
             self.world_x = world_slice.rect[0]
-            print(self.water)
             self.world_z = world_slice.rect[1]
             self.len_x = world_slice.rect[2] - world_slice.rect[0]
             self.len_z = world_slice.rect[3] - world_slice.rect[1]
@@ -79,8 +78,15 @@ class State:
             self.total_changed_blocks = {}
             self.total_changed_blocks_xz = set()
             self.phase = 1
+            self.bends = 0
+            self.semibends = 0
+            self.bendcount = 0
             print('nodes is '+str(len(self.nodes)))
             print('traffic is '+str(len(self.traffic)))
+
+            for water in self.water:
+                # src.states.set_state_block(self, water[0], self.rel_ground_hm[water[0]][water[1]], water[1], 'minecraft:iron_block')
+                pass
 
 
         else:  # for testing
@@ -172,7 +178,6 @@ class State:
         if status == False:
             return False
         self.built_heightmap.update(building_heightmap)
-        print(self.built_heightmap)
         self.exterior_heightmap.update(exterior_heightmap)
         # build road from the road to the building
         self.create_road(found_road.center, ctrn_node.center, road_type="None", points=None, leave_lot=False, add_as_road_type=False)
@@ -820,14 +825,80 @@ class State:
         return nodes
 
     # might have to get point2 within the func, rather than pass it in
-    def create_road(self, node_pos1, node_pos2, road_type, points=None, leave_lot=False, correction=5, road_blocks=None, inner_block_rate=1.0, outer_block_rate=0.75, fringe_rate=0.05, add_as_road_type = True):
+    def create_road(self, node_pos1, node_pos2, road_type, points=None, leave_lot=False, correction=5, road_blocks=None, inner_block_rate=1.0, outer_block_rate=0.75, fringe_rate=0.05, add_as_road_type = True, bend_if_needed=False):
         self.road_nodes.append(self.nodes[self.node_pointers[node_pos1]])
         self.road_nodes.append(self.nodes[self.node_pointers[node_pos2]])
         block_path = []
         if points == None:
             block_path = src.linedrawing.get_line(node_pos1, node_pos2) # inclusive
+
+
+
+
+            # if bend_if_needed:
+            #     closed = set()
+            #     for i in range(len(block_path)):
+            #         if (block_path[i] in self.built):
+            #             built_node = block_path[i]
+            #             ## try to get a bent road from that
+            #             # first find a diagonal that is not in built and isn't type water
+            #             for diag in src.movement.diagonals:
+            #                 nx = self.node_size * diag[0] + built_node.center[0]
+            #                 nz = self.node_size * diag[1] + built_node.center[1]
+            #                 if (nx, nz) in closed: continue
+            #                 if self.out_of_bounds_node(nx, nz): continue
+            #                 closed.add((nx, nz))
+            #                 p1_to_diag = src.linedrawing.get_line(node_pos1, (nx,nz))
+            #                 if any(tile in self.built for tile in p1_to_diag): continue
+            #                 # p2_to_diag = src.linedrawing.get_line((nx, nz), node_pos2)
+            #                 closest_point, p2_to_diag = self.get_closest_point(node=self.nodes[(nx, nz)],
+            #                                                                     lots=[],
+            #                                                                     possible_targets=self.roads,
+            #                                                                     road_type=road_type,
+            #                                                                     state=self,
+            #                                                                     leave_lot=false,
+            #                                                                     correction=correction)
+            #                 if any(tile in self.built for tile in p2_to_diag): continue
+            #                 block_path = p1_to_diag + p2_to_diag
+            #                 self.bends+=1
         else:
             block_path = points
+            if bend_if_needed:
+                tile_coords = [tilepos for node in self.built for tilepos in node.get_tiles()]
+                if any(tile in tile_coords for tile in block_path):
+                    # get nearest built
+                    node_coords = [node.center for node in self.built]
+                    nearest_builts = src.movement.find_nearest(*node_pos1, node_coords, 100, 20, 10)
+                    # print("nearest builts is ")
+                    # print(str(nearest_builts))
+                    self.bendcount += len(nearest_builts)
+                    closed = set()
+                    found_bend = False
+                    for built in nearest_builts:
+                        if found_bend == True: break
+                        for diag in src.movement.diagonals:
+                            nx = self.node_size * diag[0] + built[0]
+                            nz = self.node_size * diag[1] + built[1]
+                            if (nx, nz) in closed: continue
+                            closed.add((nx, nz))
+                            if self.out_of_bounds_Node(nx, nz): continue
+                            p1_to_diag = src.linedrawing.get_line(node_pos1, (nx, nz))
+                            if any(tile in self.built for tile in p1_to_diag): continue
+                            self.semibends += 1
+                            # p2_to_diag = src.linedrawing.get_line((nx, nz), node_pos2)
+                            closest_point, p2_to_diag = self.get_closest_point(node=self.nodes[(nx, nz)],
+                                                                               lots=[],
+                                                                               possible_targets=self.roads,
+                                                                               road_type=road_type,
+                                                                               state=self,
+                                                                               leave_lot=False,
+                                                                               correction=correction)
+                            if p2_to_diag is None: continue
+                            if any(tile in self.built for tile in p2_to_diag): continue
+                            block_path = p1_to_diag + p2_to_diag
+                            self.bends += 1
+                            found_bend = True
+                            break
         # add road segnmets
         middle_nodes = []
         node_path = []
@@ -950,7 +1021,7 @@ class State:
     #     self.init_lots(x1, y1, x2, y2)  # main street is a lot
 
 
-    def append_road(self, point, road_type, leave_lot=False, correction=5):
+    def append_road(self, point, road_type, leave_lot=False, correction=5, bend_if_needed = False):
         # convert point to node
         point = self.node_pointers[point]
         node = self.nodes[point]
@@ -975,7 +1046,7 @@ class State:
             point = closest_point
             path_points.extend(src.linedrawing.get_line((x2, y2), point))  # append to the points list the same thing in reverse? or is this a diff line?
 
-        self.create_road(point, (x2, y2), road_type=road_type, points=path_points)
+        self.create_road(point, (x2, y2), road_type=road_type, points=path_points, bend_if_needed=bend_if_needed)
 
 
     def get_point_to_close_gap_minor(self, x1, z1, points):
