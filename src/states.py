@@ -29,7 +29,7 @@ class State:
     len_z = 0
     unwalkable_blocks = ['minecraft:water', 'minecraft:lava']
     agent_height = 2
-    agent_jump_ability = 2
+    agent_jump_ability = 1
     heightmap_offset = -1
     node_size = 3
     road_nodes = []
@@ -867,11 +867,13 @@ class State:
                 tile_coords = [tilepos for node in self.built for tilepos in node.get_tiles()]
                 if any(tile in tile_coords for tile in block_path):
                     # get nearest built
-                    node_coords = [node.center for node in self.built]
-                    nearest_builts = src.movement.find_nearest(*node_pos1, node_coords, 100, 20, 10)
+                    built_node_coords = [node.center for node in self.built]  # returns building node coords
+                    built_diags = [(node[0]+dir[0]*self.node_size, node[1]+dir[1]*self.node_size)  # returns diagonals to building nodes
+                                   for node in built_node_coords for dir in src.movement.diagonals if (node[0]+dir[0]*self.node_size, node[1]+dir[1]*self.node_size) not in self.built]
+                    nearest_builts = src.movement.find_nearest(*node_pos1, built_diags, 5, 30, 10)
                     # print("nearest builts is ")
                     # print(str(nearest_builts))
-                    self.bendcount += len(nearest_builts)
+                    # self.bendcount += len(near)
                     closed = set()
                     found_bend = False
                     for built in nearest_builts:
@@ -884,6 +886,11 @@ class State:
                             if self.out_of_bounds_Node(nx, nz): continue
                             p1_to_diag = src.linedrawing.get_line(node_pos1, (nx, nz))
                             if any(tile in self.built for tile in p1_to_diag): continue
+
+                            # # debug
+                            # for tile in p1_to_diag:
+                            #     set_state_block(self,tile[0], self.rel_ground_hm[tile[0]][tile[1]]+10,tile[1], 'minecraft:diamond_block')
+
                             self.semibends += 1
                             # p2_to_diag = src.linedrawing.get_line((nx, nz), node_pos2)
                             closest_point, p2_to_diag = self.get_closest_point(node=self.nodes[(nx, nz)],
@@ -893,9 +900,16 @@ class State:
                                                                                state=self,
                                                                                leave_lot=False,
                                                                                correction=correction)
-                            if p2_to_diag is None: continue
-                            if any(tile in self.built for tile in p2_to_diag): continue
-                            block_path = p1_to_diag + p2_to_diag
+                            if p2_to_diag is None: continue  #if none found, try again
+                            if any(tile in tile_coords for tile in p2_to_diag): continue  # if building is in path. try again
+
+                            # # debug
+                            for tile in p1_to_diag:
+                                set_state_block(self,tile[0], self.rel_ground_hm[tile[0]][tile[1]]+10,tile[1], 'minecraft:diamond_block')
+                            for tile in p2_to_diag:
+                                set_state_block(self,tile[0], self.rel_ground_hm[tile[0]][tile[1]]+10,tile[1], 'minecraft:emerald_block')
+
+                            block_path = p1_to_diag + p2_to_diag  # concat two, building-free roads
                             self.bends += 1
                             found_bend = True
                             break
@@ -955,7 +969,7 @@ class State:
         aux_path = []
         for card in src.movement.cardinals:
             # offset1 = choice(src.movement.cardinals)
-            def clamp(x, z):
+            def clamp_to_state_coords(x, z):
                 if x > self.last_node_pointer_x:
                     x = self.last_node_pointer_x
                 elif x < 0:
@@ -965,9 +979,10 @@ class State:
                 elif z < 0:
                     z = 0
                 return (x,z)
-            p1 = clamp(block_path[0][0] + card[0], block_path[0][1] + card[1])
-            p2 = clamp(block_path[len(block_path)-1][0] + card[0], block_path[len(block_path)-1][1] + card[1])
-            aux1 = src.linedrawing.get_line( p1, p2 )
+            p1 = clamp_to_state_coords(block_path[0][0] + card[0], block_path[0][1] + card[1])
+            p2 = clamp_to_state_coords(block_path[len(block_path)-1][0] + card[0], block_path[len(block_path)-1][1] + card[1])
+            # aux1 = src.linedrawing.get_line( p1, p2 )
+            aux1 = [(block[0]+card[0], block[1]+card[1]) for block in block_path]
             aux_path.extend(aux1)
 
 
@@ -1109,6 +1124,7 @@ class State:
                     (cx2, cy2) = node2.lot.center
                     (x, z) = (x + x - cx2, z + z - cy2)
                     # clamp road endpoints
+                    print("BUILDING ROAD. IS IT LONG?")
                     if x >= self.last_node_pointer_x:
                         x = self.last_node_pointer_x
                     if x < 0:

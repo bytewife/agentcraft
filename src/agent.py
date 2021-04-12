@@ -51,10 +51,10 @@ class Agent:
         self.favorite_item = choice(src.my_utils.AGENT_ITEMS['FAVORITE'])
         self.head = head
         self.water_max = 100
-        self.water_dec_rate = -0.25 # lose this per turn
+        self.water_dec_rate = -0.2 # lose this per turn
         self.water_inc_rate = 10
         self.thirst_thresh = 50
-        self.rest_dec_rate = -0.25
+        self.rest_dec_rate = -0.15
         self.rest_inc_rate = 2
         self.rest_thresh = 30
         self.rest_max = 100
@@ -94,6 +94,11 @@ class Agent:
                 if not_in_built:
                     nx, nz = result[0].center
                     if self.state.sectors[self.x][self.z] == self.state.sectors[nx][nz]:
+                        assert type(result[2]) == set
+                        for node in result[2].union({result[1]}):  # this is equal to
+                            # src.states.set_state_block(self.state, node.center[0], self.state.rel_ground_hm[node.center[0]][node.center[1]]+10, node.center[1], 'minecraft:gold_block')
+                            self.state.built.add(node)  # add to built in order to avoid roads being placed before buildings placed
+                            pass
                         return result
             i += 1
         return None
@@ -152,6 +157,7 @@ class Agent:
                     if node in self.state.roads: break  # don't go over roads
                     if node in self.state.built: break  # don't build over buildings
                     for tile in node.get_tiles():
+                        # src.states.set_state_block(self.state, tile[0], self.state.rel_ground_hm[tile[0]][tile[1]] + 3, tile[1], 'minecraft:netherite')
                         if tile in self.state.water: continue
                     tiles += 1
                     found_nodes.add(node)
@@ -162,6 +168,7 @@ class Agent:
                 found_nodes.clear()
         if found_ctrn_dir == None:  # if there's not enough space, return
             return None
+
 
         ctrn_dir = found_ctrn_dir
         return (found_road, ctrn_node, found_nodes, ctrn_dir, bld, rot, min_nodes_in_x, min_nodes_in_z, self.state.built, wood_type)
@@ -192,6 +199,8 @@ class Agent:
                                                                                                    built_arr=self.state.built,
                                                                                                    wood_type=wood_type)
         if status == False:
+            for node in found_nodes.union({ctrn_node}):
+                self.state.built.remove(node)  # since this was set early in check_build_spot, remove it
             return False
         self.state.built_heightmap.update(building_heightmap)
         self.state.exterior_heightmap.update(exterior_heightmap)
@@ -215,14 +224,14 @@ class Agent:
                 attenuate = 0.8
                 if random() > inv_chance * attenuate:
                     block = choice(src.my_utils.ROAD_SETS['default'])
-                    self.state.set_block(x, y, z, block)
+                    src.states.set_state_block(self.state, x, y, z, block)
         y = self.state.rel_ground_hm[xf][zf] + 5
         # debug
-        for n in found_nodes:
-            x = n.center[0]
-            z = n.center[1]
-            y = self.state.rel_ground_hm[x][z] + 20
-            src.states.set_state_block(self.state, x, y, z, "minecraft:iron_block")
+        # for n in found_nodes:
+        #     x = n.center[0]
+        #     z = n.center[1]
+        #     y = self.state.rel_ground_hm[x][z] + 20
+        #     src.states.set_state_block(self.state, x, y, z, "minecraft:iron_block")
         ## remove nodes from construction
         for node in list(found_nodes):
             if node in self.state.construction:
@@ -348,12 +357,16 @@ class Agent:
         if self.turns_staying_still > Agent.max_turns_staying_still and status is False:  # _move in random direction if still for too long
             print("stayed still too long and now moving!")
             nx = nz = 1
+            found_open = False
             for dir in src.movement.directions:
                 nx = self.x + dir[0]
                 nz = self.z + dir[1]
                 ny = self.state.rel_ground_hm[nx][nz]
                 if ny < self.state.rel_ground_hm[self.x][self.z]:
+                    found_open = True
                     break
+            if not found_open:
+                nx, nz = choice(src.movement.directions)
             self.move_self(nx, nz, state=state, walkable_heightmap=walkable_heightmap)
             self.turns_staying_still = 0
         if dx == 0 and dz == 0:
@@ -409,7 +422,7 @@ class Agent:
 
     def do_water_task(self):
         print(self.name+"'s water is "+str(self.unshared_resources['water']))
-        if self.calc_motive() == self.Motive.WATER and self.unshared_resources['water'] < self.water_max:
+        if self.unshared_resources['water'] < self.water_max:# and self.calc_motive() == self.Motive.WATER :
             # keep collecting water
             status = self.collect_from_adjacent_spot(self.state, check_func=src.manipulation.is_water, manip_func=src.manipulation.collect_water_at, prosperity_inc=src.my_utils.ACTION_PROSPERITY.WATER) # this may not inc an int
             print('status is '+status)
@@ -438,8 +451,10 @@ class Agent:
         elif status == src.manipulation.TASK_OUTCOME.FAILURE.name:  # if they got sniped
             print("tree sniped")
             # udate this tree
-            for dir in src.movement.directions:
+            for dir in src.movement.idirections:
                 point = (dir[0] + self.x, dir[1] + self.z)
+                if point in self.state.trees:
+                    self.state.trees.remove(point)
                 if self.state.out_of_bounds_2D(*point): continue
                 self.state.update_block_info(*point)
             self.set_motive(self.Motive.IDLE)

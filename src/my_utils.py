@@ -135,9 +135,9 @@ class TYPE_TILES:
 			"minecraft:air",
 			"minecraft:cave_air"
 		},
-        TYPE.PASSTHROUGH.value: {
-            "minecraft:air",
-            "minecraft:cave_air",
+		TYPE.PASSTHROUGH.value: {
+			"minecraft:air",
+			"minecraft:cave_air",
 			"minecraft:spruce_wall_sign",
 			"minecraft:oak_wall_sign",
 			"minecraft:birch_wall_sign",

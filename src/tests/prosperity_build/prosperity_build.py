@@ -7,6 +7,7 @@ import http_framework.interfaceUtils
 import src.my_utils
 import src.agent
 import src.states
+from pprint import pprint
 import numpy as np
 
 from src.linedrawing import get_line
@@ -16,6 +17,11 @@ from enum import Enum
 # z1 = 46
 # x2 = 152
 # z2 = 144
+# x1 = 15
+# z1 = -42
+# x2 = 62
+# z2 = -99
+
 x1 = 0
 z1 = 0
 x2 = 62
@@ -57,7 +63,19 @@ sim = src.simulation.Simulation(area, rendering_step_duration=0.0, is_rendering_
 
 print("road_segs")
 print(sim.state.road_segs)
-sim.step(600, is_rendering=True)
+sim.step(200, is_rendering=True)
+for built in sim.state.built:
+    src.states.set_state_block(sim.state, built.center[0], sim.state.rel_ground_hm[built.center[0]][built.center[1]]+11, built.center[1], 'minecraft:red_wool')
+for xz,y in sim.state.built_heightmap.items():
+    x, z = xz
+    src.states.set_state_block(sim.state,x,y+1,z, 'minecraft:diorite')
+for x in range(sim.state.len_x):
+    for z in range(sim.state.len_z):
+        pass
+        # src.states.set_state_block(sim.state,x,sim.state.rel_ground_hm[x][z],z, 'minecraft:pumpkin')
+
+sim.step(1, is_rendering=True)
+pprint(sim.state.rel_ground_hm)
 # print(sim.state.static_ground_hm)
 # print(sim.state.sectors)
 print(src.agent.Agent.shared_resources)
