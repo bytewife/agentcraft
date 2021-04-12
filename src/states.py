@@ -54,6 +54,7 @@ class State:
             self.heightmaps = world_slice.heightmaps
             self.types = self.gen_types(self.rel_ground_hm)  # 2D array. Exclude leaves because it would be hard to determine tree positions
             self.world_x = world_slice.rect[0]
+            print(self.water)
             self.world_z = world_slice.rect[1]
             self.len_x = world_slice.rect[2] - world_slice.rect[0]
             self.len_z = world_slice.rect[3] - world_slice.rect[1]
@@ -247,7 +248,6 @@ class State:
 
 
 
-
     class Node:
 
         local = set()
@@ -268,21 +268,28 @@ class State:
             self.state = state
             # self.type = set()  # to cache type()
 
+        def get_tiles(self):
+            tiles = []
+            radius = math.floor(self.size / 2)
+            for x in range(-radius, radius + 1):
+                for z in range(-radius, radius + 1):
+                    nx = self.center[0] + x
+                    nz = self.center[1] + z
+                    tiles.append((nx,nz))
+            return tiles
+
+
         # the tiles' types + mask_type (like building or roads
         def get_type(self):
             all_types = set()
-            radius = math.ceil(self.size/2)
-            for x in range(-radius, radius+1):
-                for z in range(-radius, radius+1):
-                    nx = self.center[0] + x
-                    nz = self.center[1] + z
-                    if self.state.out_of_bounds_Node(nx, nz): continue
-                    all_types.add(self.state.types[nx][nz])  # each block has a single type
+            for tile_pos in self.get_tiles():
+                tx, tz = tile_pos
+                if self.state.out_of_bounds_Node(tx, tz): continue
+                all_types.add(self.state.types[tx][tz])  # each block has a single type
             for t in self.mask_type:
                 all_types.add(t)
             self.type = all_types
             return all_types
-
 
 
         def add_prosperity(self, amt):
@@ -519,7 +526,7 @@ class State:
                     self.abs_ground_hm[x][z] = y + self.world_y - 1
                     self.rel_ground_hm[x][z] = y
                 curr_height = self.rel_ground_hm[x][z]
-                if self.static_ground_hm[x][z] > curr_height:
+                if self.static_ground_hm[x][z] > curr_height:  # don't reduce heightmap ever. this is to avoid bugs rn
                     self.static_ground_hm[x][z] = curr_height
         return
 
@@ -528,7 +535,8 @@ class State:
         y = len(self.blocks[0])-1  # start from top
         while y > 0:
             block = self.blocks[x][y][z]
-            if not block in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.PASSTHROUGH.value]:
+            if block not in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.PASSTHROUGH.value]:
+                # print("traversed till "+block)
                 break
             y-=1
         return y
@@ -603,7 +611,7 @@ class State:
             changed_arr = self.total_changed_blocks
             changed_arr_xz = self.total_changed_blocks_xz
         n_blocks = len(changed_arr)
-        self.old_legal_actions = self.legal_actions.copy()
+        self.old_legal_actions = self.legal_actions.copy()  # needed to update
         for position, block in changed_arr.items():
             x,y,z = position
             if is_rendering == True:

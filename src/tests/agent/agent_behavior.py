@@ -31,5 +31,8 @@ ag = src.agent.Agent(sim.state, 3, 3, sim.state.rel_ground_hm, "George", """Skul
 sim.add_agent(ag, use_auto_motive=False)
 
 sim.step(14)
+print(sim.state.saplings)
+print(sim.state.trees)
+sim.step(1)
 
 print("done")

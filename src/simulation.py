@@ -160,8 +160,9 @@ class Simulation:
 
     def add_agent(self, agent : src.agent.Agent, use_auto_motive=True):
         self.agents.add(agent)
-        if use_auto_motive:
-            agent.auto_motive()
+        agent.set_motive(agent.Motive.LOGGING)
+        # if use_auto_motive:
+        #     agent.auto_motive()
 
     def update_agents(self, is_rendering=True):
         for agent in self.agents:

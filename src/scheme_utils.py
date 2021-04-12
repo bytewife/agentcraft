@@ -227,7 +227,7 @@ def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, bui
         xz_coords = [(x, z) for z in range(origin_z, origin_z+length_x) for x in range(origin_x, origin_x+length_z)]
     if state.out_of_bounds_3D(origin_x, origin_y, origin_z) or state.out_of_bounds_3D(end_x, end_y, end_z):
         print("Tried to build out of bounds!")
-        return False
+        return False, [], []
     length_x = int(length_x)
     length_y = int(length_y)
     length_z = int(length_z)

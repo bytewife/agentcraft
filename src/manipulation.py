@@ -1,7 +1,7 @@
 import src.my_utils
 import src.states
 from enum import Enum
-from random import randint, random
+from random import randint, random, choice
 import math
 class TASK_OUTCOME(Enum):
     FAILURE = 0
@@ -13,34 +13,43 @@ class TASK_OUTCOME(Enum):
 def grow_tree_at(state, x, y, z, times=1):
     growth_rate = 1
     y = state.rel_ground_hm[x][z]
+    print("starting tree y is "+str(y))  # prolly bc cut_tree insn't updating it. does it have to do with passthrough?
     # get sapling type, or if that fails get nearest log type because sometimes there's no sapling here.
     type = ''
-    if is_sapling(state, x, y - 1, z):
-        type = state[x][y-1][z][:-8]  # I hope it's not "minecraft:..."
-    elif is_log(state, x, y - 1, z):  # get log underneath instead
-        type = state.blocks[x][y-1][z]
+    if is_sapling(state, x, y, z):
+        type = state.blocks[x][y][z][:-8]  # I hope it's not "minecraft:..."
+    elif is_log(state, x, y, z):  # get log underneath instead
+        type = state.blocks[x][y][z][:-4]
     elif state.get_nearest_tree(x, z):  # get nearest log instead
-        x, z = state.get_nearest_tree(x, z)
-        type = state.blocks[x][y-1][z]
+        i = 0
+        max = 20
+        tx, tz = choice(state.get_nearest_tree(x, z))
+        type = state.blocks[tx][y][tz]
+        while state.blocks[tx][y][tz] not in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.TREE.value]:
+            if i > max:
+                type = "oak_log"
+                break
+            tx, tz = choice(state.get_nearest_tree(x, z))
+            i+=1
+            type = state.blocks[tx][y][tz]
     else:
         type = "oak_log"
     for i in range(growth_rate):
-        src.states.set_state_block(state, x, y+i, z, type)
+        print("placing "+type+" at "+state.blocks[x][y+i][z])
+        src.states.set_state_block(state, x, y+i-1, z, type)
+
 
 
 # A lorax-y, wind-swept style
-def grow_leaves(state, x, tree_y, z, type, leaves_height):
-    leaves_height
+def grow_leaves(state, x, tree_top_y, z, type, leaves_height):
     # create lorax-y trees, where the middle circles are largest or randomized
     xto = x + randint(-1,1)
     zto = z + randint(-1,1)
-    xoff = randint(-2,2)
-    zoff = randint(-2,2)
-    xfrom = x + xoff
-    zfrom = z + zoff
-    r = tree_y - leaves_height
-    for y in range(r+1, tree_y + 1):
-        idx = y - r + 1
+    xfrom = x + randint(-2,2)
+    zfrom = z + randint(-2,2)
+    r = tree_top_y - leaves_height  # diff/bottom of leaves
+    for y in range(r+1, tree_top_y + 1):
+        idx = y - r
         x = int( (((xto - xfrom)/r) * idx) + xfrom)
         z = int( (((zto - zfrom)/r) * idx) + zfrom)
         rad = randint(1,3)
@@ -131,7 +140,7 @@ def do_recur_on_adjacent(state, x, y, z, target_block_checker, recur_func, forwa
 
 def flood_kill_leaves(state, leaf_x, leaf_y, leaf_z):
     def leaf_to_air(blocks, x, y, z):
-        src.states.set_state_block(x,y,z, 'minecraft:air')
+        # src.states.set_state_block(x,y,z, 'minecraft:air')
         src.states.set_state_block(state, x, y, z, 'minecraft:air')
     do_recur_on_adjacent(state, leaf_x, leaf_y, leaf_z, is_leaf, do_recur_on_adjacent, leaf_to_air)
 

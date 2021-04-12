@@ -119,7 +119,8 @@ class Agent:
             if neighbor in self.state.roads:
                 found_road = neighbor
                 face_dir = dir
-                break
+            if neighbor in self.state.built:
+                return None                     # don't put buildings right next to each other
         if found_road == None:
             return None
         rot = 0
@@ -170,13 +171,14 @@ class Agent:
         xf = min(x1, x2)  # since the building is placed is ascending
         zf = min(z1, z2)
         # find lowest y
-        lowest_y = 255
+        lowest_y = self.state.rel_ground_hm[ctrn_node.center[0]][ctrn_node.center[1]]
         radius = math.ceil(ctrn_node.size / 2)
         for node in found_nodes.union({ctrn_node}):
             for x in range(-radius, radius + 1):
                 for z in range(-radius, radius + 1):
                     nx = node.center[0] + x
                     nz = node.center[1] + z
+                    if self.state.out_of_bounds_Node(nx, nz): continue
                     by = lowest_y = self.state.rel_ground_hm[nx][nz]
                     if self.state.rel_ground_hm[x][z] < lowest_y:
                         lowest_y = by
@@ -216,13 +218,20 @@ class Agent:
         for n in found_nodes:
             x = n.center[0]
             z = n.center[1]
-            y = self.state.rel_ground_hm[x][z] + 9
-            # self.set_block(x, y, z, "minecraft:iron_block")
+            y = self.state.rel_ground_hm[x][z] + 20
+            src.states.set_state_block(self.state, x, y, z, "minecraft:iron_block")
         ## remove nodes from construction
         for node in list(found_nodes):
             if node in self.state.construction:
                 self.state.construction.remove(node)
             self.state.built.add(node)
+            for tile in node.get_tiles():  # remove trees & saplings if they're in build spot
+                if tile in self.state.trees:
+                    self.state.trees.remove(tile)
+                    node.type = node.get_type()  # update Types to remove trees
+                if tile in self.state.saplings:
+                    self.state.saplings.remove(tile)
+                    node.type = node.get_type()  # update Types to remove saplings
         return True
 
     def auto_motive(self):
@@ -323,7 +332,7 @@ class Agent:
                     print("failed to get to build spot")
                 else:
                     self.do_build_task(*self.build_params)
-                self.auto_motive()
+                self.do_idle_task()
             elif self.motive == self.Motive.LOGGING.name:
                 self.do_log_task()
             elif self.motive == self.Motive.REPLENISH_TREE.name:
@@ -338,6 +347,8 @@ class Agent:
         if self.tree_grow_iteration < self.tree_grow_iterations_max+self.tree_leaves_height - 1:
             status = self.collect_from_adjacent_spot(self.state, check_func=is_in_state_saplings, manip_func=src.manipulation.grow_tree_at, prosperity_inc=src.my_utils.ACTION_PROSPERITY.REPLENISH_TREE)
             self.tree_grow_iteration+=1
+            if status == src.manipulation.TASK_OUTCOME.FAILURE.name:
+                self.tree_grow_iteration = 999   # so that they can go into else loop next run
         else:
             self.tree_grow_iteration = 0
             saps = set(self.state.saplings)
@@ -347,9 +358,15 @@ class Agent:
                 self.state.update_block_info(x,z)
                 if (x,z) in saps:
                     self.state.saplings.remove((x,z))
+                    # get log type
+                    leaf = 'minecraft:oak_leaves'
+                    if src.manipulation.is_log(self.state, x,self.state.rel_ground_hm[x][z], z):
+                        log = self.state.blocks[x][self.state.rel_ground_hm[x][z]][z]
+                        leaf = log[:-3] + "leaves[distance=7]"
                     # grow leaves there
-                    src.manipulation.grow_leaves(self.state, x, self.state.rel_ground_hm[x][z], z, 'minecraft:oak_leaves[distance=7]', leaves_height=self.tree_leaves_height)
-                if src.manipulation.is_log(self.state, x, self.state.rel_ground_hm[x][z], z):
+                    # src.manipulation.grow_leaves(self.state, x, self.state.rel_ground_hm[x][z], z, 'minecraft:oak_leaves[distance=7]', leaves_height=self.tree_leaves_height)
+                    src.manipulation.grow_leaves(self.state, x, self.state.rel_ground_hm[x][z], z, leaf, leaves_height=self.tree_leaves_height)
+                if src.manipulation.is_log(self.state, x, self.state.rel_ground_hm[x][z]-1, z):
                     self.state.trees.append((x,z))
             self.set_motive(self.Motive.IDLE)
 
@@ -371,7 +388,6 @@ class Agent:
         if self.calc_motive() == self.Motive.WATER and self.unshared_resources['water'] < self.water_max:
             # keep collecting water
             status = self.collect_from_adjacent_spot(self.state, check_func=src.manipulation.is_water, manip_func=src.manipulation.collect_water_at, prosperity_inc=src.my_utils.ACTION_PROSPERITY.WATER) # this may not inc an int
-            print(status)
             if status == src.manipulation.TASK_OUTCOME.SUCCESS.name:
                 self.unshared_resources['water'] += self.water_inc_rate
                 pass
@@ -426,18 +442,19 @@ class Agent:
                 self.shared_resources[self.building_material] -= cost  # preemptively apply cost to avoid races
                 self.set_path(path)
             else:
-                self.auto_motive()
+                # there are no build spots. so let's do something else
+                self.set_motive(self.Motive.LOGGING)
         elif new_motive.name == self.Motive.LOGGING.name:
-            self.set_path_to_nearest_spot(self.state.trees, 15, 10, 8, search_neighbors_instead=True)
+            self.set_path_to_nearest_spot(self.state.trees, 20, 10, 8, search_neighbors_instead=True)
             if len(self.path) < 1:  # if no trees were found
                 self.set_motive(self.Motive.REPLENISH_TREE)
-        elif new_motive.name == self.Motive.REPLENISH_TREE:
+        elif new_motive.name == self.Motive.REPLENISH_TREE.name:
             self.set_path_to_nearest_spot(self.state.saplings, 15, 10, 8, search_neighbors_instead=True)
         elif new_motive.name == self.Motive.IDLE.name: # just let it go into follow_path
             pass
 
 
-    def set_path_to_nearest_spot(self, search_array, starting_search_radius, max_iterations, radius_inc=1, search_neighbors_instead=True, default_to_current=False):
+    def set_path_to_nearest_spot(self, search_array, starting_search_radius, max_iterations, radius_inc=1, search_neighbors_instead=True):
         closed = set()
         for i in range(max_iterations):
             spots = src.movement.find_nearest(self.x, self.z, search_array, starting_search_radius+radius_inc*i, 1, radius_inc)
@@ -462,11 +479,10 @@ class Agent:
                         self.set_path(path)
                         return
                     closed.add(chosen_spot)
-        print("could not find a spot!")
-        if default_to_current == True:
-            self.set_path([])
-        else:
-            pass
+        print("water is ")
+        print(self.state.water)
+        print(self.name+" could not find a spot!")
+        self.set_path([])
 
 
     def collect_from_adjacent_spot(self, state, check_func, manip_func, prosperity_inc):
@@ -484,6 +500,7 @@ class Agent:
                 node.add_prosperity(prosperity_inc)
                 if status == src.manipulation.TASK_OUTCOME.SUCCESS.name or status == src.manipulation.TASK_OUTCOME.IN_PROGRESS.name:
                     break  # cut one at a time
+                return src.manipulation.TASK_OUTCOME.SUCCESS.name
         return status  # someone sniped this tree.
 
 
