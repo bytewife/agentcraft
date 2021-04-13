@@ -42,9 +42,7 @@ class State:
     construction = set()  # nodes where buildings can be placed
     lots = set()
 
-    build_minimum_phase_1 = 2
-    build_minimum_phase_2 = 30
-    build_minimum_phase_3 = 50
+
 
 
     ## Create surface grid
@@ -88,6 +86,11 @@ class State:
             self.agents = dict()  # holds agent and position
             self.new_agents = set()  # agents that were just created
             self.max_agents = 20
+            self.build_minimum_phase_1 = 2
+            self.build_minimum_phase_2 = 30
+            self.build_minimum_phase_3 = 50
+            self.phase2threshold = 200
+            self.phase3threshold = 500
             # print(self.types)
             # print(self.nodes[self.node_pointers[(5,5)]].get_type())
             # print('nodes is '+str(len(self.nodes)))
@@ -217,6 +220,13 @@ class State:
         return (
         found_road, ctrn_node, found_nodes, ctrn_dir, bld, rot, min_nodes_in_x, min_nodes_in_z, self.built,
         wood_type)
+
+
+    def add_prosperity_from_tile(self, x, z, amt):
+        # defer to the housing Node's prosperity
+        node_loc = self.node_pointers[(x,z)]
+        if node_loc is None: return
+        self.nodes[node_loc].add_prosperity_to_node(amt)
 
 
     def place_schematic(self,found_road, ctrn_node, found_nodes, ctrn_dir, bld, rot, min_nodes_in_x, min_nodes_in_z, built_arr, wood_type):
@@ -490,7 +500,7 @@ class State:
             return all_types
 
 
-        def add_prosperity(self, amt):
+        def add_prosperity_to_node(self, amt):
             self.state.prosperity[self.center[0]][self.center[1]] += amt
             self.state.updateFlags[self.center[0]][self.center[1]] = 1
 
@@ -585,7 +595,6 @@ class State:
                                 or src.my_utils.TYPE.CONSTRUCTION.name in node.type:
                                 resource_neighbors.append(node)
                         local.add(node)
-            self.built_resources = self.prosperity
             return local, water_neighbors, resource_neighbors
 
 
@@ -824,6 +833,18 @@ class State:
         changed_arr_xz.clear()
         if i > 0:
             print(str(i)+" assets rendered")
+        # need to update phase here with prosperity
+        self.update_phase()
+
+
+
+    def update_phase(self):
+        p = np.sum(self.prosperity)
+        print("prosp is "+str(p))
+        if p > self.phase2threshold:
+            self.phase = 2
+        if p > self.phase3threshold:
+            self.phase = 3
 
 
     ## do we wanna cache tree locations? I don't want them to cut down buildings lol

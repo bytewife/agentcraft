@@ -27,8 +27,7 @@ class Simulation:
         self.rendering_step_duration = rendering_step_duration
         self.phase = phase
         self.prosperity = 0
-        self.phase2threshold = 100
-        self.phase3threshold = 200
+
         # parse heads
         f = open("../../../assets/agent_heads.out.txt")
         agent_heads = f.readlines()
@@ -83,11 +82,7 @@ class Simulation:
         ##########
 
         for i in range(times):
-            p = np.sum(self.state.prosperity)
-            if p > self.phase2threshold:
-                self.phase = 2
-            if p > self.phase3threshold:
-                self.phase = 3
+
             self.handle_nodes()
             self.update_agents(is_rendering)
             self.state.step(is_rendering)
