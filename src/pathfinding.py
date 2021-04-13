@@ -23,7 +23,7 @@ class Pathfinding:
             self.f = g + h
             self.parent = parent
             self.action_to_here = action_to_here
-            if state.nodes[state.node_pointers[pos]] is None:
+            if state.node_pointers[pos] is None:
                 self.action_cost = 100
             else:
                 self.action_cost = state.nodes[state.node_pointers[pos]].action_cost

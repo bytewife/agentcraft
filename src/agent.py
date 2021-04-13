@@ -94,7 +94,8 @@ class Agent:
             "water": self.water_max * 0.8,
             "rest": self.rest_max * 0.29
         }
-        self.build_params = set()
+        # self.build_params = set()
+        self.build_params = None
         self.building_material = ''
         self.build_cost = 0
         self.tree_grow_iteration = 0
@@ -107,9 +108,6 @@ class Agent:
 
 
         # self.construction_site = construction_site
-
-
-
 
 
     def do_build_task(self, found_road, ctrn_node, found_nodes, ctrn_dir, bld, rot, min_nodes_in_x, min_nodes_in_z, built_arr, wood_type):
@@ -230,6 +228,9 @@ class Agent:
                 if self.build_params is None:
                     print("failed to get to build spot")
                 else:
+                    node_pos = self.build_params[1].center
+                    self.dx = max(min(node_pos[0] - self.x, 1), -1)
+                    self.dz = max(min(node_pos[1] - self.z, 1), -1)
                     self.do_build_task(*self.build_params)
                 status = self.do_idle_task()
             elif self.motive == self.Motive.LOGGING.name:
@@ -284,6 +285,8 @@ class Agent:
         #     self.is_placing_sapling = False
         if self.tree_grow_iteration < self.tree_grow_iterations_max+self.tree_leaves_height - 1:
             status, bx, bz = self.collect_from_adjacent_spot(self.state, check_func=is_in_state_saplings, manip_func=src.manipulation.grow_tree_at, prosperity_inc=src.my_utils.ACTION_PROSPERITY.REPLENISH_TREE)
+            self.dx = bx - self.x
+            self.dz = bz - self.z
             self.tree_grow_iteration+=1
             if status == src.manipulation.TASK_OUTCOME.FAILURE.name:
                 self.tree_grow_iteration = 999   # so that they can go into else loop next run
@@ -329,7 +332,6 @@ class Agent:
 
 
     def do_water_task(self):
-        print(self.name+"'s water is "+str(self.unshared_resources['water']))
         if self.unshared_resources['water'] < self.water_max:# and self.calc_motive() == self.Motive.WATER :
             # keep collecting water
             status, sx, sz = self.collect_from_adjacent_spot(self.state, check_func=src.manipulation.is_water, manip_func=src.manipulation.collect_water_at, prosperity_inc=src.my_utils.ACTION_PROSPERITY.WATER) # this may not inc an int
@@ -481,9 +483,9 @@ class Agent:
                 status = manip_func(self.state, bx, by, bz)
                 node = state.nodes[state.node_pointers[bx][bz]]
                 node.add_prosperity(prosperity_inc)
-                if status == src.manipulation.TASK_OUTCOME.SUCCESS.name or status == src.manipulation.TASK_OUTCOME.IN_PROGRESS.name:
-                    break  # cut one at a time
-                return src.manipulation.TASK_OUTCOME.SUCCESS.name, bx, bz
+                # if status == src.manipulation.TASK_OUTCOME.SUCCESS.name or status == src.manipulation.TASK_OUTCOME.IN_PROGRESS.name:
+                #     break  # cut one at a time
+                return status, bx, bz
         return status, 0, 0  # someone sniped this tree.
 
 
@@ -493,9 +495,8 @@ class Agent:
         http_framework.interfaceUtils.runCommand(kill_cmd)
         R = self.is_resting * 2
         self.walk_stage = ((self.walk_stage - R > 0) ^ 1) + R # flip bit
-        print("walk stage is "+str(self.walk_stage))
-
-        print("with resting is "+str(self.walk_stage))
+        # print("walk stage is "+str(self.walk_stage))
+        # print("with resting is "+str(self.walk_stage))
         # print(str(self.walk_stage))
         spawn_cmd = """\
 summon minecraft:armor_stand {x} {y} {z} {{NoGravity: 1, ShowArms:1, NoBasePlate:1, CustomNameVisible:1, Rotation:[{rot}f,0f,0f], \
