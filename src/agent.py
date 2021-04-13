@@ -34,18 +34,34 @@ class Agent:
     }
     max_turns_staying_still = 10
 
-    walk_pose = {
-        0: {
-            "LeftLeg":"30f,10f,0f",
-            "RightLeg":"330f,10f,0f",
-            "LeftArm":"50f,0f,0f",
-            "RightArm":"310f,0f,0f",
+    pose = {
+        0: {  # normal walk 1
+            "Head": "350f,10f,0f",
+            "LeftLeg": "30f,10f,0f",
+            "RightLeg": "330f,10f,0f",
+            "LeftArm": "50f,0f,0f",
+            "RightArm": "310f,0f,0f",
         },
-        1: {
+        1: {  # normal walk 2
+            "Head": "350f,10f,0f",
             "LeftLeg": "330f,10f,0f",
             "RightLeg": "30f,10f,0f",
             "LeftArm": "310f,0f,0f",
             "RightArm": "50f,0f,0f",
+        },
+        2: {  # normal rest 3
+            "Head": "40f,10f,0f",
+            "LeftLeg": "0f,10f,0f",
+            "RightLeg": "0f,10f,0f",
+            "LeftArm": "0f,0f,0f",
+            "RightArm": "0f,0f,0f",
+        },
+        3: {  # normal rest 4
+            "Head": "45f,10f,0f",
+            "LeftLeg": "0f,10f,0f",
+            "RightLeg": "0f,10f,0f",
+            "LeftArm": "0f,0f,0f",
+            "RightArm": "0f,0f,0f",
         }
     }
 
@@ -76,7 +92,7 @@ class Agent:
         self.rest_max = 100
         self.unshared_resources = {
             "water": self.water_max * 0.8,
-            "rest": self.rest_max * 0.8
+            "rest": self.rest_max * 0.29
         }
         self.build_params = set()
         self.building_material = ''
@@ -87,6 +103,7 @@ class Agent:
         self.is_placing_sapling = False
         self.turns_staying_still = 0
         self.walk_stage = 0  # whether moving left or right. do XOR with 1 and this
+        self.is_resting = False
 
 
         # self.construction_site = construction_site
@@ -266,7 +283,7 @@ class Agent:
         #             src.states.set_state_block(self.state,tx, self.state.rel_ground_hm[tx][tz],tz, )
         #     self.is_placing_sapling = False
         if self.tree_grow_iteration < self.tree_grow_iterations_max+self.tree_leaves_height - 1:
-            status = self.collect_from_adjacent_spot(self.state, check_func=is_in_state_saplings, manip_func=src.manipulation.grow_tree_at, prosperity_inc=src.my_utils.ACTION_PROSPERITY.REPLENISH_TREE)
+            status, bx, bz = self.collect_from_adjacent_spot(self.state, check_func=is_in_state_saplings, manip_func=src.manipulation.grow_tree_at, prosperity_inc=src.my_utils.ACTION_PROSPERITY.REPLENISH_TREE)
             self.tree_grow_iteration+=1
             if status == src.manipulation.TASK_OUTCOME.FAILURE.name:
                 self.tree_grow_iteration = 999   # so that they can go into else loop next run
@@ -302,18 +319,22 @@ class Agent:
     def do_rest_task(self):
         if self.unshared_resources['rest'] < self.rest_max: # self.calc_motive() == self.Motive.REST:
             self.unshared_resources['rest'] += self.rest_inc_rate
+            self.is_resting = True
             return True
         else:
+            self.is_resting = False
             self.set_motive(self.Motive.IDLE)
             return False
+        # self.walk_stage -= 2
 
 
     def do_water_task(self):
         print(self.name+"'s water is "+str(self.unshared_resources['water']))
         if self.unshared_resources['water'] < self.water_max:# and self.calc_motive() == self.Motive.WATER :
             # keep collecting water
-            status = self.collect_from_adjacent_spot(self.state, check_func=src.manipulation.is_water, manip_func=src.manipulation.collect_water_at, prosperity_inc=src.my_utils.ACTION_PROSPERITY.WATER) # this may not inc an int
-            print('status is '+status)
+            status, sx, sz = self.collect_from_adjacent_spot(self.state, check_func=src.manipulation.is_water, manip_func=src.manipulation.collect_water_at, prosperity_inc=src.my_utils.ACTION_PROSPERITY.WATER) # this may not inc an int
+            self.dx = sx - self.x
+            self.dz = sz - self.z
             if status == src.manipulation.TASK_OUTCOME.SUCCESS.name:
                 print("collected water!")
                 self.unshared_resources['water'] += self.water_inc_rate
@@ -330,10 +351,12 @@ class Agent:
 
 
     def do_log_task(self):
-        status = self.collect_from_adjacent_spot(self.state, check_func=src.manipulation.is_log, manip_func=src.manipulation.cut_tree_at, prosperity_inc=src.my_utils.ACTION_PROSPERITY.LOGGING)
+        status, sx, sz = self.collect_from_adjacent_spot(self.state, check_func=src.manipulation.is_log, manip_func=src.manipulation.cut_tree_at, prosperity_inc=src.my_utils.ACTION_PROSPERITY.LOGGING)
+        # face tree
+        self.dx = sx - self.x
+        self.dz = sz - self.z
         if status == src.manipulation.TASK_OUTCOME.SUCCESS.name:
             src.agent.Agent.shared_resources['oak_log'] += 1
-            print("finding another tree!")
             self.set_motive(self.Motive.IDLE)
             return True
         elif status == src.manipulation.TASK_OUTCOME.FAILURE.name:  # if they got sniped
@@ -348,7 +371,6 @@ class Agent:
             self.set_motive(self.Motive.IDLE)
             return False
         else:
-            # do nothing (continue logging)
             src.agent.Agent.shared_resources['oak_log'] += 1
             return True
 
@@ -461,15 +483,20 @@ class Agent:
                 node.add_prosperity(prosperity_inc)
                 if status == src.manipulation.TASK_OUTCOME.SUCCESS.name or status == src.manipulation.TASK_OUTCOME.IN_PROGRESS.name:
                     break  # cut one at a time
-                return src.manipulation.TASK_OUTCOME.SUCCESS.name
-        return status  # someone sniped this tree.
+                return src.manipulation.TASK_OUTCOME.SUCCESS.name, bx, bz
+        return status, 0, 0  # someone sniped this tree.
 
 
     def render(self):
         # kill agent
         kill_cmd = """kill @e[name={name}]""".format(name = self.name)
         http_framework.interfaceUtils.runCommand(kill_cmd)
-        self.walk_stage = self.walk_stage ^ 1  # flip bit
+        R = self.is_resting * 2
+        self.walk_stage = ((self.walk_stage - R > 0) ^ 1) + R # flip bit
+        print("walk stage is "+str(self.walk_stage))
+
+        print("with resting is "+str(self.walk_stage))
+        # print(str(self.walk_stage))
         spawn_cmd = """\
 summon minecraft:armor_stand {x} {y} {z} {{NoGravity: 1, ShowArms:1, NoBasePlate:1, CustomNameVisible:1, Rotation:[{rot}f,0f,0f], \
 mall:{is_small}, CustomName: '{{"text":"{name}", "color":"customcolor", "bold":false, "underlined":false, \
@@ -479,7 +506,8 @@ ArmorItems:[{{id:"{boots}",Count:1b}},\
 {{id:"{upper_armor}",Count:1b}},\
 {{id:"player_head",Count:1b,tag:{{{head}}}}}],\
 HandItems:[{{id:"{hand1}", Count:1b}},{{id:"{hand2}", Count:1b}}],\
-Pose:{{Head:[{head_tilt}f,10f,0f], \
+Pose:{{ \
+Head:[{head_rot}], \
 LeftLeg:[{left_leg}], \
 RightLeg:[{right_leg}], \
 LeftArm:[{left_arm}], \
@@ -498,13 +526,21 @@ RightArm:[{right_arm}]}}\
             lower_armor="leather_leggings",
             hand1=self.current_action_item,
             hand2=self.favorite_item,
-            head_tilt="350",
-            left_leg=Agent.walk_pose[self.walk_stage]["LeftLeg"],
-            right_leg = Agent.walk_pose[self.walk_stage]["RightLeg"],
-            left_arm=Agent.walk_pose[self.walk_stage]["LeftArm"],
-            right_arm=Agent.walk_pose[self.walk_stage]["RightArm"],
+            head_rot=Agent.pose[self.walk_stage]["Head"],
+            left_leg=Agent.pose[self.walk_stage]["LeftLeg"],
+            right_leg = Agent.pose[self.walk_stage]["RightLeg"],
+            left_arm=Agent.pose[self.walk_stage]["LeftArm"],
+            right_arm=Agent.pose[self.walk_stage]["RightArm"],
         )  # this can be related to resources! 330 is high, 400 is low
         http_framework.interfaceUtils.runCommand(spawn_cmd)
+
+
+    def get_head_tilt(self):  # unused currnetly
+        if self.is_resting: return '45'
+        else: return '350'
+
+
+
 
 
 # Pose:{{Head: [{head_tilt}f, 10f, 0f], \

@@ -438,9 +438,6 @@ class State:
             node.range, node.water_resources, node.resource_neighbors = node.gen_range(nodes, node_pointers, self)
         return nodes, node_pointers
 
-
-
-
     class Node:
 
         ACTION_COSTS = {
