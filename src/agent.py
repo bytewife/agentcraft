@@ -70,6 +70,7 @@ class Agent:
         self.tree_grow_iteration = 0
         self.tree_grow_iterations_max = randint(3,5)
         self.tree_leaves_height = randint(5,7)
+        self.is_placing_sapling = False
         self.turns_staying_still = 0
 
 
@@ -181,7 +182,9 @@ class Agent:
         status = False
         if len(self.path) > 0:
             nx, nz = self.path.pop()
-            if self.state.legal_actions[self.x][self.z][src.movement.DeltaToDirIdx[(nx-self.x, nz-self.z)]] == 0:  # if not legal move (aka building was placed)
+            dx = max(min(nx-self.x, 1), -1)
+            dz = max(min(nz-self.z, 1), -1)
+            if self.state.legal_actions[self.x][self.z][src.movement.DeltaToDirIdx[(dx, dz)]] == 0:  # if not legal move (aka building was placed)
                 print(self.name + " was blocked by a new building! Getting new motive.")
                 self.auto_motive()
                 return False
@@ -241,6 +244,13 @@ class Agent:
     def do_replenish_tree_task(self):
         def is_in_state_saplings(state, x, y, z):
             return (x,z) in state.saplings
+        # if self.is_placing_sapling:
+        #     for dir in src.movement.directions:
+        #         tx = self.x + dir[0]
+        #         tz = self.z + dir[1]
+        #         if is_in_state_saplings(self.state, tx, self.state.rel_ground_hm[tx][tz], tz):
+        #             src.states.set_state_block(self.state,tx, self.state.rel_ground_hm[tx][tz],tz, )
+        #     self.is_placing_sapling = False
         if self.tree_grow_iteration < self.tree_grow_iterations_max+self.tree_leaves_height - 1:
             status = self.collect_from_adjacent_spot(self.state, check_func=is_in_state_saplings, manip_func=src.manipulation.grow_tree_at, prosperity_inc=src.my_utils.ACTION_PROSPERITY.REPLENISH_TREE)
             self.tree_grow_iteration+=1
@@ -361,7 +371,30 @@ class Agent:
             if len(self.path) < 1:  # if no trees were found
                 self.set_motive(self.Motive.REPLENISH_TREE)
         elif new_motive.name == self.Motive.REPLENISH_TREE.name:
-            self.set_path_to_nearest_spot(self.state.saplings, 15, 10, 20, search_neighbors_instead=True)
+            status = self.set_path_to_nearest_spot(self.state.saplings, 10, 3, 10, search_neighbors_instead=True)
+            if status == False:  # could not find sapling, so let's place one
+                # choose random location that isn't in roads or built
+                tries = 0
+                max_tries = 50
+                rad = 30
+                tx = tz = 0
+                node = None
+                while node == None or tries < max_tries or node in self.state.built or node in self.state.roads:
+                    tx = randint(self.x - rad, self.x + rad)
+                    tz = randint(self.z - rad, self.z + rad)
+                    if self.state.out_of_bounds_Node(tx, tz): continue
+                    node = self.state.nodes[self.state.node_pointers[(tx, tz)]]
+                    tries+=1
+                if tries > max_tries:
+                    print("Error: no places to put sapling")
+                    tx = self.x
+                    tz = self.z
+                    # exit(1)  # TODO this is will prolly never happen
+                self.state.saplings.append((tx, tz))
+                path = self.state.pathfinder.get_path((self.x, self.z), (tx, tz), self.state.len_x, self.state.len_z,
+                                                      self.state.legal_actions)
+                self.set_path(path)
+                self.is_placing_sapling = True
         elif new_motive.name == self.Motive.PROPAGATE.name:
             # TODO go to own house instead
             self.set_path_to_nearest_spot(list(self.state.built_heightmap.keys()), 30, 10, 20, search_neighbors_instead=False)
@@ -385,17 +418,18 @@ class Agent:
                         if self.state.sectors[pos[0], pos[1]] == self.state.sectors[self.x][self.z]:
                             path = self.state.pathfinder.get_path((self.x, self.z), pos, self.state.len_x, self.state.len_z, self.state.legal_actions)
                             self.set_path(path)
-                            return
+                            return True
                     closed.add(chosen_spot)
                 else:
                     if self.state.sectors[chosen_spot[0]][chosen_spot[1]] == self.state.sectors[self.x][self.z]:
                         path = self.state.pathfinder.get_path((self.x, self.z), (chosen_spot[0], chosen_spot[1]), self.state.len_x, self.state.len_z,
                                                               self.state.legal_actions)
                         self.set_path(path)
-                        return
+                        return True
                     closed.add(chosen_spot)
         print(self.name+" could not find a spot!")
         self.set_path([])
+        return False
 
 
     def collect_from_adjacent_spot(self, state, check_func, manip_func, prosperity_inc):

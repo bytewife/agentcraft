@@ -9,12 +9,13 @@ diagonal_cost = 141
 
 class Pathfinding:
 
-    def __init__(self):
+    def __init__(self, state):
+        self.state = state
         pass
 
 
-    class Node:
-        def __init__(self, pos, g=0, h=0, parent=None, action_to_here=0, action_cost=0, legal_actions=0):
+    class PathNode:
+        def __init__(self, state, pos, g=0, h=0, parent=None, action_to_here=0, action_cost=0, legal_actions=0):
             self.pos = pos
             self.g = g
             self.parent = parent
@@ -22,7 +23,7 @@ class Pathfinding:
             self.f = g + h
             self.parent = parent
             self.action_to_here = action_to_here
-            self.action_cost = action_cost
+            self.action_cost = state.nodes[state.node_pointers[pos]].action_cost
             self.legal_actions = legal_actions
             self.sectors = []
             self.sector_sizes = {}
@@ -37,7 +38,7 @@ class Pathfinding:
 
 
     i = 0
-    def expand(self, parent : Node, goal, max_x, max_z, all_legal_actions):  # TODO integtrate legal actions here
+    def expand(self, parent : PathNode, goal, max_x, max_z, all_legal_actions):  # TODO integtrate legal actions here
         children = []
         x, z = parent.pos
         curr_legal_actions = all_legal_actions[x][z]
@@ -56,8 +57,8 @@ class Pathfinding:
             else:
                 g += diagonal_cost
             h = self.heuristic(*pos, *goal)
-            child = self.Node(
-                pos, g, h, parent,
+            child = self.PathNode(
+                self.state, pos, g, h, parent,
                 action_to_here=(-dx, -dz), action_cost=cardinal_cost, legal_actions=all_legal_actions[tx][tz]
             )
             children.append(child)
@@ -65,7 +66,7 @@ class Pathfinding:
 
 
     def get_path(self, start, end : list, max_x, max_z, legal_actions):
-        first = self.Node(start, g=0, h=self.heuristic(*start, *end), parent=None, action_to_here=None, action_cost=0, legal_actions=legal_actions)
+        first = self.PathNode(self.state, start, g=0, h=self.heuristic(*start, *end), parent=None, action_to_here=None, action_cost=0, legal_actions=legal_actions)
         open = [first]  # heap
         closed = set() # change to a dict with coord-node
         g_lookup = {}

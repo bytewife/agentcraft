@@ -68,7 +68,7 @@ class State:
                 self.blocks, vertical_ability=self.agent_jump_ability, heightmap=self.rel_ground_hm,
                 actor_height=self.agent_height, unwalkable_blocks=["minecraft:water", 'minecraft:lava']
             )
-            self.pathfinder = src.pathfinding.Pathfinding()
+            self.pathfinder = src.pathfinding.Pathfinding(self)
             self.sectors = self.pathfinder.create_sectors(self.heightmaps["MOTION_BLOCKING_NO_LEAVES"],
                                             self.legal_actions)  # add tihs into State
             self.nodes, self.node_pointers = self.gen_nodes(self.len_x, self.len_z, self.node_size)
@@ -443,6 +443,11 @@ class State:
 
     class Node:
 
+        ACTION_COSTS = {
+            src.my_utils.TYPE.MINOR_ROAD.name: 50,
+            src.my_utils.TYPE.MAJOR_ROAD.name: 50,
+            src.my_utils.TYPE.BUILT.name: 50,
+        }
         local = set()
         def __init__(self, state, center, types, size):
             self.center = center
@@ -459,6 +464,7 @@ class State:
             self.neighborhood_radius = 1
             self.adjacent_radius = 1
             self.state = state
+            self.action_cost = 100
             # self.type = set()  # to cache type()
 
         def get_tiles(self):
@@ -939,6 +945,7 @@ class State:
             if node in self.construction:
                 self.construction.discard(node)
             self.roads.append(node)  # put node in roads array
+            node.action_cost = src.states.State.Node.ACTION_COSTS[src.my_utils.TYPE.MINOR_ROAD.name]
 
 
     def create_well(self, sx, sz, len_x, len_z):

@@ -48,9 +48,9 @@ def grow_leaves(state, x, tree_top_y, z, type, leaves_height):
     zto = z + randint(-1,1)
     xfrom = x + randint(-2,2)
     zfrom = z + randint(-2,2)
-    r = tree_top_y - leaves_height  # diff/bottom of leaves
+    r = max(1, tree_top_y - leaves_height)  # diff/bottom of leaves.  max bc there was a division by 0
     for y in range(r+1, tree_top_y + 1):
-        idx = y - r
+        idx =y - r
         x = int( (((xto - xfrom)/r) * idx) + xfrom)
         z = int( (((zto - zfrom)/r) * idx) + zfrom)
         rad = randint(1,3)
@@ -89,7 +89,7 @@ def is_log(state, x, y, z):
     if state.out_of_bounds_3D(x, y, z):
         return False
     block = state.blocks[x][y][z]
-    if not block is None and block[-3:] == 'log':
+    if  block is not None and block[-3:] == 'log' and block[:2] != "st":  # let's ignore stripped
         return True
     return False
 
@@ -122,10 +122,13 @@ def cut_tree_at(state, x, y, z, times=1):
             for dir in src.movement.directions:
                 tx = x + dir[0]
                 tz = z + dir[1]
+                if state.out_of_bounds_2D(tx,tz):
+                    continue
                 ttype = state.types[tx][tz]
                 node = state.nodes[state.node_pointers[(tx,tz)]]
                 if ttype == src.my_utils.TYPE.GREEN.name \
-                    and node not in state.built: # check if right
+                    and node not in state.built \
+                    and node not in state.roads: # check if right
                     new_x = tx
                     new_y = state.rel_ground_hm[tx][tz]
                     new_z = tz

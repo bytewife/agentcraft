@@ -45,9 +45,9 @@ ROTATION_LOOKUP = {
 }
 
 AGENT_ITEMS = {"REST": ["clock", "white_tulip", "white_wool", "white_bed"],
-			   "LOGGING": ["iron_axe", "gold_axe", "stone_axe"],
+			   "LOGGING": ["iron_axe", "golden_axe", "stone_axe"],
 			   "WATER": ["glass_bottle", 'bucket'],
-			   "BUILD": ["iron_shovel", "stone_shovel", "gold_shovel"],
+			   "BUILD": ["iron_shovel", "stone_shovel", "golden_shovel"],
 			   "FAVORITE": ['apple', 'bread', 'melon_slice', 'golden_apple', 'book', 'diamond', 'emerald', 'nautilus_shell', 'cornflower', 'bamboo', 'torch', 'sunflower', 'zombie_head', 'ladder', 'poppy', 'warped_fungus'],
 			   "REPLENISH": ['bone_meal']}
 
@@ -91,16 +91,10 @@ class TYPE_TILES:
 		TYPE.TREE.value: {  # FOREST
 			"minecraft:log",
 			"minecraft:dark_oak_log",
-			"minecraft:stripped_dark_oak_log",
 			"minecraft:spruce_log",
 			"minecraft:acacia_log",
-			"minecraft:stripped_spruce_log",
 			"minecraft:oak_log",
-			"minecraft:stripped_oak_log",
 			"minecraft:jungle_log",
-			"minecraft:stripped_jungle_log",
-            "minecraft:stripped_acacia_log",
-            "minecraft:stripped_birch_log",
 			"minecraft:birch_log",
 		},
 		TYPE.GREEN.value: {  # GREEN

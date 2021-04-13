@@ -33,4 +33,8 @@ for x in range(sim.state.len_x):
     for z in range(sim.state.len_z):
         pass
 
+for built in sim.state.built:
+    src.states.set_state_block(sim.state, built.center[0], sim.state.rel_ground_hm[built.center[0]][built.center[1]]+11, built.center[1], 'minecraft:red_wool')
+sim.step(1)
+
 print("done")
