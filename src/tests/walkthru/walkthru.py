@@ -28,13 +28,13 @@ sim = src.simulation.Simulation(area, rendering_step_duration=0.0, is_rendering_
 
 src.agent.Agent.shared_resources["oak_log"] = 60
 
-sim.step(100, is_rendering=True)
+# sim.step(100, is_rendering=True)
 for x in range(sim.state.len_x):
     for z in range(sim.state.len_z):
         pass
 
 for built in sim.state.built:
     src.states.set_state_block(sim.state, built.center[0], sim.state.rel_ground_hm[built.center[0]][built.center[1]]+11, built.center[1], 'minecraft:red_wool')
-sim.step(1)
+sim.step(60)
 
 print("done")

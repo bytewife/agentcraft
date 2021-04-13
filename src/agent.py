@@ -34,6 +34,20 @@ class Agent:
     }
     max_turns_staying_still = 10
 
+    walk_pose = {
+        0: {
+            "LeftLeg":"30f,10f,0f",
+            "RightLeg":"330f,10f,0f",
+            "LeftArm":"50f,0f,0f",
+            "RightArm":"310f,0f,0f",
+        },
+        1: {
+            "LeftLeg": "330f,10f,0f",
+            "RightLeg": "30f,10f,0f",
+            "LeftArm": "310f,0f,0f",
+            "RightArm": "50f,0f,0f",
+        }
+    }
 
 
     def __init__(self, state, state_x, state_z, walkable_heightmap, name, head,
@@ -72,7 +86,7 @@ class Agent:
         self.tree_leaves_height = randint(5,7)
         self.is_placing_sapling = False
         self.turns_staying_still = 0
-
+        self.walk_stage = 0  # whether moving left or right. do XOR with 1 and this
 
 
         # self.construction_site = construction_site
@@ -455,6 +469,7 @@ class Agent:
         # kill agent
         kill_cmd = """kill @e[name={name}]""".format(name = self.name)
         http_framework.interfaceUtils.runCommand(kill_cmd)
+        self.walk_stage = self.walk_stage ^ 1  # flip bit
         spawn_cmd = """\
 summon minecraft:armor_stand {x} {y} {z} {{NoGravity: 1, ShowArms:1, NoBasePlate:1, CustomNameVisible:1, Rotation:[{rot}f,0f,0f], \
 mall:{is_small}, CustomName: '{{"text":"{name}", "color":"customcolor", "bold":false, "underlined":false, \
@@ -465,13 +480,12 @@ ArmorItems:[{{id:"{boots}",Count:1b}},\
 {{id:"player_head",Count:1b,tag:{{{head}}}}}],\
 HandItems:[{{id:"{hand1}", Count:1b}},{{id:"{hand2}", Count:1b}}],\
 Pose:{{Head:[{head_tilt}f,10f,0f], \
-LeftLeg:[3f,10f,0f], \
-RightLeg:[348f,18f,0f], \
-LeftArm:[348f,308f,0f], \
-RightArm:[348f,67f,0f]}}\
+LeftLeg:[{left_leg}], \
+RightLeg:[{right_leg}], \
+LeftArm:[{left_arm}], \
+RightArm:[{right_arm}]}}\
 }}\
 """.format(
-
             x=self.x+self.state.world_x,
             y=self.y+self.state.world_y,
             z=self.z+self.state.world_z,
@@ -484,5 +498,17 @@ RightArm:[348f,67f,0f]}}\
             lower_armor="leather_leggings",
             hand1=self.current_action_item,
             hand2=self.favorite_item,
-            head_tilt="350")  # this can be related to resources! 330 is high, 400 is low
+            head_tilt="350",
+            left_leg=Agent.walk_pose[self.walk_stage]["LeftLeg"],
+            right_leg = Agent.walk_pose[self.walk_stage]["RightLeg"],
+            left_arm=Agent.walk_pose[self.walk_stage]["LeftArm"],
+            right_arm=Agent.walk_pose[self.walk_stage]["RightArm"],
+        )  # this can be related to resources! 330 is high, 400 is low
         http_framework.interfaceUtils.runCommand(spawn_cmd)
+
+
+# Pose:{{Head: [{head_tilt}f, 10f, 0f], \
+#        LeftLeg: [3f, 10f, 0f], \
+#        RightLeg: [348f, 18f, 0f], \
+#        LeftArm: [348f, 308f, 0f], \
+#        RightArm: [348f, 67f, 0f]}} \
