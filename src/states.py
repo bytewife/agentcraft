@@ -8,8 +8,9 @@ import src.movement
 import src.pathfinding
 import src.scheme_utils
 import src.agent
+import math
 import numpy as np
-from random import choice, random
+from random import choice, random, randint
 from scipy.interpolate import interp1d
 import src.linedrawing
 import src.manipulation
@@ -86,6 +87,7 @@ class State:
             self.bendcount = 0
             self.agents = dict()  # holds agent and position
             self.new_agents = set()  # agents that were just created
+            self.max_agents = 20
             # print(self.types)
             # print(self.nodes[self.node_pointers[(5,5)]].get_type())
             # print('nodes is '+str(len(self.nodes)))
@@ -112,39 +114,72 @@ class State:
             self.len_x, self.len_y, self.len_z, self.blocks = parse_blocks_file(blocks_file)
 
 
-    def place_building_at(self, ctrn_node, bld, bld_lenx, bld_lenz, wood_type):
+    def find_build_location(self, agentx, agentz, building_file, wood_type, ignore_sector=False):
+        f = open(building_file, "r")
+        size = f.readline()
+        f.close()
+        x_size, y_size, z_size = [int(n) for n in size.split(' ')]
+        i = 0
+        build_tries = 200
+        while i < build_tries:
+            construction_site = choice(list(self.construction))
+            result = self.check_build_spot(construction_site, building_file, x_size, z_size, wood_type)
+            if result != None:
+                # check if any of the nodes are in built
+                if result[1] in self.built:
+                    continue
+                not_in_built = True
+                for node in result[2]:
+                    if node in self.built:
+                        not_in_built = False
+                        break
+                # see if found road is in same sector
+                if not_in_built:
+                    nx, nz = result[0].center
+                    if self.sectors[agentx][agentz] == self.sectors[nx][nz] or ignore_sector:  # this seems wrong
+                        assert type(result[2]) == set
+                        for node in result[2].union({result[1]}):  # this is equal to
+                            # src.states.set_state_block(self.state, node.center[0], self.state.rel_ground_hm[node.center[0]][node.center[1]]+10, node.center[1], 'minecraft:gold_block')
+                            self.built.add(
+                                node)  # add to built in order to avoid roads being placed before buildings placed
+                            pass
+                        return result
+            i += 1
+        return None
+
+
+    def check_build_spot(self, ctrn_node, bld, bld_lenx, bld_lenz, wood_type):
         # check if theres adequate space by getting nodes, and move the building to center it if theres extra space
         # if not ctrn_node in self.construction: return
         # for every orientation of this node+neighbors whose lenx and lenz are the min space required to place building at
-        min_nodes_in_x = math.ceil(bld_lenx/ctrn_node.size)
-        min_nodes_in_z = math.ceil(bld_lenz/ctrn_node.size)
-        min_tiles = min_nodes_in_x*min_nodes_in_z
+        min_nodes_in_x = math.ceil(bld_lenx / ctrn_node.size)
+        min_nodes_in_z = math.ceil(bld_lenz / ctrn_node.size)
+        min_tiles = min_nodes_in_x * min_nodes_in_z
         found_ctrn_dir = None
         found_nodes = set()
-
         # get rotation based on neighboring road
         found_road = None
         face_dir = None
         for dir in src.movement.cardinals:  # maybe make this cardinal only
-            nx = ctrn_node.center[0] + dir[0]*ctrn_node.size
-            nz = ctrn_node.center[1] + dir[1]*ctrn_node.size
+            nx = ctrn_node.center[0] + dir[0] * ctrn_node.size
+            nz = ctrn_node.center[1] + dir[1] * ctrn_node.size
             if self.out_of_bounds_Node(nx, nz): continue
             np = (nx, nz)
             neighbor = self.nodes[self.node_pointers[np]]
             if neighbor in self.roads:
                 found_road = neighbor
                 face_dir = dir
-                break
+            if neighbor in self.built:
+                return None  # don't put buildings right next to each other
         if found_road == None:
-            return False
+            return None
         rot = 0
         if face_dir[0] == 1: rot = 2
         if face_dir[0] == -1: rot = 0
         if face_dir[1] == -1: rot = 1
         if face_dir[1] == 1: rot = 3
-        # print('face_dir is '+str(face_dir))
         # self.set_block(ctrn_node.center[0], 17, ctrn_node.center[1],"minecraft:emerald_block")
-        if rot in [1,3]:
+        if rot in [1, 3]:
             temp = min_nodes_in_x
             min_nodes_in_x = min_nodes_in_z
             min_nodes_in_z = temp
@@ -157,12 +192,16 @@ class State:
                 for z in range(0, min_nodes_in_z):
                     # x1 = ctrn_node.center[0]+x*ctrn_node.size*dir[0]
                     # z1 = ctrn_node.center[1]+z*ctrn_node.size*dir[1]
-                    nx = ctrn_node.center[0]+x*ctrn_node.size*dir[0]
-                    nz = ctrn_node.center[1]+z*ctrn_node.size*dir[1]
+                    nx = ctrn_node.center[0] + x * ctrn_node.size * dir[0]
+                    nz = ctrn_node.center[1] + z * ctrn_node.size * dir[1]
                     if self.out_of_bounds_Node(nx, nz): break
-                    node = self.nodes[(nx,nz)]
+                    node = self.nodes[(nx, nz)]
                     if not node in self.construction: break
                     if node in self.roads: break  # don't go over roads
+                    if node in self.built: break  # don't build over buildings
+                    for tile in node.get_tiles():
+                        # src.states.set_state_block(self.state, tile[0], self.state.rel_ground_hm[tile[0]][tile[1]] + 3, tile[1], 'minecraft:netherite')
+                        if tile in self.water: continue
                     tiles += 1
                     found_nodes.add(node)
             if tiles == min_tiles:  # found a spot!
@@ -170,27 +209,53 @@ class State:
                 break
             else:
                 found_nodes.clear()
+
         if found_ctrn_dir == None:  # if there's not enough space, return
-            return False
+            return None
 
         ctrn_dir = found_ctrn_dir
+        return (
+        found_road, ctrn_node, found_nodes, ctrn_dir, bld, rot, min_nodes_in_x, min_nodes_in_z, self.built,
+        wood_type)
+
+
+    def place_schematic(self,found_road, ctrn_node, found_nodes, ctrn_dir, bld, rot, min_nodes_in_x, min_nodes_in_z, built_arr, wood_type):
         x1 = ctrn_node.center[0] - ctrn_dir[0]  # to uncenter
         z1 = ctrn_node.center[1] - ctrn_dir[1]
         x2 = ctrn_node.center[0] + ctrn_dir[0] + ctrn_dir[0] * ctrn_node.size * (min_nodes_in_x - 1)
         z2 = ctrn_node.center[1] + ctrn_dir[1] + ctrn_dir[1] * ctrn_node.size * (min_nodes_in_z - 1)
         xf = min(x1, x2)  # since the building is placed is ascending
         zf = min(z1, z2)
-        y = self.rel_ground_hm[xf][zf] # temp
-        status, building_heightmap, exterior_heightmap = src.scheme_utils.place_schematic_in_state(self, bld, xf, y, zf, rot=rot, built_arr=self.built, wood_type=wood_type)
+        # find lowest y
+        lowest_y = self.rel_ground_hm[ctrn_node.center[0]][ctrn_node.center[1]]
+        radius = math.ceil(ctrn_node.size / 2)
+        for node in found_nodes.union({ctrn_node}):
+            for x in range(-radius, radius + 1):
+                for z in range(-radius, radius + 1):
+                    nx = node.center[0] + x
+                    nz = node.center[1] + z
+                    if self.out_of_bounds_Node(nx, nz): continue
+                    by = self.rel_ground_hm[nx][nz]
+                    if by < lowest_y:
+                        lowest_y = by
+        y = lowest_y  # This should be the lowest y in the
+        status, building_heightmap, exterior_heightmap = src.scheme_utils.place_schematic_in_state(self, bld, xf,
+                                                                                                   y, zf,
+                                                                                                   rot=rot,
+                                                                                                   built_arr=self.built,
+                                                                                                   wood_type=wood_type)
         if status == False:
+            for node in found_nodes.union({ctrn_node}):
+                self.built.remove(node)  # since this was set early in check_build_spot, remove it
             return False
         self.built_heightmap.update(building_heightmap)
         self.exterior_heightmap.update(exterior_heightmap)
         # build road from the road to the building
-        self.create_road(found_road.center, ctrn_node.center, road_type="None", points=None, leave_lot=False, add_as_road_type=False)
-        xmid = int((x2 + x1)/2)
-        zmid = int((z2 + z1)/2)
-        distmax = math.dist((ctrn_node.center[0]-ctrn_dir[0], ctrn_node.center[1]-ctrn_dir[1]), (xmid, zmid))
+        self.create_road(found_road.center, ctrn_node.center, road_type="None", points=None, leave_lot=False,
+                               add_as_road_type=False)
+        xmid = int((x2 + x1) / 2)
+        zmid = int((z2 + z1) / 2)
+        distmax = math.dist((ctrn_node.center[0] - ctrn_dir[0], ctrn_node.center[1] - ctrn_dir[1]), (xmid, zmid))
         # build construction site ground
         for n in found_nodes:
             # for each of the nodes' tiles, generate random, based on dist. Also, add it to built.
@@ -199,27 +264,143 @@ class State:
                 z = n.center[1] + dir[1]
                 # add to built
                 y = int(self.rel_ground_hm[x][z]) - 1
-                inv_chance = math.dist((x, z), (xmid, zmid))/distmax  # clamp to 0-1
-                if inv_chance == 1.0: # stylistic choice: don't let corners be placed
+                inv_chance = math.dist((x, z), (xmid, zmid)) / distmax  # clamp to 0-1
+                if inv_chance == 1.0:  # stylistic choice: don't let corners be placed
                     continue
                 attenuate = 0.8
-                if random() > inv_chance*attenuate:
+                if random() > inv_chance * attenuate:
                     block = choice(src.my_utils.ROAD_SETS['default'])
-                    self.set_block(x, y, z, block)
+                    src.states.set_state_block(self, x, y, z, block)
         y = self.rel_ground_hm[xf][zf] + 5
-        # self.set_block(xf, y, zf, "minecraft:diamond_block")
         # debug
-        for n in found_nodes:
-            x = n.center[0]
-            z = n.center[1]
-            y = self.rel_ground_hm[x][z] + 9
-            # self.set_block(x, y, z, "minecraft:iron_block")
+        # for n in found_nodes:
+        #     x = n.center[0]
+        #     z = n.center[1]
+        #     y = self.state.rel_ground_hm[x][z] + 20
+        #     src.states.set_state_block(self.state, x, y, z, "minecraft:iron_block")
         ## remove nodes from construction
         for node in list(found_nodes):
-            self.construction.remove(node)
+            if node in self.construction:
+                self.construction.remove(node)
             self.built.add(node)
-        self.generated_building = True
+            for tile in node.get_tiles():  # remove trees & saplings if they're in build spot
+                if tile in self.trees:
+                    self.trees.remove(tile)
+                    node.type = node.get_type()  # update Types to remove trees
+                if tile in self.saplings:
+                    self.saplings.remove(tile)
+                    node.type = node.get_type()  # update Types to remove saplings
         return True
+
+
+    # def place_building_at(self, ctrn_node, bld, bld_lenx, bld_lenz, wood_type):
+    #     # check if theres adequate space by getting nodes, and move the building to center it if theres extra space
+    #     # if not ctrn_node in self.construction: return
+    #     # for every orientation of this node+neighbors whose lenx and lenz are the min space required to place building at
+    #     min_nodes_in_x = math.ceil(bld_lenx/ctrn_node.size)
+    #     min_nodes_in_z = math.ceil(bld_lenz/ctrn_node.size)
+    #     min_tiles = min_nodes_in_x*min_nodes_in_z
+    #     found_ctrn_dir = None
+    #     found_nodes = set()
+    #
+    #     # get rotation based on neighboring road
+    #     found_road = None
+    #     face_dir = None
+    #     for dir in src.movement.cardinals:  # maybe make this cardinal only
+    #         nx = ctrn_node.center[0] + dir[0]*ctrn_node.size
+    #         nz = ctrn_node.center[1] + dir[1]*ctrn_node.size
+    #         if self.out_of_bounds_Node(nx, nz): continue
+    #         np = (nx, nz)
+    #         neighbor = self.nodes[self.node_pointers[np]]
+    #         if neighbor in self.roads:
+    #             found_road = neighbor
+    #             face_dir = dir
+    #             break
+    #     if found_road == None:
+    #         return False
+    #     rot = 0
+    #     if face_dir[0] == 1: rot = 2
+    #     if face_dir[0] == -1: rot = 0
+    #     if face_dir[1] == -1: rot = 1
+    #     if face_dir[1] == 1: rot = 3
+    #     # print('face_dir is '+str(face_dir))
+    #     # self.set_block(ctrn_node.center[0], 17, ctrn_node.center[1],"minecraft:emerald_block")
+    #     if rot in [1,3]:
+    #         temp = min_nodes_in_x
+    #         min_nodes_in_x = min_nodes_in_z
+    #         min_nodes_in_z = temp
+    #     ## find site where x and z are reversed. this rotates
+    #     for dir in src.movement.diagonals:
+    #         if found_ctrn_dir != None:
+    #             break
+    #         tiles = 0
+    #         for x in range(0, min_nodes_in_x):
+    #             for z in range(0, min_nodes_in_z):
+    #                 # x1 = ctrn_node.center[0]+x*ctrn_node.size*dir[0]
+    #                 # z1 = ctrn_node.center[1]+z*ctrn_node.size*dir[1]
+    #                 nx = ctrn_node.center[0]+x*ctrn_node.size*dir[0]
+    #                 nz = ctrn_node.center[1]+z*ctrn_node.size*dir[1]
+    #                 if self.out_of_bounds_Node(nx, nz): break
+    #                 node = self.nodes[(nx,nz)]
+    #                 if not node in self.construction: break
+    #                 if node in self.roads: break  # don't go over roads
+    #                 tiles += 1
+    #                 found_nodes.add(node)
+    #         if tiles == min_tiles:  # found a spot!
+    #             found_ctrn_dir = dir
+    #             break
+    #         else:
+    #             found_nodes.clear()
+    #     if found_ctrn_dir == None:  # if there's not enough space, return
+    #         return False
+    #
+    #     ctrn_dir = found_ctrn_dir
+    #     x1 = ctrn_node.center[0] - ctrn_dir[0]  # to uncenter
+    #     z1 = ctrn_node.center[1] - ctrn_dir[1]
+    #     x2 = ctrn_node.center[0] + ctrn_dir[0] + ctrn_dir[0] * ctrn_node.size * (min_nodes_in_x - 1)
+    #     z2 = ctrn_node.center[1] + ctrn_dir[1] + ctrn_dir[1] * ctrn_node.size * (min_nodes_in_z - 1)
+    #     xf = min(x1, x2)  # since the building is placed is ascending
+    #     zf = min(z1, z2)
+    #     y = self.rel_ground_hm[xf][zf] # temp
+    #     status, building_heightmap, exterior_heightmap = src.scheme_utils.place_schematic_in_state(self, bld, xf, y, zf, rot=rot, built_arr=self.built, wood_type=wood_type)
+    #     if status == False:
+    #         return False
+    #     self.built_heightmap.update(building_heightmap)
+    #     self.exterior_heightmap.update(exterior_heightmap)
+    #     # build road from the road to the building
+    #     self.create_road(found_road.center, ctrn_node.center, road_type="None", points=None, leave_lot=False, add_as_road_type=False)
+    #     xmid = int((x2 + x1)/2)
+    #     zmid = int((z2 + z1)/2)
+    #     distmax = math.dist((ctrn_node.center[0]-ctrn_dir[0], ctrn_node.center[1]-ctrn_dir[1]), (xmid, zmid))
+    #     # build construction site ground
+    #     for n in found_nodes:
+    #         # for each of the nodes' tiles, generate random, based on dist. Also, add it to built.
+    #         for dir in src.movement.idirections:
+    #             x = n.center[0] + dir[0]
+    #             z = n.center[1] + dir[1]
+    #             # add to built
+    #             y = int(self.rel_ground_hm[x][z]) - 1
+    #             inv_chance = math.dist((x, z), (xmid, zmid))/distmax  # clamp to 0-1
+    #             if inv_chance == 1.0: # stylistic choice: don't let corners be placed
+    #                 continue
+    #             attenuate = 0.8
+    #             if random() > inv_chance*attenuate:
+    #                 block = choice(src.my_utils.ROAD_SETS['default'])
+    #                 self.set_block(x, y, z, block)
+    #     y = self.rel_ground_hm[xf][zf] + 5
+    #     # self.set_block(xf, y, zf, "minecraft:diamond_block")
+    #     # debug
+    #     for n in found_nodes:
+    #         x = n.center[0]
+    #         z = n.center[1]
+    #         y = self.rel_ground_hm[x][z] + 9
+    #         # self.set_block(x, y, z, "minecraft:iron_block")
+    #     ## remove nodes from construction
+    #     for node in list(found_nodes):
+    #         self.construction.remove(node)
+    #         self.built.add(node)
+    #     self.generated_building = True
+    #     return True
 
 
     def get_nearest_tree(self,x,z):
@@ -653,9 +834,18 @@ class State:
                 bz = z + zo
                 if self.out_of_bounds_2D(bx, bz):
                     continue
+                # also need to update legal actions for neighbors
                 self.legal_actions[bx][bz] = src.movement.get_legal_actions_from_block(self.blocks, bx, bz, self.agent_jump_ability,
                                                                                    self.rel_ground_hm, self.agent_height,
                                                                                    self.unwalkable_blocks)
+                # for dir in src.movement.directions:
+                #     nx = dir[0] + bx
+                #     self.legal_actions[bx][bz] = src.movement.get_legal_actions_from_block(self.blocks, bx, bz,
+                #                                                                            self.agent_jump_ability,
+                #                                                                            self.rel_ground_hm,
+                #                                                                            self.agent_height,
+                #                                                                            self.unwalkable_blocks)
+
 
         # if x z not in closed_for_propagation
         self.pathfinder.update_sector_for_block(x, z, self.sectors,
@@ -751,7 +941,42 @@ class State:
             self.roads.append(node)  # put node in roads array
 
 
+    def create_well(self, sx, sz, len_x, len_z):
+        if len_x < 3 or len_z < 3:
+            print("Error: well needs to be at least 3x3")
+            return False
+        height = 2
+        if self.out_of_bounds_Node(sx, sz) or self.out_of_bounds_Node(sx + len_x, sz + len_z) :
+            return False
+        else:
+            lowest_y = self.rel_ground_hm[sx][sz]
+            for x in range(sx, sx + len_x + 1):
+                for z in range(sz, sz + len_z + 1):
+                    if lowest_y > self.rel_ground_hm[x][z]:
+                        lowest_y = self.rel_ground_hm[x][z]
+            if lowest_y + height > self.len_y:
+                return False
+            # create water
+            for x in range(sx, sx+len_x):
+                for z in range(sz, sz + len_z):
+                    if x == sx or x == sx+len_x-1 or \
+                        z == sz or z == sz+len_z-1:
+                        src.states.set_state_block(self,x,lowest_y, z, 'minecraft:stripped_oak_log')
+                    else:
+                        src.states.set_state_block(self,x,lowest_y, z, 'minecraft:water')
+                    src.states.set_state_block(self,x,lowest_y+1, z, 'minecraft:air')
+                    src.states.set_state_block(self,x,lowest_y+2, z, 'minecraft:air')
+                    self.water.append((x,z))
+                    self.built.add(self.nodes[self.node_pointers[(x,z)]])
+            return True
+
     def init_main_st(self):
+        if len(self.water) <= 0:
+            sx = randint(0, self.len_x)
+            sz = randint(0, self.len_z)
+            while self.create_well(sx, sz, 4, 4) is False:
+                sx = randint(0, self.len_x)
+                sz = randint(0, self.len_z)
         (x1, y1) = choice(self.water)
         n_pos = self.node_pointers[(x1, y1)]
         water_checks = 100
@@ -854,36 +1079,6 @@ class State:
         block_path = []
         if points == None:
             block_path = src.linedrawing.get_line(node_pos1, node_pos2) # inclusive
-
-
-
-
-            # if bend_if_needed:
-            #     closed = set()
-            #     for i in range(len(block_path)):
-            #         if (block_path[i] in self.built):
-            #             built_node = block_path[i]
-            #             ## try to get a bent road from that
-            #             # first find a diagonal that is not in built and isn't type water
-            #             for diag in src.movement.diagonals:
-            #                 nx = self.node_size * diag[0] + built_node.center[0]
-            #                 nz = self.node_size * diag[1] + built_node.center[1]
-            #                 if (nx, nz) in closed: continue
-            #                 if self.out_of_bounds_node(nx, nz): continue
-            #                 closed.add((nx, nz))
-            #                 p1_to_diag = src.linedrawing.get_line(node_pos1, (nx,nz))
-            #                 if any(tile in self.built for tile in p1_to_diag): continue
-            #                 # p2_to_diag = src.linedrawing.get_line((nx, nz), node_pos2)
-            #                 closest_point, p2_to_diag = self.get_closest_point(node=self.nodes[(nx, nz)],
-            #                                                                     lots=[],
-            #                                                                     possible_targets=self.roads,
-            #                                                                     road_type=road_type,
-            #                                                                     state=self,
-            #                                                                     leave_lot=false,
-            #                                                                     correction=correction)
-            #                 if any(tile in self.built for tile in p2_to_diag): continue
-            #                 block_path = p1_to_diag + p2_to_diag
-            #                 self.bends+=1
         else:
             block_path = points
         if bend_if_needed:
@@ -910,7 +1105,7 @@ class State:
                         if (nx, nz) in closed: continue
                         closed.add((nx, nz))
                         if self.out_of_bounds_Node(nx, nz): continue
-                        p1_to_diag = src.linedrawing.get_line(node_pos1, (nx, nz))
+                        p1_to_diag = src.linedrawing.get_line(node_pos1, (nx, nz))  # TODO add aux to p1 so it checks neigrboars
                         if any(tile in tile_coords for tile in p1_to_diag): continue
 
                         # # debug
@@ -942,6 +1137,7 @@ class State:
                         self.bends += 1
                         found_bend = True
                         break
+
         # add road segnmets
         middle_nodes = []
         node_path = []

@@ -2,6 +2,7 @@ import src.agent
 import src.states
 import src.my_utils
 import http_framework.worldLoader
+import http_framework.interfaceUtils
 import time
 import random
 import numpy as np
@@ -36,10 +37,15 @@ class Simulation:
         f.close()
 
         if run_start:
+            clean_agents = "kill @e[type=minecraft:armor_stand,x={},y=64,z={},distance=..100]".format(
+                str((XZXZ[2] + XZXZ[0]) / 2),
+                str((XZXZ[3] + XZXZ[1]) / 2))
+            http_framework.interfaceUtils.runCommand(clean_agents)
             self.start()
 
     def start(self):
         print("started")
+
         result = False  # returns agent positions or False
         for i in range(100):
             while result is False:
@@ -53,14 +59,16 @@ class Simulation:
 
         construction_site = random.choice(list(self.state.construction))
         nearest_tree_pos = self.state.get_nearest_tree(*construction_site.center)[0]
+
         wood_type = self.state.blocks[nearest_tree_pos[0]]\
             [self.state.rel_ground_hm[nearest_tree_pos[0]][nearest_tree_pos[1]]]\
             [nearest_tree_pos[1]]
         wood = src.my_utils.get_wood_type(wood_type)
         i = 0
-        build_tries = 300
-        while self.state.place_building_at(construction_site, building, x_size, z_size, wood) is False and i < build_tries:  # flip the x and z
-            construction_site = random.choice(list(self.state.construction))
+        build_tries = 1  # 1 because the while loop is now in find_build
+        schematic_args = self.state.find_build_location(0,0,building,wood,ignore_sector=True)
+        while self.state.place_schematic(*schematic_args) is False and i < build_tries:  # flip the x and z
+            schematic_args = self.state.find_build_location(0,0,building,wood,ignore_sector=True)
             i+=1
 
 
