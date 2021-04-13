@@ -11,7 +11,6 @@ class Simulation:
 
     # with names? Let's look after ensembles and other's data scructure for max flexibility
     def __init__(self, XZXZ, run_start=True, phase=0, maNum=5, miNum=400, byNum= 2000, brNum=1000, buNum=10, pDecay=0.98, tDecay=0.25, corNum=5, times=1, is_rendering_each_step=True, rendering_step_duration=0.8):
-        self.agents = set()
         self.world_slice = http_framework.worldLoader.WorldSlice(XZXZ)
         self.state = src.states.State(self.world_slice)
         self.maNum = maNum
@@ -31,8 +30,9 @@ class Simulation:
         self.phase3threshold = 200
         # parse heads
         f = open("../../../assets/agent_heads.out.txt")
-        self.agent_heads = f.readlines()
-        self.agent_heads = [h.rstrip('\n') for h in self.agent_heads]
+        agent_heads = f.readlines()
+        agent_heads = [h.rstrip('\n') for h in agent_heads]
+        src.states.State.agent_heads = agent_heads
         f.close()
 
         if run_start:
@@ -66,10 +66,7 @@ class Simulation:
 
         self.state.step()  # check if this affects agent pahs. it seems to.
         # spawn agents at main street endpoints
-        for agent_pos in result:
-            head = random.choice(self.agent_heads)
-            new_agent = src.agent.Agent(self.state, *agent_pos, walkable_heightmap=self.state.rel_ground_hm, name=names.get_first_name(), head=head)
-            self.add_agent(new_agent)
+
             # new_agent.set_motive(src.agent.Agent.Motive.LOGGING)
 
 
@@ -105,7 +102,7 @@ class Simulation:
             node = self.state.nodes[(node_pos)]
 
             # calculate roads
-            if not (src.my_utils.TYPE.GREEN.name in node.get_type() or src.my_utils.TYPE.TREE.name in node.type or src.my_utils.TYPE.BUILDING.name in node.type):
+            if not (src.my_utils.TYPE.GREEN.name in node.get_type() or src.my_utils.TYPE.TREE.name in node.type or src.my_utils.TYPE.CONSTRUCTION.name in node.type):
                 # print("returnung")
                 return
 
@@ -158,18 +155,20 @@ class Simulation:
                             self.state.set_type_building(lot)
 
 
-    def add_agent(self, agent : src.agent.Agent, use_auto_motive=True):
-        self.agents.add(agent)
-        agent.set_motive(agent.Motive.LOGGING)
         # if use_auto_motive:
         #     agent.auto_motive()
 
     def update_agents(self, is_rendering=True):
-        for agent in self.agents:
+        for agent in self.state.agents.keys():
             agent.unshared_resources['rest'] += agent.rest_dec_rate
             agent.unshared_resources['water'] += agent.water_dec_rate
             agent.follow_path(state=self.state, walkable_heightmap=self.state.rel_ground_hm)
             # agent.move_in_state()
             if is_rendering:
                 agent.render()
+        new_agents = self.state.new_agents.copy()
+        for new_agent in new_agents:  # because error occurs if dict changes during iteration
+            self.state.agents[new_agent] = (new_agent.x, new_agent.y, new_agent.z)
+            self.state.new_agents.remove(new_agent)
+            print("added")
             # print("agent is in "+str(self.state.sectors[agent.x][agent.z]))

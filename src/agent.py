@@ -11,6 +11,7 @@ import src.my_utils
 import src.scheme_utils
 import http_framework.interfaceUtils
 from math import dist, ceil
+import names
 
 class Agent:
 
@@ -21,6 +22,7 @@ class Agent:
         WATER = 3
         REST = 4
         REPLENISH_TREE = 5
+        PROPAGATE = 6
 
     shared_resources = {
         "oak_log": 0,
@@ -253,6 +255,7 @@ class Agent:
 
 
     def calc_motive(self):
+        # TODO propagate if found lover and happy
         if self.unshared_resources['rest'] < self.rest_thresh:
             return self.Motive.REST
         elif self.unshared_resources['water'] < self.thirst_thresh:
@@ -260,8 +263,8 @@ class Agent:
         elif self.has_enough_to_build(self.state.phase):
             return self.Motive.BUILD
         else:
-            actions = (self.Motive.LOGGING, self.Motive.REPLENISH_TREE)
-            weights = (10, 1)
+            actions = (self.Motive.LOGGING, self.Motive.REPLENISH_TREE, self.Motive.PROPAGATE)
+            weights = (10, 1, 5)
             choice = choices(actions, weights, k=1)
             return choice[0]
 
@@ -313,6 +316,11 @@ class Agent:
         self.x = new_x
         self.z = new_z
         self.y = walkable_heightmap[new_x][new_z]
+        node = self.state.nodes[self.state.node_pointers[(self.x, self.z)]]
+        if node != None:
+            node.add_prosperity(src.my_utils.ACTION_PROSPERITY.WALKING)
+        self.state.agents[self] = (self.x, self.y, self.z)
+
 
 
     def teleport(self, target_x, target_z, walkable_heightmap):
@@ -352,6 +360,8 @@ class Agent:
                 status = self.do_log_task()
             elif self.motive == self.Motive.REPLENISH_TREE.name:
                 status = self.do_replenish_tree_task()
+            elif self.motive == self.Motive.PROPAGATE.name:
+                status = self.do_propagate_task()
             elif self.motive == self.Motive.IDLE.name:
                 status = self.do_idle_task()
         if self.turns_staying_still > Agent.max_turns_staying_still and status is False:  # _move in random direction if still for too long
@@ -373,7 +383,19 @@ class Agent:
             self.turns_staying_still += 1
 
 
-            
+    def do_propagate_task(self):
+        empty_spot = (self.x, self.z)
+        for dir in src.movement.directions:
+            tx = self.x + dir[0]
+            tz = self.z + dir[1]
+            if self.state.sectors[tx][tz] == self.state.sectors[self.x][self.z]:
+                empty_spot = (tx, tz)
+        child = Agent(self.state, *empty_spot, self.state.rel_ground_hm, name=names.get_first_name(), head=choice(src.states.State.agent_heads))
+        self.state.add_agent(child)
+        self.set_motive(self.Motive.IDLE)
+        return True
+
+
     def do_replenish_tree_task(self):
         def is_in_state_saplings(state, x, y, z):
             return (x,z) in state.saplings
@@ -498,6 +520,9 @@ class Agent:
                 self.set_motive(self.Motive.REPLENISH_TREE)
         elif new_motive.name == self.Motive.REPLENISH_TREE.name:
             self.set_path_to_nearest_spot(self.state.saplings, 15, 10, 20, search_neighbors_instead=True)
+        elif new_motive.name == self.Motive.PROPAGATE.name:
+            # TODO go to own house instead
+            self.set_path_to_nearest_spot(list(self.state.built_heightmap.keys()), 30, 10, 20, search_neighbors_instead=False)
         elif new_motive.name == self.Motive.IDLE.name: # just let it go into follow_path
             pass
 

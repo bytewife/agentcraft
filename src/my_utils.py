@@ -55,8 +55,9 @@ AGENT_ITEMS = {"REST": ["clock", "white_tulip", "white_wool", "white_bed"],
 
 class ACTION_PROSPERITY():
 	LOGGING = 10
-	WATER = 10
+	WATER = 20
 	REPLENISH_TREE = 5
+	WALKING = 1
 
 
 class TYPE(Enum):
@@ -64,7 +65,7 @@ class TYPE(Enum):
 	TREE = 2
 	GREEN = 3
 	BROWN = 4
-	BUILDING = 5
+	CONSTRUCTION = 5
 	MAJOR_ROAD = 6
 	MINOR_ROAD = 7
 	BRIDGE = 8
@@ -72,6 +73,7 @@ class TYPE(Enum):
 	HIGHWAY = 10
 	AIR = 11
 	PASSTHROUGH = 12
+	BUILT = 13
 
 
 class HEIGHTMAPS(Enum):
@@ -104,7 +106,6 @@ class TYPE_TILES:
 		TYPE.GREEN.value: {  # GREEN
 			"minecraft:grass_block",
 			"minecraft:sand"
-			"minecraft:coarse_dirt",
 			"minecraft:dirt",
 			# "minecraft:oak_sapling",
 		},
@@ -112,8 +113,9 @@ class TYPE_TILES:
 			"minecraft:gravel",
 			"minecraft:diorite",
 			"minecraft:stone",
+			"minecraft:coarse_dirt",
 		},
-		TYPE.BUILDING.value: {  # BUILDING
+		TYPE.CONSTRUCTION.value: {  # BUILDING
 			""
 		},
 		TYPE.MAJOR_ROAD.value: {  # MAJOR ROAD
@@ -185,6 +187,14 @@ class TYPE_TILES:
 			"minecraft:black_carpet",
 			"minecraft:player_head",
 			"minecraft:flower_pot",
+		},
+		TYPE.BUILT.value: {  # TODO hook this up with settingg the nodes to be built on start
+			"minecraft:oak_stairs",
+			"minecraft:spruce_stairs",
+			"minecraft:brunce_stairs",
+			"minecraft:dark_oak_stairs",
+			"minecraft:acacia_stairs",
+			"minecraft:jungle_stairs",
 		}
 	}
 

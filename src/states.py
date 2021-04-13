@@ -7,20 +7,23 @@ import src.my_utils
 import src.movement
 import src.pathfinding
 import src.scheme_utils
+import src.agent
 import numpy as np
 from random import choice, random
 from scipy.interpolate import interp1d
 import src.linedrawing
 import src.manipulation
+import names
 
 class State:
 
+    agent_heads = []
     tallest_building_height = 30
     changed_blocks = {}
     blocks = []  # 3D Array of all the assets in the state
     trees = []
     saplings = []
-    water = []
+    water = []  # tile positions
     world_y = 0
     world_x = 0
     world_z = 0
@@ -52,6 +55,7 @@ class State:
             self.rel_ground_hm = self.gen_rel_ground_hm(self.abs_ground_hm)  # a heightmap based on the state's y values. -1
             self.static_ground_hm = np.copy(self.rel_ground_hm)  # use this for placing roads
             self.heightmaps = world_slice.heightmaps
+            self.built = set()
             self.types = self.gen_types(self.rel_ground_hm)  # 2D array. Exclude leaves because it would be hard to determine tree positions
             self.world_x = world_slice.rect[0]
             self.world_z = world_slice.rect[1]
@@ -70,7 +74,6 @@ class State:
             self.prosperity = np.zeros((self.len_x, self.len_z))
             self.traffic = np.zeros((self.len_x, self.len_z))
             self.updateFlags = np.zeros((self.len_x, self.len_z))
-            self.built = set()
             self.built_heightmap = {}
             self.exterior_heightmap = {}
             self.generated_building = False
@@ -81,8 +84,12 @@ class State:
             self.bends = 0
             self.semibends = 0
             self.bendcount = 0
-            print('nodes is '+str(len(self.nodes)))
-            print('traffic is '+str(len(self.traffic)))
+            self.agents = dict()  # holds agent and position
+            self.new_agents = set()  # agents that were just created
+            # print(self.types)
+            # print(self.nodes[self.node_pointers[(5,5)]].get_type())
+            # print('nodes is '+str(len(self.nodes)))
+            # print('traffic is '+str(len(self.traffic)))
 
             for water in self.water:
                 # src.states.set_state_block(self, water[0], self.rel_ground_hm[water[0]][water[1]], water[1], 'minecraft:iron_block')
@@ -286,6 +293,8 @@ class State:
 
         # the tiles' types + mask_type (like building or roads
         def get_type(self):
+            if self in self.state.built:
+                self.add_mask_type(src.my_utils.TYPE.BUILT.name)
             all_types = set()
             for tile_pos in self.get_tiles():
                 tx, tz = tile_pos
@@ -311,7 +320,7 @@ class State:
                 return self.state.traffic[self.center[0]][self.center[1]]
 
 
-        def add_type(self, type):
+        def add_mask_type(self, type):
             self.mask_type.add(type)
 
 
@@ -389,7 +398,7 @@ class State:
                             water_neighbors.append(node)
                         if src.my_utils.TYPE.TREE.name in node.type \
                                 or src.my_utils.TYPE.GREEN.name in node.type \
-                                or src.my_utils.TYPE.BUILDING.name in node.type:
+                                or src.my_utils.TYPE.CONSTRUCTION.name in node.type:
                                 resource_neighbors.append(node)
                         local.add(node)
             self.built_resources = self.prosperity
@@ -423,12 +432,12 @@ class State:
             new_neighbors = set()
             for i in range(5):
                 new_neighbors = set([e for n in lot for e in n.adjacent if e not in lot and (
-                        src.my_utils.TYPE.GREEN.name in e.mask_type or src.my_utils.TYPE.TREE.name in e.mask_type or src.my_utils.TYPE.BUILDING.name in e.mask_type)])
-                accept = set([n for n in new_neighbors if src.my_utils.TYPE.BUILDING.name not in n.mask_type])
+                        src.my_utils.TYPE.GREEN.name in e.mask_type or src.my_utils.TYPE.TREE.name in e.mask_type or src.my_utils.TYPE.CONSTRUCTION.name in e.mask_type)])
+                accept = set([n for n in new_neighbors if src.my_utils.TYPE.CONSTRUCTION.name not in n.mask_type])
                 if len(new_neighbors) == 0:
                     break
                 lot.update(accept)
-            if len([n for n in new_neighbors if src.my_utils.TYPE.BUILDING.name not in n.mask_type]) == 0:  # neighbors except self
+            if len([n for n in new_neighbors if src.my_utils.TYPE.CONSTRUCTION.name not in n.mask_type]) == 0:  # neighbors except self
                 return lot
             else:
                 return None
@@ -701,7 +710,8 @@ class State:
             else False
 
     def out_of_bounds_Node(self, x, z):
-        if x < 0 or z < 0 or  x > self.last_node_pointer_x or z > self.last_node_pointer_z: # the problem is that some assets don't point to a tile.
+        # if x < 0 or z < 0 or x > self.last_node_pointer_x or z > self.last_node_pointer_z: # the problem is that some assets don't point to a tile.
+        if x < 0 or z < 0 or x > self.last_node_pointer_x or z > self.last_node_pointer_z: # the problem is that some assets don't point to a tile.
             return True
         return False
 
@@ -719,7 +729,7 @@ class State:
                         src.my_utils.TYPE.BROWN.name in node.type or \
                         src.my_utils.TYPE.TREE.name in node.type:
                     node.clear_type(self)
-                    node.add_type(src.my_utils.TYPE.BUILDING.name)
+                    node.add_mask_type(src.my_utils.TYPE.CONSTRUCTION.name)
                     self.construction.add(node)
 
 
@@ -728,10 +738,10 @@ class State:
             node = self.nodes[self.node_pointers[point]]
             if src.my_utils.TYPE.WATER.name in node.get_type():
                 node.clear_type(self)
-                node.add_type(src.my_utils.TYPE.BRIDGE.name) # we don't use add_type. instead we give each tile a type
+                node.add_mask_type(src.my_utils.TYPE.BRIDGE.name) # we don't use add_type. instead we give each tile a type
             else:
                 node.clear_type(self)
-                node.add_type(road_type)
+                node.add_mask_type(road_type)
             for road in self.roads:
                 # node.clear_type(self)  # mine
                 node.add_neighbor(road)
@@ -800,7 +810,20 @@ class State:
         p2 = (x2, y2)
         self.init_lots(*p1, *p2)  # main street is a lot
         self.create_road(node_pos1=p1, node_pos2=p2, road_type=src.my_utils.TYPE.MAJOR_ROAD.name)
-        return [p1, p2]
+
+        # add starter agents
+        for agent_pos in [p1, p2]:
+            print(str(agent_pos))
+            head = choice(State.agent_heads)
+            new_agent = src.agent.Agent(self, *agent_pos, walkable_heightmap=self.rel_ground_hm,
+                                        name=names.get_first_name(), head=head)
+            self.add_agent(new_agent)
+        return True
+
+
+    def add_agent(self, agent, use_auto_motive=True):
+        self.new_agents.add(agent)  # to be handled by update_agents
+        agent.set_motive(agent.Motive.LOGGING)
 
 
     def init_lots(self, x1, y1, x2, y2):
@@ -863,56 +886,62 @@ class State:
             #                 self.bends+=1
         else:
             block_path = points
-            if bend_if_needed:
-                tile_coords = [tilepos for node in self.built for tilepos in node.get_tiles()]
-                if any(tile in tile_coords for tile in block_path):
-                    # get nearest built
-                    built_node_coords = [node.center for node in self.built]  # returns building node coords
-                    built_diags = [(node[0]+dir[0]*self.node_size, node[1]+dir[1]*self.node_size)  # returns diagonals to building nodes
-                                   for node in built_node_coords for dir in src.movement.diagonals if (node[0]+dir[0]*self.node_size, node[1]+dir[1]*self.node_size) not in self.built]
-                    nearest_builts = src.movement.find_nearest(*node_pos1, built_diags, 5, 30, 10)
-                    # print("nearest builts is ")
-                    # print(str(nearest_builts))
-                    # self.bendcount += len(near)
-                    closed = set()
-                    found_bend = False
-                    for built in nearest_builts:
-                        if found_bend == True: break
-                        for diag in src.movement.diagonals:
-                            nx = self.node_size * diag[0] + built[0]
-                            nz = self.node_size * diag[1] + built[1]
-                            if (nx, nz) in closed: continue
-                            closed.add((nx, nz))
-                            if self.out_of_bounds_Node(nx, nz): continue
-                            p1_to_diag = src.linedrawing.get_line(node_pos1, (nx, nz))
-                            if any(tile in self.built for tile in p1_to_diag): continue
+        if bend_if_needed:
+            tile_coords = [tilepos for node in self.built for tilepos in node.get_tiles()]
+            if any(tile in tile_coords for tile in block_path):
+                # get nearest built
+                built_node_coords = [node.center for node in self.built]  # returns building node coords
+                built_diags = [(node[0] + dir[0] * self.node_size, node[1] + dir[1] * self.node_size)
+                               # returns diagonals to building nodes
+                               for node in built_node_coords for dir in src.movement.diagonals if (
+                               node[0] + dir[0] * self.node_size,
+                               node[1] + dir[1] * self.node_size) not in self.built]
+                nearest_builts = src.movement.find_nearest(*node_pos1, built_diags, 5, 30, 10)
+                # print("nearest builts is ")
+                # print(str(nearest_builts))
+                # self.bendcount += len(near)
+                closed = set()
+                found_bend = False
+                for built in nearest_builts:
+                    if found_bend == True: break
+                    for diag in src.movement.diagonals:
+                        nx = self.node_size * diag[0] + built[0]
+                        nz = self.node_size * diag[1] + built[1]
+                        if (nx, nz) in closed: continue
+                        closed.add((nx, nz))
+                        if self.out_of_bounds_Node(nx, nz): continue
+                        p1_to_diag = src.linedrawing.get_line(node_pos1, (nx, nz))
+                        if any(tile in tile_coords for tile in p1_to_diag): continue
 
-                            # # debug
-                            # for tile in p1_to_diag:
-                            #     set_state_block(self,tile[0], self.rel_ground_hm[tile[0]][tile[1]]+10,tile[1], 'minecraft:diamond_block')
+                        # # debug
+                        # for tile in p1_to_diag:
+                        #     set_state_block(self,tile[0], self.rel_ground_hm[tile[0]][tile[1]]+10,tile[1], 'minecraft:diamond_block')
 
-                            self.semibends += 1
-                            # p2_to_diag = src.linedrawing.get_line((nx, nz), node_pos2)
-                            closest_point, p2_to_diag = self.get_closest_point(node=self.nodes[(nx, nz)],
-                                                                               lots=[],
-                                                                               possible_targets=self.roads,
-                                                                               road_type=road_type,
-                                                                               state=self,
-                                                                               leave_lot=False,
-                                                                               correction=correction)
-                            if p2_to_diag is None: continue  #if none found, try again
-                            if any(tile in tile_coords for tile in p2_to_diag): continue  # if building is in path. try again
+                        self.semibends += 1
+                        # p2_to_diag = src.linedrawing.get_line((nx, nz), node_pos2)
+                        closest_point, p2_to_diag = self.get_closest_point(node=self.nodes[(nx, nz)],
+                                                                           lots=[],
+                                                                           possible_targets=self.roads,
+                                                                           road_type=road_type,
+                                                                           state=self,
+                                                                           leave_lot=False,
+                                                                           correction=correction)
+                        if p2_to_diag is None: continue  # if none found, try again
+                        if any(tile in tile_coords for tile in
+                               p2_to_diag): continue  # if building is in path. try again
 
-                            # # debug
-                            for tile in p1_to_diag:
-                                set_state_block(self,tile[0], self.rel_ground_hm[tile[0]][tile[1]]+10,tile[1], 'minecraft:diamond_block')
-                            for tile in p2_to_diag:
-                                set_state_block(self,tile[0], self.rel_ground_hm[tile[0]][tile[1]]+10,tile[1], 'minecraft:emerald_block')
+                        # # debug
+                        for tile in p1_to_diag:
+                            set_state_block(self, tile[0], self.rel_ground_hm[tile[0]][tile[1]] + 10, tile[1],
+                                            'minecraft:diamond_block')
+                        for tile in p2_to_diag:
+                            set_state_block(self, tile[0], self.rel_ground_hm[tile[0]][tile[1]] + 10, tile[1],
+                                            'minecraft:emerald_block')
 
-                            block_path = p1_to_diag + p2_to_diag  # concat two, building-free roads
-                            self.bends += 1
-                            found_bend = True
-                            break
+                        block_path = p1_to_diag + p2_to_diag  # concat two, building-free roads
+                        self.bends += 1
+                        found_bend = True
+                        break
         # add road segnmets
         middle_nodes = []
         node_path = []

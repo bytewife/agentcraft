@@ -63,7 +63,7 @@ sim = src.simulation.Simulation(area, rendering_step_duration=0.0, is_rendering_
 
 print("road_segs")
 print(sim.state.road_segs)
-sim.step(200, is_rendering=True)
+sim.step(400, is_rendering=True)
 for built in sim.state.built:
     src.states.set_state_block(sim.state, built.center[0], sim.state.rel_ground_hm[built.center[0]][built.center[1]]+11, built.center[1], 'minecraft:red_wool')
 for xz,y in sim.state.built_heightmap.items():

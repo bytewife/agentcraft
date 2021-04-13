@@ -2,6 +2,7 @@ import src.my_utils
 import src.states
 from enum import Enum
 from random import randint, random, choice
+import src.movement
 import math
 class TASK_OUTCOME(Enum):
     FAILURE = 0
@@ -113,18 +114,39 @@ def cut_tree_at(state, x, y, z, times=1):
                   or is_leaf(state.get_adjacent_block(x, y, z, 0, 0, -1)):
               flood_kill_leaves(state, x, y + 1, z)
         if not is_log(state, x, y - 1, z):  # place sapling
+            # find green around here
+            new_x = x
+            new_y = y
+            new_z = z
+            found_new_spot = False
+            for dir in src.movement.directions:
+                tx = x + dir[0]
+                tz = z + dir[1]
+                ttype = state.types[tx][tz]
+                node = state.nodes[state.node_pointers[(tx,tz)]]
+                if ttype == src.my_utils.TYPE.GREEN.name \
+                    and node not in state.built: # check if right
+                    new_x = tx
+                    new_y = state.rel_ground_hm[tx][tz]
+                    new_z = tz
+                    found_new_spot = True
+                    break
             new_replacement = "minecraft:" + log_type + "_sapling"
+            # new_replacement = "minecraft:air"
             yoff = -1
             if state.blocks[x][y-1][z] == "minecraft:air":
                 new_replacement = "minecraft:air"
                 yoff = 0  # needs verification
-            src.states.set_state_block(state, x, y, z, new_replacement)
-            new_type = state.determine_type(x, z, state.rel_ground_hm, yoff) # -1 to account for sapling
-            state.types[x][z] = new_type
-            print("new state is "+str(state.types[x][z]))
+            src.states.set_state_block(state, x, y, z, "minecraft:air")
+            removed_tree_tile_type = state.determine_type(x, z, state.rel_ground_hm, yoff) # -1 to account for sapling
+            state.types[x][z] = removed_tree_tile_type
             if (x,z) in state.trees:  # when sniped
                 state.trees.remove((x,z))
-            state.saplings.append((x,z))
+            if found_new_spot:
+                sapling_tile_type = state.determine_type(new_x, new_z, state.rel_ground_hm, yoff)  # -1 to account for sapling
+                state.types[new_x][new_z] = sapling_tile_type
+                src.states.set_state_block(state, new_x, new_y, new_z, new_replacement)
+                state.saplings.append((new_x,new_z))
             return TASK_OUTCOME.SUCCESS.name
         y -= 1
     return TASK_OUTCOME.IN_PROGRESS.name
