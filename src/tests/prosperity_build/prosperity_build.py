@@ -75,7 +75,7 @@ for x in range(sim.state.len_x):
         # src.states.set_state_block(sim.state,x,sim.state.rel_ground_hm[x][z],z, 'minecraft:pumpkin')
 
 sim.step(1, is_rendering=True)
-pprint(sim.state.rel_ground_hm)
+# pprint(sim.state.rel_ground_hm)
 # print(sim.state.static_ground_hm)
 # print(sim.state.sectors)
 print(src.agent.Agent.shared_resources)

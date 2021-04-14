@@ -840,11 +840,11 @@ class State:
 
     def update_phase(self):
         p = np.sum(self.prosperity)
-        print("prosp is "+str(p))
-        if p > self.phase2threshold:
-            self.phase = 2
-        if p > self.phase3threshold:
-            self.phase = 3
+        # print("prosp is "+str(p))
+        # if p > self.phase2threshold:
+        #     self.phase = 2
+        # if p > self.phase3threshold:
+        #     self.phase = 3
 
 
     ## do we wanna cache tree locations? I don't want them to cut down buildings lol
@@ -1139,6 +1139,7 @@ class State:
 
                         self.semibends += 1
                         # p2_to_diag = src.linedrawing.get_line((nx, nz), node_pos2)
+
                         closest_point, p2_to_diag = self.get_closest_point(node=self.nodes[(nx, nz)],
                                                                            lots=[],
                                                                            possible_targets=self.roads,
@@ -1146,9 +1147,31 @@ class State:
                                                                            state=self,
                                                                            leave_lot=False,
                                                                            correction=correction)
-                        if p2_to_diag is None: continue  # if none found, try again
-                        if any(tile in tile_coords for tile in
-                               p2_to_diag): continue  # if building is in path. try again
+
+                        # lets try raycastign up to the dist of p2
+                        if p2_to_diag is None: continue # if none found, try again
+                        if any(tile in tile_coords for tile in p2_to_diag): # if building is in path. try again
+                            # try one last thing: raycast
+                            found_raycast = False
+                            # body here
+                            leeway = 0
+                            dist = len(p2_to_diag) + leeway
+                            steps = 45
+                            step_amt = 360/steps
+                            status = False
+                            raycast_path = None
+                            for i in range(steps):
+                                end_x = int(math.cos(math.radians(i*step_amt)) * dist)
+                                end_z = int(math.sin(math.radians(i*step_amt)) * dist)
+                                if self.out_of_bounds_Node(end_x, end_z): continue
+                                set_state_block(self, end_x, self.rel_ground_hm[end_x][end_z]+15, end_z, "minecraft:gold_block")
+                                status, raycast_path = self.raycast_using_nodes(start=(nx, nz), end=(end_x, end_z), target=self.roads, breaks_list=[self.built])
+                                if status is True: break
+                            if status is False: continue
+                            print("FOUND RAYCAST")
+                            print("where raycast_start is "+str((nx, nz)))
+                            print("where raycast_end is "+str((end_x, end_z)))
+                            p2_to_diag = raycast_path
 
                         # # debug
                         for tile in p1_to_diag:
@@ -1254,6 +1277,22 @@ class State:
         return [node_pos1, node_pos2]
 
 
+    def raycast_using_nodes(self, start, end, target, breaks_list):
+        max_path = src.linedrawing.get_line(start, end)
+        result_path = []
+        for tile in max_path:
+            node_ptr = self.node_pointers[(tile)]
+            if node_ptr is None: continue
+            node = self.nodes[node_ptr]
+            for _break in breaks_list:
+                if node in _break: return False, None
+            if node in target:
+                result_path.append(tile)
+                return True, result_path
+            result_path.append(tile)
+        return False, None
+
+
     # def init_main_st(self, water_pts):
     #     (x1, y1) = random.choice(water_pts)  # start in water
     #     n = self.array[x1][y1]
@@ -1302,6 +1341,8 @@ class State:
             return
         (x2, y2) = closest_point
         closest_point = None
+        print("closest point is "+str(closest_point))
+        print("path point is "+str(path_points))
         if road_type == src.my_utils.TYPE.MINOR_ROAD.name:
             closest_point = self.get_point_to_close_gap_minor(*point, path_points)  # connects 2nd end of minor roads to the nearest major or minor road. I think it's a single point
         elif road_type == src.my_utils.TYPE.MAJOR_ROAD.name:  # extend major
@@ -1334,6 +1375,9 @@ class State:
 
     def get_point_to_close_gap_major(self, node, x1, z1, points):
         print("EXTENDING MAJOR ROAD")
+        print('node is ' + str(node.center))
+        print('with xz ' + str((x1, z1)))
+        print('points is  to is ' + str(points))
         # extends a major road to the edge of a lot
         if node.lot is None:
             return None
@@ -1372,16 +1416,23 @@ class State:
                     z2 - z) > zthr:
                 if node2.lot is not None:
                     (cx2, cy2) = node2.lot.center
+                    # print('center is '+str((cx2, cy2)))
+                    # print('with xz '+str((x,z)))
                     (x, z) = (x + x - cx2, z + z - cy2)
+                    # print('going to is '+str((x, z)))
                     # clamp road endpoints
                     print("BUILDING ROAD. IS IT LONG?")
                     if x >= self.last_node_pointer_x:
+                        print("YES")
                         x = self.last_node_pointer_x
                     if x < 0:
+                        print("YES")
                         x = 0
                     if z >= self.last_node_pointer_z:
+                        print("YES")
                         z = self.last_node_pointer_z
                     if z < 0:
+                        print("YES")
                         z = 0
                 if abs(x2 - x) > xthr and abs(z2 - z) > zthr:
                     if not state.add_lot([(x2, z2), (x, z)]):

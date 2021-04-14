@@ -92,7 +92,7 @@ class Agent:
         self.rest_max = 100
         self.unshared_resources = {
             "water": self.water_max * 0.8,
-            "rest": self.rest_max * 0.29
+            "rest": self.rest_max * 0.8
         }
         # self.build_params = set()
         self.build_params = None
@@ -336,16 +336,16 @@ class Agent:
             self.dx = sx - self.x
             self.dz = sz - self.z
             if status == src.manipulation.TASK_OUTCOME.SUCCESS.name:
-                print("collected water!")
+                # print("collected water!")
                 self.unshared_resources['water'] += self.water_inc_rate
                 return True
             elif status == src.manipulation.TASK_OUTCOME.FAILURE.name:  # if no water found
-                print("did not collect water!")
+                # print("did not collect water!")
                 self.set_motive(self.Motive.IDLE)
                 return False
             return True  # in prograss
         else:
-            print("idling from water")
+            # print("idling from water")
             self.set_motive(self.Motive.IDLE)
             return True
 
