@@ -266,7 +266,7 @@ class State:
         xmid = int((x2 + x1) / 2)
         zmid = int((z2 + z1) / 2)
         distmax = math.dist((ctrn_node.center[0] - ctrn_dir[0], ctrn_node.center[1] - ctrn_dir[1]), (xmid, zmid))
-        # build construction site ground
+        # build construction site ground - foundation
         for n in found_nodes:
             # for each of the nodes' tiles, generate random, based on dist. Also, add it to built.
             for dir in src.movement.idirections:
@@ -282,6 +282,35 @@ class State:
                     block = choice(src.my_utils.ROAD_SETS['default'])
                     src.states.set_state_block(self, x, y, z, block)
         y = self.rel_ground_hm[xf][zf] + 5
+        # extend road to fill building front
+
+        front_length = min_nodes_in_x
+        use_x = False
+        print("ctrn_dir is "+str(ctrn_dir))
+        # if ctrn_dir in [(0,1), (0,-1)]:
+        #     print("going by Z")
+        print("front length is "+str(front_length))
+        if rot == 1 or rot == 3:
+            use_x = True
+        for i in range(front_length-1, -1, -1):
+            print("trying")
+            front_length = min_nodes_in_z
+            nx, nz = ctrn_node.center
+            ## offset it
+            print("nx is "+str((use_x ^ 0) * self.node_size * (rot - 2)))
+            print("nx is "+str((use_x ^ 1) * self.node_size * (rot - 1)))
+            nx += (use_x ^ 1) * self.node_size * (rot - 1)
+            nz += (use_x ^ 0) * self.node_size * (rot - 2)
+            nx += i * self.node_size * (use_x ^ 0) * ctrn_dir[0]
+            nz += i * self.node_size * (use_x ^ 1) * ctrn_dir[1]
+            set_state_block(self, nx, self.rel_ground_hm[nx][nz]+12, nz, "minecraft:diamond_ore")
+            node_ptr = self.node_pointers[(nx, nz)]
+            if node_ptr is None: continue
+            node = self.nodes[node_ptr]
+            if node in self.roads or node in self.built or node.center in self.water: continue
+            self.append_road((nx, nz), src.my_utils.TYPE.MINOR_ROAD.name)
+
+
         # debug
         # for n in found_nodes:
         #     x = n.center[0]
@@ -1164,7 +1193,7 @@ class State:
                                 end_x = int(math.cos(math.radians(i*step_amt)) * dist) + nx  # nx and nz are the satrt
                                 end_z = int(math.sin(math.radians(i*step_amt)) * dist) + nz
                                 if self.out_of_bounds_Node(end_x, end_z): continue
-                                set_state_block(self, end_x, self.rel_ground_hm[end_x][end_z]+15, end_z, "minecraft:gold_block")
+                                # set_state_block(self, end_x, self.rel_ground_hm[end_x][end_z]+15, end_z, "minecraft:gold_block")
                                 status, raycast_path = self.raycast_using_nodes(start=(nx, nz), end=(end_x, end_z), target=self.roads, breaks_list=[self.built])
                                 if status is True: break
                             if status is False: continue
@@ -1423,7 +1452,7 @@ class State:
                     (cx2, cy2) = node2.lot.center
                     print('center is '+str((cx2, cy2)))
                     print('with xz '+str((x,z)))
-                    (x, z) = (x + x - cx2, z + z - cy2)
+                    # (x, z) = (x + x - cx2, z + z - cy2)  ### CHANGED
                     print('going to is '+str((x, z)))
                     # clamp road endpoints
                     print("BUILDING ROAD. IS IT LONG?")
