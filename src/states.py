@@ -1161,8 +1161,8 @@ class State:
                             status = False
                             raycast_path = None
                             for i in range(steps):
-                                end_x = int(math.cos(math.radians(i*step_amt)) * dist)
-                                end_z = int(math.sin(math.radians(i*step_amt)) * dist)
+                                end_x = int(math.cos(math.radians(i*step_amt)) * dist) + nx  # nx and nz are the satrt
+                                end_z = int(math.sin(math.radians(i*step_amt)) * dist) + nz
                                 if self.out_of_bounds_Node(end_x, end_z): continue
                                 set_state_block(self, end_x, self.rel_ground_hm[end_x][end_z]+15, end_z, "minecraft:gold_block")
                                 status, raycast_path = self.raycast_using_nodes(start=(nx, nz), end=(end_x, end_z), target=self.roads, breaks_list=[self.built])
@@ -1329,6 +1329,9 @@ class State:
         # convert point to node
         point = self.node_pointers[point]
         node = self.nodes[point]
+        if point is None or node is None:
+            print("tried to build road outside of Node bounds!")
+            return
         # self.roads.append((point1))
         closest_point, path_points = self.get_closest_point(node=self.nodes[self.node_pointers[point]], # get closest point to any road
                                                               lots=[],
@@ -1341,16 +1344,18 @@ class State:
             return
         (x2, y2) = closest_point
         closest_point = None
-        print("closest point is "+str(closest_point))
+        print("given point is ")
         print("path point is "+str(path_points))
         if road_type == src.my_utils.TYPE.MINOR_ROAD.name:
             closest_point = self.get_point_to_close_gap_minor(*point, path_points)  # connects 2nd end of minor roads to the nearest major or minor road. I think it's a single point
         elif road_type == src.my_utils.TYPE.MAJOR_ROAD.name:  # extend major
             closest_point = self.get_point_to_close_gap_major(node, *point, path_points)  # "extends a major road to the edge of a lot"
 
+        print("closest point is "+str(closest_point))
         if closest_point is not None:
             point = closest_point
             path_points.extend(src.linedrawing.get_line((x2, y2), point))  # append to the points list the same thing in reverse? or is this a diff line?
+            print("path points is "+str(path_points))
 
         self.create_road(point, (x2, y2), road_type=road_type, points=path_points, bend_if_needed=bend_if_needed)
 
@@ -1416,10 +1421,10 @@ class State:
                     z2 - z) > zthr:
                 if node2.lot is not None:
                     (cx2, cy2) = node2.lot.center
-                    # print('center is '+str((cx2, cy2)))
-                    # print('with xz '+str((x,z)))
+                    print('center is '+str((cx2, cy2)))
+                    print('with xz '+str((x,z)))
                     (x, z) = (x + x - cx2, z + z - cy2)
-                    # print('going to is '+str((x, z)))
+                    print('going to is '+str((x, z)))
                     # clamp road endpoints
                     print("BUILDING ROAD. IS IT LONG?")
                     if x >= self.last_node_pointer_x:
