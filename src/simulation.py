@@ -80,11 +80,9 @@ class Simulation:
 
     def step(self, times=1, is_rendering=True):
         ##########
-
         for i in range(times):
-
             self.handle_nodes()
-            self.update_agents(is_rendering)
+            self.state.update_agents(is_rendering)
             self.state.step(is_rendering)
             time.sleep(self.rendering_step_duration * is_rendering)
         if not self.is_rendering_each_step:  # render just the end
@@ -163,18 +161,3 @@ class Simulation:
 
         # if use_auto_motive:
         #     agent.auto_motive()
-
-    def update_agents(self, is_rendering=True):
-        for agent in self.state.agents.keys():
-            agent.unshared_resources['rest'] += agent.rest_dec_rate
-            agent.unshared_resources['water'] += agent.water_dec_rate
-            agent.follow_path(state=self.state, walkable_heightmap=self.state.rel_ground_hm)
-            # agent.move_in_state()
-            if is_rendering:
-                agent.render()
-        new_agents = self.state.new_agents.copy()
-        for new_agent in new_agents:  # because error occurs if dict changes during iteration
-            self.state.agents[new_agent] = (new_agent.x, new_agent.y, new_agent.z)
-            self.state.new_agents.remove(new_agent)
-            print("added")
-            # print("agent is in "+str(self.state.sectors[agent.x][agent.z]))

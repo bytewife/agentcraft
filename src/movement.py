@@ -7,15 +7,36 @@ from scipy.spatial import KDTree
 from math import dist
 
 
-class Directions(Enum):
-    N  = 0
-    E  = 1
-    S  = 2
-    W  = 3
-    NE = 4
-    ES = 5
-    SW = 6
-    WN = 7
+# class Directions(Enum):
+#     N  = 0
+#     E  = 1
+#     S  = 2
+#     W  = 3
+#     NE = 4
+#     ES = 5
+#     SW = 6
+#     WN = 7
+
+# class Directions(Enum):
+#     N  = 0
+#     E  = 1
+#     S  = 2
+#     W  = 3
+#     NE = 4
+#     ES = 5
+#     SW = 6
+#     WN = 7
+
+Directions = {
+    0: (1,0),
+    1: (0, 1),
+    2: (-1, 0),
+    3: (0, -1),
+    4: (1, 1),
+    5: (-1, 1),
+    6: (-1, -1),
+    7: (1, -1),
+}
 
 DeltaToDirIdx = {
     (1,0): 0,

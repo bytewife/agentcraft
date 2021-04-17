@@ -23,6 +23,15 @@ class Agent:
         REST = 4
         REPLENISH_TREE = 5
         PROPAGATE = 6
+        SOCIALIZE_LOVER = 7
+        SOCIALIZE_FRIEND = 8
+        SOCIALIZE_ENEMY = 9
+
+    social_interaction_score = {
+        Motive.SOCIALIZE_LOVER: 10,
+        Motive.SOCIALIZE_FRIEND: 10,
+        Motive.SOCIALIZE_ENEMY: 10,
+    }
 
     shared_resources = {
         "oak_log": 0,
@@ -72,11 +81,12 @@ class Agent:
         self.x = self.rendered_x = state_x
         self.z = self.rendered_z = state_z
         self.y = self.rendered_y = walkable_heightmap[state_x][state_z] + 0
+        self.state = state
+        self.node = self.state.nodes[self.state.node_pointers[(self.x,self.z)]]
         self.dx = self.dz = 1  # temp
         self.name = name
         self.parent_1 = parent_1
         self.parent_2 = parent_2
-        self.state = state
         self.path = []
         self.motive = motive
         self.current_action_item = ""
@@ -105,9 +115,58 @@ class Agent:
         self.turns_staying_still = 0
         self.walk_stage = 0  # whether moving left or right. do XOR with 1 and this
         self.is_resting = False
+        self.socialize_want = 0
+        self.socialize_threshold = 0  # TODO change this
+        self.socialize_partner = None
 
-
+        ### SOCIALS
+        self.mutual_friends = set()
+        self.mutual_enemies = set()
+        self.lover = None
+        self.joy = 10
         # self.construction_site = construction_site
+
+    def socialize(self):
+        self.socialize_want += 1
+        if self.socialize_want >= self.socialize_threshold: return  # TODO unlock this somewhere
+        for agent in self.state.agents_in_nodes[self.node]:
+            if agent == self: continue
+            if not self.socialize_want >= self.socialize_threshold: continue
+            elif agent == self.lover:
+                self.set_motive(self.Motive.SOCIALIZE_LOVER)
+                agent.set_motive(self.Motive.SOCIALIZE_LOVER)
+            elif agent in self.mutual_friends:
+                self.set_motive(self.Motive.SOCIALIZE_FRIEND)
+                agent.set_motive(self.Motive.SOCIALIZE_FRIEND)
+            elif agent in self.mutual_enemies:
+                self.set_motive(self.Motive.SOCIALIZE_ENEMY)
+                agent.set_motive(self.Motive.SOCIALIZE_ENEMY)
+            self.approach_agent(agent)  # go to path, and both agents interact once follow_path is done and friend nearby
+            agent.await_agent(self)
+            self.socialize_partner = agent
+            agent.socialize_partner = self
+            self.socialize_want = 0
+            agent.socialize_want = 0
+
+    def approach_agent(self, agent):
+        # dx = agent.x - self.x
+        path = self.set_path_to_nearest_spot(agent, 3, 1, 0, search_neighbors_instead=True)
+        self.set_path(path)
+        if len(self.path) > 3:
+            agent.auto_motive()
+            self.auto_motive()
+            self.path.clear()
+
+
+    def await_agent(self, agent):
+        self.path.clear()
+
+    def do_socialize_task(self, agent, motive : Enum):
+        # face agent
+        dx = self.x - agent.x
+        dz = self.z - agent.z
+        self.dx = dx
+        self.dz = dz
 
 
     def do_build_task(self, found_road, ctrn_node, found_nodes, ctrn_dir, bld, rot, min_nodes_in_x, min_nodes_in_z, built_arr, wood_type):
@@ -126,7 +185,7 @@ class Agent:
             return self.Motive.REST
         elif self.unshared_resources['water'] < self.thirst_thresh:
             return self.Motive.WATER
-        elif self.has_enough_to_build(self.state.phase):
+        elif self.check_can_build(self.state.phase):
             return self.Motive.BUILD
         elif random() > 0.90 and len(self.state.agents) > self.state.max_agents:
             return self.Motive.PROPAGATE
@@ -136,8 +195,7 @@ class Agent:
             choice = choices(actions, weights, k=1)
             return choice[0]
 
-
-    def has_enough_to_build(self, phase):
+    def check_can_build(self, phase):
         for res, amt in self.shared_resources.items():
             if phase == 1:
                 if amt > self.state.build_minimum_phase_1:
@@ -153,7 +211,6 @@ class Agent:
                     return True
             else:
                 return False
-
 
     def get_appropriate_build(self, phase):
         rp = '../../../schemes/'
@@ -173,12 +230,11 @@ class Agent:
             exit(1)
         return rp+build, cost
 
-
     # 3D movement is a stretch goal
     def move_self(self, new_x, new_z, state, walkable_heightmap):
-        if new_x < 0 or new_z < 0 or new_x >= state.len_x or new_z >= state.len_z:
-            print(self.name + " tried to move out of bounds!")
+        if self.state.out_of_bounds_Node(new_x, new_z):
             return
+        self.update_node_occupancy(self.x, self.z, new_x, new_z)
         self.dx = (new_x - self.x) #& -1
         self.dz = (new_z - self.z) #& -1
         self.x = new_x
@@ -187,22 +243,16 @@ class Agent:
         self.state.add_prosperity_from_tile(self.x, self.z, src.my_utils.ACTION_PROSPERITY.WALKING)
         self.state.agents[self] = (self.x, self.y, self.z)
 
-
-
-    def teleport(self, target_x, target_z, walkable_heightmap):
-        if (target_x < 0 or target_z < 0 or target_x >= self.state.len_x or target_z >= self.state.len_z):
-            print(self.name + " tried to move out of bounds!")
-            return
-        self.x = target_x
-        self.z = target_z
-        target_y = walkable_heightmap[target_x][target_z]
-        self.y = target_y
-        print(self.name + " teleported to "+str(target_x)+" "+str(target_y)+" "+str(target_z))
-
+    def update_node_occupancy(self, x1, z1, x2, z2):
+        n1 = self.state.nodes[self.state.node_pointers[(x1,z1)]]
+        n2 = self.state.nodes[self.state.node_pointers[(x2,z2)]]
+        if n1 != n2:
+            self.state.agents_in_nodes[n1].remove(self)
+            self.state.agents_in_nodes[n2].append(self)
+            self.node = n2
 
     def set_path(self, path):
         self.path = path
-
 
     def follow_path(self, state, walkable_heightmap):
         nx = nz = 0
@@ -237,6 +287,21 @@ class Agent:
                 status = self.do_replenish_tree_task()
             elif self.motive == self.Motive.PROPAGATE.name:
                 status = self.do_propagate_task()
+            elif self.motive == self.Motive.SOCIALIZE_LOVER.name:
+                status, x, z = self.find_adjacent_agent(self.socialize_partner)
+                if status:
+                    do_socialize_task(agent, self.Motive.SOCIALIZE_LOVER)
+            elif self.motive == self.Motive.SOCIALIZE_FRIEND.name:
+                status, x, z = self.find_adjacent_agent(self.socialize_partner)
+                if status:
+                    do_socialize_task(agent, self.Motive.SOCIALIZE_FRIEND)
+            elif self.motive == self.Motive.SOCIALIZE_ENEMY.name:
+                status, dx, dz = self.find_adjacent_agent(self.socialize_partner, 2, 2)
+                if status == src.manipulation.TASK_OUTCOME.SUCCESS:
+                    self.do_socialize_task(self.socialize_partner, self.Motive.SOCIALIZE_FRIEND)
+                elif status == src.manipulation.TASK_OUTCOME.FAILURE:
+                    self.auto_motive()
+                    self.socialize_partner.auto_motive()
             elif self.motive == self.Motive.IDLE.name:
                 status = self.do_idle_task()
         if self.turns_staying_still > Agent.max_turns_staying_still and status is False:  # _move in random direction if still for too long
@@ -258,6 +323,23 @@ class Agent:
             self.turns_staying_still += 1
 
 
+    def find_adjacent_agent(self, agent, max_x, max_z):
+        dx = agent.x - self.x
+        dz = agent.z - self.z
+        adx = abs(dx)
+        adz = abs(dz)
+        if adx <= 1 and adz <= 1: # adjacent
+            return src.manipulation.TASK_OUTCOME.SUCCESS, dx, dz
+        if adx > max_x and adz > max_z: # error
+            return src.manipulation.TASK_OUTCOME.FAILURE, dx, dz
+        else:
+            return src.manipulation.TASK_OUTCOME.IN_PROGRESS, dx, dz
+
+
+
+
+
+
     def do_propagate_task(self):
         empty_spot = (self.x, self.z)
         for dir in src.movement.directions:
@@ -274,13 +356,6 @@ class Agent:
     def do_replenish_tree_task(self):
         def is_in_state_saplings(state, x, y, z):
             return (x,z) in state.saplings
-        # if self.is_placing_sapling:
-        #     for dir in src.movement.directions:
-        #         tx = self.x + dir[0]
-        #         tz = self.z + dir[1]
-        #         if is_in_state_saplings(self.state, tx, self.state.rel_ground_hm[tx][tz], tz):
-        #             src.states.set_state_block(self.state,tx, self.state.rel_ground_hm[tx][tz],tz, )
-        #     self.is_placing_sapling = False
         if self.tree_grow_iteration < self.tree_grow_iterations_max+self.tree_leaves_height - 1:
             status, bx, bz = self.collect_from_adjacent_spot(self.state, check_func=is_in_state_saplings, manip_func=src.manipulation.grow_tree_at, prosperity_inc=src.my_utils.ACTION_PROSPERITY.REPLENISH_TREE)
             self.dx = bx - self.x
@@ -311,11 +386,9 @@ class Agent:
             self.set_motive(self.Motive.IDLE)
             return False
 
-
     def do_idle_task(self):
         self.auto_motive()
         return False
-
 
     def do_rest_task(self):
         if self.unshared_resources['rest'] < self.rest_max: # self.calc_motive() == self.Motive.REST:
@@ -326,8 +399,6 @@ class Agent:
             self.is_resting = False
             self.set_motive(self.Motive.IDLE)
             return False
-        # self.walk_stage -= 2
-
 
     def do_water_task(self):
         if self.unshared_resources['water'] < self.water_max:# and self.calc_motive() == self.Motive.WATER :
@@ -348,7 +419,6 @@ class Agent:
             # print("idling from water")
             self.set_motive(self.Motive.IDLE)
             return True
-
 
     def do_log_task(self):
         status, sx, sz = self.collect_from_adjacent_spot(self.state, check_func=src.manipulation.is_log, manip_func=src.manipulation.cut_tree_at, prosperity_inc=src.my_utils.ACTION_PROSPERITY.LOGGING)
@@ -373,7 +443,6 @@ class Agent:
         else:
             src.agent.Agent.shared_resources['oak_log'] += 1
             return True
-
 
     # prepares for motive
     def set_motive(self, new_motive : Enum):
@@ -434,9 +503,10 @@ class Agent:
         elif new_motive.name == self.Motive.PROPAGATE.name:
             # TODO go to own house instead
             self.set_path_to_nearest_spot(list(self.state.built_heightmap.keys()), 30, 10, 20, search_neighbors_instead=False)
+        elif new_motive.name == self.Motive.SOCIALIZE_FRIEND.name:
+            pass
         elif new_motive.name == self.Motive.IDLE.name: # just let it go into follow_path
             pass
-
 
     def set_path_to_nearest_spot(self, search_array, starting_search_radius, max_iterations, radius_inc=1, search_neighbors_instead=True):
         closed = set()
@@ -484,7 +554,6 @@ class Agent:
                 #     break  # cut one at a time
                 return status, bx, bz
         return status, 0, 0  # someone sniped this tree.
-
 
     def render(self):
         # kill agent
@@ -536,8 +605,6 @@ RightArm:[{right_arm}]}}\
     def get_head_tilt(self):  # unused currnetly
         if self.is_resting: return '45'
         else: return '350'
-
-
 
 
 

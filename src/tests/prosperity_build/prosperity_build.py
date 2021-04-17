@@ -22,10 +22,22 @@ from enum import Enum
 # x2 = 62
 # z2 = -99
 
-x1 = 0
-z1 = 0
-x2 = 62
-z2 = 65
+# x1 = 0
+# z1 = 0
+# x2 = 62
+# z2 = 65
+
+x1 = 1000
+z1 = 1000
+x2 = 1100
+z2 = 1100
+
+# x1 = 10000
+# z1 = 10000
+# # x2 = -1058
+# # z2 = -1024
+# x2 = 10250
+# z2 = 10250
 
 area = [x1,z1,x2,z2]
 area = src.my_utils.correct_area(area)
@@ -60,15 +72,15 @@ sim = src.simulation.Simulation(area, rendering_step_duration=0.0, is_rendering_
 #         pass
         # print("water found!")
 
-
 print("road_segs")
 print(sim.state.road_segs)
 sim.step(400, is_rendering=True)
 for built in sim.state.built:
-    src.states.set_state_block(sim.state, built.center[0], sim.state.rel_ground_hm[built.center[0]][built.center[1]]+11, built.center[1], 'minecraft:red_wool')
+    # src.states.set_state_block(sim.state, built.center[0], sim.state.rel_ground_hm[built.center[0]][built.center[1]]+11, built.center[1], 'minecraft:red_wool')
+    pass
 for xz,y in sim.state.built_heightmap.items():
     x, z = xz
-    src.states.set_state_block(sim.state,x,y+1,z, 'minecraft:diorite')
+    # src.states.set_state_block(sim.state,x,y+1,z, 'minecraft:diorite')
 for x in range(sim.state.len_x):
     for z in range(sim.state.len_z):
         pass

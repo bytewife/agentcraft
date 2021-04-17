@@ -84,6 +84,7 @@ class State:
             self.semibends = 0
             self.bendcount = 0
             self.agents = dict()  # holds agent and position
+            self.agents_in_nodes = self.init_agents_in_nodes()
             self.new_agents = set()  # agents that were just created
             self.max_agents = 20
             self.build_minimum_phase_1 = 2
@@ -115,6 +116,14 @@ class State:
                             blocks3D[x][inv_y][z] = "minecraft:"+blocks[index]
                 return dx, dy, dz, blocks3D
             self.len_x, self.len_y, self.len_z, self.blocks = parse_blocks_file(blocks_file)
+
+
+    def init_agents_in_nodes(self):
+        result = dict()
+        for node in self.nodes.values():
+            result[node] = list()
+        return result
+
 
 
     def find_build_location(self, agentx, agentz, building_file, wood_type, ignore_sector=False):
@@ -286,24 +295,21 @@ class State:
 
         front_length = min_nodes_in_x
         use_x = False
-        print("ctrn_dir is "+str(ctrn_dir))
         # if ctrn_dir in [(0,1), (0,-1)]:
         #     print("going by Z")
-        print("front length is "+str(front_length))
         if rot == 1 or rot == 3:
             use_x = True
         for i in range(front_length-1, -1, -1):
-            print("trying")
             front_length = min_nodes_in_z
             nx, nz = ctrn_node.center
             ## offset it
-            print("nx is "+str((use_x ^ 0) * self.node_size * (rot - 2)))
-            print("nx is "+str((use_x ^ 1) * self.node_size * (rot - 1)))
+            # print("nx is "+str((use_x ^ 0) * self.node_size * (rot - 2)))
+            # print("nx is "+str((use_x ^ 1) * self.node_size * (rot - 1)))
             nx += (use_x ^ 1) * self.node_size * (rot - 1)
             nz += (use_x ^ 0) * self.node_size * (rot - 2)
             nx += i * self.node_size * (use_x ^ 0) * ctrn_dir[0]
             nz += i * self.node_size * (use_x ^ 1) * ctrn_dir[1]
-            set_state_block(self, nx, self.rel_ground_hm[nx][nz]+12, nz, "minecraft:diamond_ore")
+            # set_state_block(self, nx, self.rel_ground_hm[nx][nz]+12, nz, "minecraft:diamond_ore")
             node_ptr = self.node_pointers[(nx, nz)]
             if node_ptr is None: continue
             node = self.nodes[node_ptr]
@@ -770,9 +776,7 @@ class State:
     def traverse_down_till_block(self,x,z):
         y = len(self.blocks[0])-1  # start from top
         while y > 0:
-            block = self.blocks[x][y][z]
-            if block not in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.PASSTHROUGH.value]:
-                # print("traversed till "+block)
+            if self.blocks[x][y][z] not in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.PASSTHROUGH.value]:
                 break
             y-=1
         return y
@@ -852,7 +856,6 @@ class State:
             x,y,z = position
             if is_rendering == True:
                 http_framework.interfaceUtils.placeBlockBatched(self.world_x + x, self.world_y + y, self.world_z + z, block, n_blocks)
-            # http_framwork.interfaceUtils.setBlock(self.world_x + state_x, self.world_y + state_y, self.world_z + state_z, block)
             i += 1
         self.update_heightmaps()  # must wait until all assets are placed
         for position in changed_arr_xz:
@@ -860,9 +863,8 @@ class State:
             self.update_block_info(x, z)  # Must occur after new assets have been placed. Also, only the surface should run it.
         changed_arr.clear()
         changed_arr_xz.clear()
-        if i > 0:
-            print(str(i)+" assets rendered")
-        # need to update phase here with prosperity
+        # if i > 0:
+        #     print(str(i)+" assets rendered")
         self.update_phase()
 
 
@@ -1092,7 +1094,7 @@ class State:
 
         # add starter agents
         for agent_pos in [p1, p2]:
-            print(str(agent_pos))
+            print("adding agent at "+str(agent_pos))
             head = choice(State.agent_heads)
             new_agent = src.agent.Agent(self, *agent_pos, walkable_heightmap=self.rel_ground_hm,
                                         name=names.get_first_name(), head=head)
@@ -1102,7 +1104,24 @@ class State:
 
     def add_agent(self, agent, use_auto_motive=True):
         self.new_agents.add(agent)  # to be handled by update_agents
+        ax = agent.x
+        az = agent.z
+        self.agents_in_nodes[self.nodes[self.node_pointers[(ax, az)]]].append(agent)
         agent.set_motive(agent.Motive.LOGGING)
+
+
+    def update_agents(self, is_rendering=True):
+        for agent in self.agents.keys():
+            agent.unshared_resources['rest'] += agent.rest_dec_rate
+            agent.unshared_resources['water'] += agent.water_dec_rate
+            agent.follow_path(state=self, walkable_heightmap=self.rel_ground_hm)
+            # agent.socialize()
+            if is_rendering:
+                agent.render()
+        new_agents = self.new_agents.copy()
+        for new_agent in new_agents:  # because error occurs if dict changes during iteration
+            self.agents[new_agent] = (new_agent.x, new_agent.y, new_agent.z)
+            self.new_agents.remove(new_agent)
 
 
     def init_lots(self, x1, y1, x2, y2):
