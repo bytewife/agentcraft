@@ -237,6 +237,7 @@ class Pathfinding:
                     # get larger sector
                     sector = self.sectors[x][z]
                     osector = self.sectors[ox][oz]
+                    if sector == osector: continue
                     coord_to_prop_into = (x,z) # smaller
                     sector_to_prop_into = sector
                     size = self.sector_sizes[sector]

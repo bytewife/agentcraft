@@ -92,6 +92,7 @@ class State:
             self.build_minimum_phase_3 = 50
             self.phase2threshold = 200
             self.phase3threshold = 500
+            self.traverse_from = np.copy(self.rel_ground_hm)
             # print(self.types)
             # print(self.nodes[self.node_pointers[(5,5)]].get_type())
             # print('nodes is '+str(len(self.nodes)))
@@ -774,7 +775,7 @@ class State:
 
 
     def traverse_down_till_block(self,x,z):
-        y = len(self.blocks[0])-1  # start from top
+        y = self.traverse_from[x][z]+1  # don't start from top, but from max_building_height from rel
         while y > 0:
             if self.blocks[x][y][z] not in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.PASSTHROUGH.value]:
                 break
@@ -883,6 +884,7 @@ class State:
 
     # is this state x
     def update_block_info(self, x, z):  # this might be expensive if you use this repeatedly in a group
+
         for xo in range(-1, 2):
             for zo in range(-1, 2):
                 bx = x + xo
@@ -893,14 +895,6 @@ class State:
                 self.legal_actions[bx][bz] = src.movement.get_legal_actions_from_block(self.blocks, bx, bz, self.agent_jump_ability,
                                                                                    self.rel_ground_hm, self.agent_height,
                                                                                    self.unwalkable_blocks)
-                # for dir in src.movement.directions:
-                #     nx = dir[0] + bx
-                #     self.legal_actions[bx][bz] = src.movement.get_legal_actions_from_block(self.blocks, bx, bz,
-                #                                                                            self.agent_jump_ability,
-                #                                                                            self.rel_ground_hm,
-                #                                                                            self.agent_height,
-                #                                                                            self.unwalkable_blocks)
-
 
         # if x z not in closed_for_propagation
         self.pathfinder.update_sector_for_block(x, z, self.sectors,
@@ -1510,6 +1504,7 @@ class State:
 
 
 def set_state_block(state, x, y, z, block_name):
+    state.traverse_from[x][z] = max(y, state.traverse_from[x][z])
     state.blocks[x][y][z] = block_name
     state.changed_blocks_xz.add((x,z))
     state.total_changed_blocks_xz.add((x,z))
