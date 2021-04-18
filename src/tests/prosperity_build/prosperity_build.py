@@ -27,10 +27,10 @@ from enum import Enum
 # x2 = 62
 # z2 = 65
 
-x1 = 1000
-z1 = 1000
-x2 = 1100
-z2 = 1100
+x1 = 2000
+z1 = 2000
+x2 = 2250
+z2 = 2250
 
 # x1 = 10000
 # z1 = 10000
@@ -51,6 +51,10 @@ http_framework.interfaceUtils.runCommand(clean_agents)
 
 # sim = src.simulation.Simulation(area, rendering_step_duration=0.0)
 sim = src.simulation.Simulation(area, rendering_step_duration=0.0, is_rendering_each_step=False)
+while sim.start() == False:
+    # sim = src.simulation.Simulation(area, worldSlice=sim.world_slice, rendering_step_duration=0.0, is_rendering_each_step=False)
+    sim = src.simulation.Simulation(area, rendering_step_duration=0.0,
+                                is_rendering_each_step=False)
 # sim.step(1)
 ## ROADS
 # for r in sim.state.roads:

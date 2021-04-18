@@ -171,7 +171,7 @@ class Agent:
 
     def do_build_task(self, found_road, ctrn_node, found_nodes, ctrn_dir, bld, rot, min_nodes_in_x, min_nodes_in_z, built_arr, wood_type):
         self.state.place_schematic(found_road, ctrn_node, found_nodes, ctrn_dir, bld, rot, min_nodes_in_x, min_nodes_in_z, built_arr, wood_type)
-
+        self.state.place_platform(found_road, ctrn_node, found_nodes, ctrn_dir, bld, rot, min_nodes_in_x, min_nodes_in_z, built_arr, wood_type)
 
     def auto_motive(self):
         new_motive = self.calc_motive()
@@ -460,7 +460,7 @@ class Agent:
             building, cost = self.get_appropriate_build(self.state.phase)
             result = self.state.find_build_location(self.x, self.z, building, self.building_material[:-4])
             # now move to teh road
-            if result != None:
+            if result:
                 self.build_params = result
                 tx, tz = result[0].center
                 path = self.state.pathfinder.get_path((self.x, self.z), (tx, tz), self.state.len_x, self.state.len_z,

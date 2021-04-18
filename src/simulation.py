@@ -11,8 +11,11 @@ import names
 class Simulation:
 
     # with names? Let's look after ensembles and other's data scructure for max flexibility
-    def __init__(self, XZXZ, run_start=True, phase=0, maNum=5, miNum=400, byNum= 2000, brNum=1000, buNum=10, pDecay=0.98, tDecay=0.25, corNum=5, times=1, is_rendering_each_step=True, rendering_step_duration=0.8):
-        self.world_slice = http_framework.worldLoader.WorldSlice(XZXZ)
+    def __init__(self, XZXZ, worldSlice=None, run_start=True, phase=0, maNum=5, miNum=400, byNum= 2000, brNum=1000, buNum=10, pDecay=0.98, tDecay=0.25, corNum=5, times=1, is_rendering_each_step=True, rendering_step_duration=0.8):
+        if worldSlice == None:
+            self.world_slice = http_framework.worldLoader.WorldSlice(XZXZ)
+        else:
+            self.world_slice = worldSlice
         self.state = src.states.State(self.world_slice)
         self.maNum = maNum
         self.miNum = miNum
@@ -40,8 +43,8 @@ class Simulation:
                 str((XZXZ[2] + XZXZ[0]) / 2),
                 str((XZXZ[3] + XZXZ[1]) / 2))
             http_framework.interfaceUtils.runCommand(clean_agents)
-            self.start()
 
+    # this needs to be run manually so that we can rerun the sim if needed
     def start(self):
         print("started")
 
@@ -65,16 +68,16 @@ class Simulation:
         wood = src.my_utils.get_wood_type(wood_type)
         i = 0
         build_tries = 1  # 1 because the while loop is now in find_build
+        # rx = random.randint(0,self.state.last_node_pointer_x)
+        # rz = random.randint(0,self.state.last_node_pointer_z)
         schematic_args = self.state.find_build_location(0,0,building,wood,ignore_sector=True)
-        while self.state.place_schematic(*schematic_args) is False and i < build_tries:  # flip the x and z
+        while schematic_args is False or self.state.place_schematic(*schematic_args) is False and self.state.place_platform(*schematic_args) is False:  # flip the x and z
             schematic_args = self.state.find_build_location(0,0,building,wood,ignore_sector=True)
+            if i < build_tries:
+                return False
             i+=1
-
-
         self.state.step()  # check if this affects agent pahs. it seems to.
-        # spawn agents at main street endpoints
-
-            # new_agent.set_motive(src.agent.Agent.Motive.LOGGING)
+        return True
 
 
 
@@ -145,6 +148,7 @@ class Simulation:
                 if node.local_prosperity > self.miNum and not road_found_near:
                     # print("building minor road")
                     # if not len([n for n in node.plot() if Type.BUILDING not in n.type]):
+                    pass
                     self.state.append_road((i, j), src.my_utils.TYPE.MINOR_ROAD.name, correction=self.corNum)
 
                 # calculate reservations of greenery

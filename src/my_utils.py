@@ -136,6 +136,7 @@ class TYPE_TILES:
 		TYPE.PASSTHROUGH.value: {
 			"minecraft:air",
 			"minecraft:cave_air",
+			"minecraft:snow",
 			"minecraft:spruce_wall_sign",
 			"minecraft:oak_wall_sign",
 			"minecraft:birch_wall_sign",
@@ -184,6 +185,9 @@ class TYPE_TILES:
 			"minecraft:player_head",
 			"minecraft:flower_pot",
 			"minecraft:fern",
+			"minecraft:poppy",
+			"minecraft:dandelion",
+			"minecraft:large_fern",
 		},
 		TYPE.BUILT.value: {  # TODO hook this up with settingg the nodes to be built on start
 			"minecraft:oak_stairs",
