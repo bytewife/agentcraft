@@ -134,8 +134,8 @@ def adjacents(state, x, z):
     return adjacents
 
 
-def find_nearest(x, z, spot_coords, starting_search_radius, max_iterations=20, radius_inc=1): # can be used at a sort
-    if len(spot_coords) <= 0: return
+def find_nearest(state, x, z, spot_coords, starting_search_radius, max_iterations=20, radius_inc=1): # can be used at a sort
+    if type(spot_coords) != list or len(spot_coords) <= 0: return []
     kdtree = KDTree(spot_coords)
     for iteration in range(max_iterations):
         radius = starting_search_radius + iteration * radius_inc
@@ -143,6 +143,7 @@ def find_nearest(x, z, spot_coords, starting_search_radius, max_iterations=20, r
         if len(idx) > 0:
             result = []
             for i in idx:
+                if (state.out_of_bounds_Node(*spot_coords[i])): continue
                 result.append(spot_coords[i])
             return result
     return []

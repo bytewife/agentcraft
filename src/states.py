@@ -29,10 +29,11 @@ class State:
 
 
     ## Create surface grid
-    def __init__(self, world_slice=None, blocks_file=None, max_y_offset=tallest_building_height):
+    def __init__(self, world_slice=None, precomp_legal_actions=None, blocks_file=None, max_y_offset=tallest_building_height):
         if not world_slice is None:
             self.rect = world_slice.rect
             self.world_slice = world_slice
+            self.rect = world_slice.rect
 
             self.world_y = 0
             self.world_x = 0
@@ -64,10 +65,13 @@ class State:
             self.len_z = world_slice.rect[3] - world_slice.rect[1]
             self.end_x = world_slice.rect[2]
             self.end_z = world_slice.rect[3]
-            self.legal_actions = src.movement.gen_all_legal_actions(
-                self.blocks, vertical_ability=self.agent_jump_ability, heightmap=self.rel_ground_hm,
-                actor_height=self.agent_height, unwalkable_blocks=["minecraft:water", 'minecraft:lava']
-            )
+            if precomp_legal_actions == None:
+                self.legal_actions = src.movement.gen_all_legal_actions(
+                    self.blocks, vertical_ability=self.agent_jump_ability, heightmap=self.rel_ground_hm,
+                    actor_height=self.agent_height, unwalkable_blocks=["minecraft:water", 'minecraft:lava']
+                )
+            else:
+                self.legal_actions = precomp_legal_actions
             self.pathfinder = src.pathfinding.Pathfinding(self)
             self.sectors = self.pathfinder.create_sectors(self.heightmaps["MOTION_BLOCKING_NO_LEAVES"],
                                             self.legal_actions)  # add tihs into State
@@ -275,7 +279,7 @@ class State:
                 if block in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.PASSTHROUGH.value] or block in src.my_utils.ROAD_SETS['default_slabs']:
                     # block = self.blocks[tx][self.static_ground_hm[tx][tz]-1][tz]
                     block = self.blocks[tx][self.static_ground_hm[tx][tz]][tz]
-                    print("block is "+str(block))
+                    # print("block is "+str(block))
                     if len(traverse) > 0:
                         block = wood_type + '_planks'
                         for y in traverse:
@@ -496,8 +500,8 @@ class State:
     #     return True
 
 
-    def get_nearest_tree(self,x,z):
-        return src.movement.find_nearest(x,z,self.trees, 5, 10, 6)
+    def get_nearest_tree(self,x,z, iterations=10):
+        return src.movement.find_nearest(self, x,z,self.trees, 5, iterations, 5)
 
 
     # note: not every block has a node. These will point to None
@@ -853,7 +857,7 @@ class State:
     def gen_types(self, heightmap):
         xlen = len(self.blocks)
         zlen = len(self.blocks[0][0])
-        types = [["str" for i in range(zlen)] for j in range(xlen)]
+        types = [["str" for j in range(zlen)] for i in range(xlen)]
         for x in range(xlen):
             for z in range(zlen):
                 type_name = self.determine_type(x, z, heightmap).name
@@ -1117,7 +1121,7 @@ class State:
         def is_valid(node):
             return src.my_utils.TYPE.WATER.name not in node.type and src.my_utils.TYPE.LAVA.name not in node.type and src.my_utils.TYPE.FOREIGN_BUILT.name not in node.type
         def is_valid_block(block):
-            return block not in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.WATER.value] and  block not in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.LAVA.value] and block not in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.FOREIGN_BUILT.value]
+            return block not in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.WATER.value] and block not in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.LAVA.value] and block not in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.FOREIGN_BUILT.value]
 
         i = 0
         while not is_valid(n1):  # generate and test until n1 isn't water
@@ -1131,7 +1135,7 @@ class State:
         n2 = np.random.choice(n2_options, replace=False)  # n2 is based off of n1's range, - local to make it farther
         points = src.linedrawing.get_line((n1.center[0], n1.center[1]), (n2.center[0], n2.center[1]))
         find_new_n2 = True
-        limit = 10
+        limit = 100
         i = 0
         while find_new_n2:
             if i > limit:
@@ -1261,7 +1265,7 @@ class State:
 
                 built_diags = [(node[0] + dir[0] * self.node_size, node[1] + dir[1] * self.node_size)
                                for node in built_node_coords for dir in src.movement.diagonals if is_valid(self, (node[0] + dir[0] * self.node_size, node[1] + dir[1] * self.node_size))]
-                nearest_builts = src.movement.find_nearest(*node_pos1, built_diags, 5, 30, 10)
+                nearest_builts = src.movement.find_nearest(self, *node_pos1, built_diags, 5, 30, 10)
                 # print("nearest builts is ")
                 # print(str(nearest_builts))
                 # self.bendcount += len(near)

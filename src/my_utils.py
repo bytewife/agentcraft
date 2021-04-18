@@ -89,7 +89,7 @@ class TYPE_TILES:
 	tile_sets = {
 		TYPE.WATER.value: {  #WATER
 			"minecraft:water",
-			"minecraft:lily_pad",
+			"minecraft:flowing_water",
 		},
 		TYPE.TREE.value: {  # FOREST
 			"minecraft:dark_oak_log",
@@ -188,6 +188,7 @@ class TYPE_TILES:
 			"minecraft:poppy",
 			"minecraft:dandelion",
 			"minecraft:large_fern",
+			"minecraft:lily_pad",
 		},
 		TYPE.BUILT.value: {  # TODO hook this up with settingg the nodes to be built on start
 			"minecraft:oak_stairs",

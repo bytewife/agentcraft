@@ -11,12 +11,18 @@ import names
 class Simulation:
 
     # with names? Let's look after ensembles and other's data scructure for max flexibility
-    def __init__(self, XZXZ, worldSlice=None, run_start=True, phase=0, maNum=5, miNum=400, byNum= 2000, brNum=1000, buNum=10, pDecay=0.98, tDecay=0.25, corNum=5, times=1, is_rendering_each_step=True, rendering_step_duration=0.8):
-        if worldSlice == None:
-            self.world_slice = http_framework.worldLoader.WorldSlice(XZXZ)
-        else:
-            self.world_slice = worldSlice
-        self.state = src.states.State(self.world_slice)
+    def __init__(self, XZXZ, precomp_world_slice=None, precomp_legal_actions = None, precomp_types = None, run_start=True, precomp_sectors = None, phase=0, maNum=5, miNum=400, byNum= 2000, brNum=1000, buNum=10, pDecay=0.98, tDecay=0.25, corNum=5, times=1, is_rendering_each_step=True, rendering_step_duration=0.8):
+        # if precomp_world_slice == None:
+        self.world_slice = http_framework.worldLoader.WorldSlice(XZXZ)
+        # else:
+        #     self.world_slice = precomp_world_slice
+        self.state = src.states.State(self.world_slice, precomp_legal_actions=precomp_legal_actions)
+        # if precomp_legal_actions:
+        #     self.state.legal_actions = precomp_legal_actions
+        # if precomp_types:
+        #     self.state.types = precomp_types
+        # if precomp_sectors:
+        #     self.state.sectors = precomp_sectors
         self.maNum = maNum
         self.miNum = miNum
         self.byNum = byNum
@@ -49,9 +55,14 @@ class Simulation:
         print("started")
 
         result = False  # returns agent positions or False
-        for i in range(100):
-            while result is False:
-                result = self.state.init_main_st()
+        i=0
+        max_tries = 200
+        while result is False:
+            if i > max_tries: return False
+            result = self.state.init_main_st()
+            i+=1
+
+
 
         # build a house
         building = "../../../schemes/"+random.choice(src.my_utils.STRUCTURES['small'])[0]
@@ -60,7 +71,8 @@ class Simulation:
         x_size, y_size, z_size = [int(n) for n in size.split(' ')]
 
         construction_site = random.choice(list(self.state.construction))
-        nearest_tree_pos = self.state.get_nearest_tree(*construction_site.center)[0]
+        c_center = construction_site.center
+        nearest_tree_pos = self.state.get_nearest_tree(*c_center, 20)[0]
 
         wood_type = self.state.blocks[nearest_tree_pos[0]]\
             [self.state.rel_ground_hm[nearest_tree_pos[0]][nearest_tree_pos[1]]]\

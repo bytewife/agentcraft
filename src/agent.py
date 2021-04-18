@@ -511,7 +511,7 @@ class Agent:
     def set_path_to_nearest_spot(self, search_array, starting_search_radius, max_iterations, radius_inc=1, search_neighbors_instead=True):
         closed = set()
         for i in range(max_iterations):
-            spots = src.movement.find_nearest(self.x, self.z, search_array, starting_search_radius+radius_inc*i, 1, radius_inc)
+            spots = src.movement.find_nearest(self.state, self.x, self.z, search_array, starting_search_radius+radius_inc*i, 1, radius_inc)
             if spots is [] or spots is None: continue
             while len(spots) > 0:
                 chosen_spot = choice(spots)
