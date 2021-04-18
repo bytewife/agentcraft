@@ -124,7 +124,9 @@ def cut_tree_at(state, x, y, z, times=1):
                 if state.out_of_bounds_2D(tx,tz):
                     continue
                 ttype = state.types[tx][tz]
-                node = state.nodes[state.node_pointers[(tx,tz)]]
+                node_ptr = state.node_pointers[(tx,tz)]
+                if node_ptr == None: continue
+                node = state.nodes[node_ptr]
                 if ttype == src.my_utils.TYPE.GREEN.name \
                     and node not in state.built \
                     and node not in state.roads: # check if right
@@ -141,12 +143,12 @@ def cut_tree_at(state, x, y, z, times=1):
                 yoff = 0  # needs verification
             src.states.set_state_block(state, x, y, z, "minecraft:air")
             removed_tree_tile_type = state.determine_type(x, z, state.rel_ground_hm, yoff) # -1 to account for sapling
-            state.types[x][z] = removed_tree_tile_type
+            state.types[x][z] = removed_tree_tile_type.name
             if (x,z) in state.trees:  # when sniped
                 state.trees.remove((x,z))
             if found_new_spot:
                 sapling_tile_type = state.determine_type(new_x, new_z, state.rel_ground_hm, yoff)  # -1 to account for sapling
-                state.types[new_x][new_z] = sapling_tile_type
+                state.types[new_x][new_z] = sapling_tile_type.name
                 src.states.set_state_block(state, new_x, new_y, new_z, new_replacement)
                 state.saplings.append((new_x,new_z))
             return TASK_OUTCOME.SUCCESS.name

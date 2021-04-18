@@ -6,7 +6,8 @@ import src.agent
 # https://stackoverflow.com/questions/34470597/is-there-a-dedicated-way-to-get-the-number-of-items-in-a-python-enum
 
 ROAD_SETS = {
-	'default': ["minecraft:bricks	", "minecraft:granite", "minecraft:coarse_dirt", "minecraft:grass_path"]
+	'default': ["minecraft:bricks	", "minecraft:granite", "minecraft:coarse_dirt", "minecraft:grass_path"],
+	'default_slabs': ["minecraft:brick_slab", "minecraft:granite_slab"]
 }
 
 STRUCTURES = {
@@ -74,6 +75,8 @@ class TYPE(Enum):
 	AIR = 11
 	PASSTHROUGH = 12
 	BUILT = 13
+	LAVA = 14
+	FOREIGN_BUILT = 15
 
 
 class HEIGHTMAPS(Enum):
@@ -86,10 +89,9 @@ class TYPE_TILES:
 	tile_sets = {
 		TYPE.WATER.value: {  #WATER
 			"minecraft:water",
-            "minecraft:lily_pad"
+			"minecraft:lily_pad",
 		},
 		TYPE.TREE.value: {  # FOREST
-			"minecraft:log",
 			"minecraft:dark_oak_log",
 			"minecraft:spruce_log",
 			"minecraft:acacia_log",
@@ -181,16 +183,40 @@ class TYPE_TILES:
 			"minecraft:black_carpet",
 			"minecraft:player_head",
 			"minecraft:flower_pot",
+			"minecraft:fern",
 		},
 		TYPE.BUILT.value: {  # TODO hook this up with settingg the nodes to be built on start
 			"minecraft:oak_stairs",
 			"minecraft:spruce_stairs",
-			"minecraft:brunce_stairs",
+			"minecraft:birch_stairs",
 			"minecraft:dark_oak_stairs",
 			"minecraft:acacia_stairs",
 			"minecraft:jungle_stairs",
-		}
-	}
+			"minecraft:oak_planks",
+			"minecraft:spruce_planks",
+			"minecraft:birch_planks",
+			"minecraft:dark_oak_planks",
+			"minecraft:acacia_planks",
+			"minecraft:jungle_planks",
+		},
+		TYPE.LAVA.value: {
+			"minecraft:lava",
+		},
+        TYPE.FOREIGN_BUILT.value: {
+            "minecraft:oak_stairs",
+            "minecraft:spruce_stairs",
+            "minecraft:birch_stairs",
+            "minecraft:dark_oak_stairs",
+            "minecraft:acacia_stairs",
+            "minecraft:jungle_stairs",
+            "minecraft:oak_planks",
+            "minecraft:spruce_planks",
+            "minecraft:birch_planks",
+            "minecraft:dark_oak_planks",
+            "minecraft:acacia_planks",
+            "minecraft:jungle_planks",
+        },
+    }
 
 
 def correct_area(area):

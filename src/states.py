@@ -25,6 +25,7 @@ class State:
     trees = []
     saplings = []
     water = []  # tile positions
+    lava = set()  # tile positions
     world_y = 0
     world_x = 0
     world_z = 0
@@ -42,9 +43,6 @@ class State:
     construction = set()  # nodes where buildings can be placed
     lots = set()
 
-
-
-
     ## Create surface grid
     def __init__(self, world_slice=None, blocks_file=None, max_y_offset=tallest_building_height):
         if not world_slice is None:
@@ -55,6 +53,7 @@ class State:
             self.static_ground_hm = np.copy(self.rel_ground_hm)  # use this for placing roads
             self.heightmaps = world_slice.heightmaps
             self.built = set()
+            self.foreign_built = set()
             self.types = self.gen_types(self.rel_ground_hm)  # 2D array. Exclude leaves because it would be hard to determine tree positions
             self.world_x = world_slice.rect[0]
             self.world_z = world_slice.rect[1]
@@ -212,9 +211,14 @@ class State:
                     if not node in self.construction: break
                     if node in self.roads: break  # don't go over roads
                     if node in self.built: break  # don't build over buildings
+                    if node in self.foreign_built: break
+                    obstacle_found = False
                     for tile in node.get_tiles():
                         # src.states.set_state_block(self.state, tile[0], self.state.rel_ground_hm[tile[0]][tile[1]] + 3, tile[1], 'minecraft:netherite')
-                        if tile in self.water: continue
+                        if tile in self.water or tile in self.lava:
+                            obstacle_found = True
+                            break
+                    if obstacle_found == True: break
                     tiles += 1
                     found_nodes.add(node)
             if tiles == min_tiles:  # found a spot!
@@ -314,7 +318,7 @@ class State:
             node_ptr = self.node_pointers[(nx, nz)]
             if node_ptr is None: continue
             node = self.nodes[node_ptr]
-            if node in self.roads or node in self.built or node.center in self.water: continue
+            if node in self.roads or node in self.built or node.center in self.water or node in self.foreign_built: continue
             self.append_road((nx, nz), src.my_utils.TYPE.MINOR_ROAD.name)
 
 
@@ -783,29 +787,55 @@ class State:
         return y
 
 
+    # def gen_types(self, heightmap):
+    #     xlen = len(self.blocks)
+    #     zlen = len(self.blocks[0][0])
+    #     types = [["str" for i in range(zlen)] for j in range(xlen)]
+    #     for x in range(xlen):
+    #         for z in range(zlen):
+    #             type = self.determine_type(x, z, heightmap)
+    #             if type == "TREES":
+    #                 self.trees.append((x, z))
+    #             elif type == "TREES":
+    #                 self.water.append((x,z))
+    #             elif type == "LAVA":
+    #                 self.lava.add((x, z))
+    #             elif type == "FOREIGN_BUILT":
+    #                 node_ptr = self.node_pointers[(x,z)]
+    #                 if node_ptr:
+    #                     node = self.nodes[node_ptr]
+    #                     self.foreign_built.add(node)
+    #             types[x][z] = type# each block is a list of types. The node needs to chek its assets
+    #     return types
+
     def gen_types(self, heightmap):
         xlen = len(self.blocks)
         zlen = len(self.blocks[0][0])
         types = [["str" for i in range(zlen)] for j in range(xlen)]
         for x in range(xlen):
             for z in range(zlen):
-                type = self.determine_type(x, z, heightmap)
-                if type == "TREE":
+                type_name = self.determine_type(x, z, heightmap).name
+                if type_name == "TREE":
                     self.trees.append((x, z))
-                if type == "WATER":
+                elif type_name == "WATER":
                     self.water.append((x,z))
-                types[x][z] = type  # each block is a list of types. The node needs to chek its assets
-        print("done initializing types")
+                elif type_name == "LAVA":
+                    self.lava.add((x, z))
+                elif type_name == "FOREIGN_BUILT":
+                    node_ptr = self.node_pointers[(x, z)]
+                    if node_ptr:
+                        node = self.nodes[node_ptr]
+                        self.foreign_built.add(node)
+                types[x][z] = type_name
         return types
-
 
     def determine_type(self, x, z, heightmap, yoffset = 0):
         block_y = int(heightmap[x][z]) - 1 + yoffset
         block = self.blocks[x][block_y][z]
         for i in range(1, len(src.my_utils.TYPE) + 1):
             if block in src.my_utils.TYPE_TILES.tile_sets[i]:
-                return src.my_utils.TYPE(i).name
-        return src.my_utils.TYPE.BROWN.name
+                return src.my_utils.TYPE(i)
+        return src.my_utils.TYPE.BROWN
 
 
 
@@ -1041,27 +1071,37 @@ class State:
         n = self.nodes[n_pos]
         n1_options = list(set(n.range) - set(n.local))  # Don't put water right next to water, depending on range
         n1 = np.random.choice(n1_options, replace=False)  # Pick random point of the above
-        while src.my_utils.TYPE.WATER.name in n1.mask_type:  # generate and test until n1 isn't water
-            n1 = np.random.choice(n1_options, replace=False)  # If it's water, choose again
+        def is_valid(node):
+            return src.my_utils.TYPE.WATER.name not in node.type and src.my_utils.TYPE.LAVA.name not in node.type and src.my_utils.TYPE.FOREIGN_BUILT.name not in node.type
+        def is_valid_block(block):
+            return block not in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.WATER.value] and  block not in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.LAVA.value] and block not in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.FOREIGN_BUILT.value]
+
+        i = 0
+        while not is_valid(n1):  # generate and test until n1 isn't water
+            n1 = np.random.choice(n1_options, replace=False)
+            if i >= water_checks:
+                self.init_main_st()
+                return
+            i+=1
         n2_options = list(set(n1.range) - set(n1.local))  # the length of the main road is the difference between the local and the range
         n2 = np.random.choice(n2_options, replace=False)  # n2 is based off of n1's range, - local to make it farther
         points = src.linedrawing.get_line((n1.center[0], n1.center[1]), (n2.center[0], n2.center[1]))
-        water_found = True
+        find_new_n2 = True
         limit = 10
         i = 0
-        while water_found:
+        while find_new_n2:
             if i > limit:
                 return False
-            water_found = False
+            find_new_n2 = False
             for p in points:
                 x = self.node_pointers[p][0]
                 z = self.node_pointers[p][1]
                 y = self.rel_ground_hm[x][z] - 1
                 b = self.blocks[x][y][z]
-                if b in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.WATER.value]:
+                if not is_valid_block(b):
                     n2 = np.random.choice(n2_options, replace=False)
                     points = src.linedrawing.get_line((n1.center[0], n1.center[1]), (n2.center[0], n2.center[1]))
-                    water_found = True
+                    find_new_n2 = True
                     i+=1
                     break
         points = self.points_to_nodes(points)  # points is the path of nodes from the chosen
@@ -1140,24 +1180,38 @@ class State:
         return nodes
 
     # might have to get point2 within the func, rather than pass it in
-    def create_road(self, node_pos1, node_pos2, road_type, points=None, leave_lot=False, correction=5, road_blocks=None, inner_block_rate=1.0, outer_block_rate=0.75, fringe_rate=0.05, add_as_road_type = True, bend_if_needed=False):
+    def create_road(self, node_pos1, node_pos2, road_type, points=None, leave_lot=False, correction=5, road_blocks=None,road_block_slabs=None, inner_block_rate=1.0, outer_block_rate=0.75, fringe_rate=0.05, add_as_road_type = True, bend_if_needed=False):
         self.road_nodes.append(self.nodes[self.node_pointers[node_pos1]])
         self.road_nodes.append(self.nodes[self.node_pointers[node_pos2]])
+        water_set = set(self.water)
         block_path = []
         if points == None:
             block_path = src.linedrawing.get_line(node_pos1, node_pos2) # inclusive
         else:
             block_path = points
         if bend_if_needed:
-            tile_coords = [tilepos for node in self.built for tilepos in node.get_tiles()]
+            tile_coords = {tilepos for node in self.built for tilepos in node.get_tiles()}
             if any(tile in tile_coords for tile in block_path):
                 # get nearest built
                 built_node_coords = [node.center for node in self.built]  # returns building node coords
+
+                def is_valid(state, pos):
+                    nonlocal water_set
+                    nonlocal tile_coords
+                    return pos not in tile_coords and pos not in water_set and pos not in state.foreign_built
+
+                def is_walkable(state, path):
+                    last_y = state.rel_ground_hm[path[0][0]][path[0][1]]
+                    for i in range(1,len(path)):
+                        y = state.rel_ground_hm[path[i][0]][path[i][1]]
+                        dy = abs(last_y - y)
+                        if dy > state.agent_jump_ability:
+                            return False
+                        last_y = y
+                    return True
+
                 built_diags = [(node[0] + dir[0] * self.node_size, node[1] + dir[1] * self.node_size)
-                               # returns diagonals to building nodes
-                               for node in built_node_coords for dir in src.movement.diagonals if (
-                               node[0] + dir[0] * self.node_size,
-                               node[1] + dir[1] * self.node_size) not in self.built]
+                               for node in built_node_coords for dir in src.movement.diagonals if is_valid(self, (node[0] + dir[0] * self.node_size, node[1] + dir[1] * self.node_size))]
                 nearest_builts = src.movement.find_nearest(*node_pos1, built_diags, 5, 30, 10)
                 # print("nearest builts is ")
                 # print(str(nearest_builts))
@@ -1173,7 +1227,7 @@ class State:
                         closed.add((nx, nz))
                         if self.out_of_bounds_Node(nx, nz): continue
                         p1_to_diag = src.linedrawing.get_line(node_pos1, (nx, nz))  # TODO add aux to p1 so it checks neigrboars
-                        if any(tile in tile_coords for tile in p1_to_diag): continue
+                        if any(not is_valid(self, tile) for tile in p1_to_diag) or not is_walkable(self, p1_to_diag): continue
 
                         # # debug
                         # for tile in p1_to_diag:
@@ -1192,10 +1246,8 @@ class State:
 
                         # lets try raycastign up to the dist of p2
                         if p2_to_diag is None: continue # if none found, try again
-                        if any(tile in tile_coords for tile in p2_to_diag): # if building is in path. try again
-                            # try one last thing: raycast
+                        if any(not is_valid(self,tile) for tile in p2_to_diag) or not is_walkable(self, p2_to_diag): # if building is in path. try again
                             found_raycast = False
-                            # body here
                             leeway = 0
                             dist = len(p2_to_diag) + leeway
                             steps = 45
@@ -1210,9 +1262,6 @@ class State:
                                 status, raycast_path = self.raycast_using_nodes(start=(nx, nz), end=(end_x, end_z), target=self.roads, breaks_list=[self.built])
                                 if status is True: break
                             if status is False: continue
-                            print("FOUND RAYCAST")
-                            print("where raycast_start is "+str((nx, nz)))
-                            print("where raycast_end is "+str((end_x, end_z)))
                             p2_to_diag = raycast_path
 
                         # # debug
@@ -1270,48 +1319,79 @@ class State:
         # place assets. TODO prolly not right- i think you wanna render road segments
         if road_blocks == None:
             road_blocks = src.my_utils.ROAD_SETS['default']
+        if road_block_slabs == None:
+            road_block_slabs = src.my_utils.ROAD_SETS['default_slabs']
+
         ## render
-        for block in block_path:
-            x = block[0]
-            z = block[1]
+        last_road_y = self.static_ground_hm[block_path[0][0]][block_path[0][1]] - 1
+        length = len(block_path)
+        for i in range(length):
+            x = block_path[i][0]
+            z = block_path[i][1]
             y = int(self.static_ground_hm[x][z]) - 1
             if self.blocks[x][y][z] == "minecraft:water" or src.manipulation.is_log(self, x, y, z):
                 continue
             if random() < inner_block_rate:
-                road_block = choice(road_blocks)
-                set_state_block(self, x, y, z, road_block)
+                check_next_road = True
+                if i >= length-1:
+                    check_next_road = False
+                next_road_y = -1
+                if check_next_road:
+                    next_road_y = self.static_ground_hm[block_path[i+1][0]][block_path[i+1][1]] - 1
+                if last_road_y - (self.static_ground_hm[x][z]-1) > 0:
+                    set_state_block(self, x, y+1, z, choice(road_block_slabs))
+                elif check_next_road and next_road_y - (self.static_ground_hm[x][z]-1) > 0:
+                    set_state_block(self, x, y + 1, z, choice(road_block_slabs))
+                else:
+                    set_state_block(self, x, y, z, choice(road_blocks))
+                last_road_y = y
 
-        aux_path = []
+        aux_paths = []
         for card in src.movement.cardinals:
             # offset1 = choice(src.movement.cardinals)
-            def clamp_to_state_coords(x, z):
-                if x > self.last_node_pointer_x:
-                    x = self.last_node_pointer_x
+            def clamp_to_state_coords(state, x, z):
+                if x > state.last_node_pointer_x:
+                    x = state.last_node_pointer_x
                 elif x < 0:
                     x = 0
-                if z > self.last_node_pointer_z:
-                    z = self.last_node_pointer_z
+                if z > state.last_node_pointer_z:
+                    z = state.last_node_pointer_z
                 elif z < 0:
                     z = 0
                 return (x,z)
-            p1 = clamp_to_state_coords(block_path[0][0] + card[0], block_path[0][1] + card[1])
-            p2 = clamp_to_state_coords(block_path[len(block_path)-1][0] + card[0], block_path[len(block_path)-1][1] + card[1])
             # aux1 = src.linedrawing.get_line( p1, p2 )
-            aux1 = [(block[0]+card[0], block[1]+card[1]) for block in block_path]
-            aux_path.extend(aux1)
-
+            aux_path = [clamp_to_state_coords(self, block[0]+card[0], block[1]+card[1]) for block in block_path]
+            aux_paths.append(aux_path)
 
         ## borders
-        for block in aux_path:
-            x = block[0]
-            z = block[1]
-            y = int(self.static_ground_hm[x][z]) - 1
-            block = self.blocks[x][y][z]
-            if self.blocks[x][y][z] == "minecraft:water" or src.manipulation.is_log(self, x, y, z):
-                continue
-            if random() < outer_block_rate:
-                road_block = choice(road_blocks)
-                set_state_block(self, x, y, z, road_block)
+        for aux_path in aux_paths:
+            last_aux_y = self.static_ground_hm[aux_path[0][0]][aux_path[0][1]] - 1
+            length = len(aux_path)
+            for i in range(length):
+                x = aux_path[i][0]
+                z = aux_path[i][1]
+                y = int(self.static_ground_hm[x][z]) - 1
+                block = self.blocks[x][y][z]
+                if self.blocks[x][y][z] == "minecraft:water" or src.manipulation.is_log(self, x, y, z):
+                    continue
+                if random() < outer_block_rate:
+                    # if last_aux_y - self.rel_ground_hm[x][z] > 0:
+                    #     set_state_block(self, x, y+1, z, choice(road_block_slabs))
+                    # else:
+                    #     set_state_block(self, x, y, z, choice(road_blocks))
+                    check_next_road = True
+                    if i >= length-1:
+                        check_next_road = False
+                    next_road_y = -1
+                    if check_next_road:
+                        next_road_y = self.static_ground_hm[aux_path[i+1][0]][aux_path[i+1][1]] - 1
+                    if last_road_y - (self.static_ground_hm[x][z]-1) > 0:
+                        set_state_block(self, x, y+1, z, choice(road_block_slabs))
+                    elif check_next_road and next_road_y - (self.static_ground_hm[x][z]-1) > 0:
+                        set_state_block(self, x, y + 1, z, choice(road_block_slabs))
+                    else:
+                        set_state_block(self, x, y, z, choice(road_blocks))
+                    last_road_y = y
 
         # self.set_type_road(node_path, src.my_utils.TYPE.MAJOR_ROAD.name)
         if add_as_road_type:
