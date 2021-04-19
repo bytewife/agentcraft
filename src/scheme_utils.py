@@ -308,6 +308,9 @@ def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, bui
                     src.manipulation.flood_kill_logs(state, bx, by, bz, 0)
                 if use_head == False:
                     src.states.set_state_block(state, bx, by, bz, block)
+                else:
+                    http_framework.interfaceUtils.setBlockWithData(bx + state.world_x, by + state.world_y,
+                                                                   bz + state.world_z, block)
                 traverse_up_to_air(bx, by, bz, block, building_heightmap, height_traversal, exterior_heightmap, agent_height)
                 i+=1
                 xi += 1

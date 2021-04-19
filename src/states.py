@@ -261,28 +261,43 @@ class State:
             if found_ctrn_dir != None:
                 break
             tiles = 0
+            is_valid = True
             for x in range(0, min_nodes_in_x):
                 for z in range(0, min_nodes_in_z):
                     nx = ctrn_node.center[0] + x * ctrn_node.size * dir[0]
                     nz = ctrn_node.center[1] + z * ctrn_node.size * dir[1]
-                    if self.out_of_bounds_Node(nx, nz): break
+                    if self.out_of_bounds_Node(nx, nz):
+                        is_valid = False
+                        break
                     ny = self.rel_ground_hm[nx][nz]
                     if ny > highest_y: highest_y = ny
                     elif ny < lowest_y: lowest_y = ny
                     node = self.nodes[(nx, nz)]
-                    if not node in self.construction: break
-                    if node in self.roads: break  # don't go over roads
-                    if node in self.built: break  # don't build over buildings
-                    if node.center in self.foreign_built: break
+                    if not node in self.construction:
+                        is_valid = False
+                        break
+                    if node in self.roads:
+                        is_valid = False
+                        break
+                    if node in self.built:
+                        is_valid = False
+                        break
+                    if node.center in self.foreign_built:
+                        is_valid = False
+                        break
                     obstacle_found = False
                     for tile in node.get_tiles():
                         # src.states.set_state_block(self.state, tile[0], self.state.rel_ground_hm[tile[0]][tile[1]] + 3, tile[1], 'minecraft:netherite')
                         if tile in self.water or tile in self.lava:
                             obstacle_found = True
                             break
-                    if obstacle_found == True: break
+                    if obstacle_found == True:
+                        is_valid = False
+                        break
                     tiles += 1
                     found_nodes.add(node)
+                if is_valid == False:
+                    break
             if tiles == min_tiles:  # found a spot!
                 found_ctrn_dir = dir
                 break
@@ -330,9 +345,10 @@ class State:
             result.append(y)
         return result
 
-    def place_platform(self, found_road, ctrn_node, found_nodes, ctrn_dir, bld, rot, min_nodes_in_x, min_nodes_in_z, built_arr, wood_type, build_y):
+    def place_platform(self, found_road=None, ctrn_node=None, found_nodes_iter=None, ctrn_dir=None, bld=None, rot=None, min_nodes_in_x=None, min_nodes_in_z=None, built_arr=None, wood_type="oak", build_y=None):
         # py = self.static_ground_hm[found_road.center[0]][found_road.center[1]] - 1
         # py = self.get_highest_height_in_node(found_road,self.static_ground_hm) - 1
+        found_nodes = list(found_nodes_iter)
         py = build_y - 1
         for node in found_nodes:
             for tile in node.get_tiles():
@@ -404,7 +420,7 @@ class State:
             node = self.nodes[node_ptr]
             if node in self.roads or node in self.built or node.center in self.water or node in self.foreign_built: continue
             front_nodes.append(node)  # to use for later
-        mean_y = int(sum([self.static_ground_hm[t[0],t[1]] for t in front_tiles]) / len(front_tiles))
+        mean_y = round(sum([self.static_ground_hm[t[0],t[1]] for t in front_tiles]) / len(front_tiles))
 
         status, building_heightmap, exterior_heightmap = src.scheme_utils.place_schematic_in_state(self, bld, xf,
                                                                                                    mean_y, zf,
@@ -414,7 +430,7 @@ class State:
         if status == False:
             for node in found_nodes.union({ctrn_node}):
                 self.built.remove(node)  # since this was set early in check_build_spot, remove it
-            return False
+            return False, None
         self.built_heightmap.update(building_heightmap)
         self.exterior_heightmap.update(exterior_heightmap)
         # build road from the road to the building
@@ -1149,37 +1165,52 @@ class State:
             print("Error: well needs to be at least 3x3")
             return False
         height = 2
+        well_nodes = set()
         if self.out_of_bounds_Node(sx, sz) or self.out_of_bounds_Node(sx + len_x, sz + len_z) :
-            return False
+            return False, -1
         else:
-            lowest_y = self.rel_ground_hm[sx][sz]
+            endpoints_x = [sx, sx+len_x-1]
+            endpoints_z = [sz, sz+len_z-1]
+            highest_y = self.static_ground_hm[sx][sz] + 1
             for x in range(sx, sx + len_x + 1):
                 for z in range(sz, sz + len_z + 1):
-                    if lowest_y > self.rel_ground_hm[x][z]:
-                        lowest_y = self.rel_ground_hm[x][z]
-            if lowest_y + height > self.len_y:
+                    if highest_y < self.static_ground_hm[x][z]:
+                        highest_y = self.static_ground_hm[x][z]
+            if highest_y + height > self.len_y:
                 return False
             # create water
             for x in range(sx, sx+len_x):
                 for z in range(sz, sz + len_z):
-                    if x == sx or x == sx+len_x-1 or \
+                    if (x == sx or x == sx+len_x-1) and \
+                         (z == sz or z == sz+len_z-1):
+                        src.states.set_state_block(self, x, highest_y, z, 'minecraft:air')
+                    elif x == sx or x == sx+len_x-1 or \
                         z == sz or z == sz+len_z-1:
-                        src.states.set_state_block(self,x,lowest_y, z, 'minecraft:stripped_oak_log')
+                        # src.states.set_state_block(self,x,lowest_y, z, 'minecraft:stripped_oak_log')
+                        src.states.set_state_block(self,x,highest_y, z, 'minecraft:barrel[facing=up]')
                     else:
-                        src.states.set_state_block(self,x,lowest_y, z, 'minecraft:water')
-                    src.states.set_state_block(self,x,lowest_y+1, z, 'minecraft:air')
-                    src.states.set_state_block(self,x,lowest_y+2, z, 'minecraft:air')
+                        src.states.set_state_block(self,x,highest_y, z, 'minecraft:water')
+                    src.manipulation.flood_kill_logs(self,x,highest_y+2, z)
+                    src.states.set_state_block(self,x,highest_y - 1, z, 'minecraft:barrel[facing=up]')
+                    src.states.set_state_block(self,x,highest_y+1, z, 'minecraft:air')
+                    src.states.set_state_block(self,x,highest_y+2, z, 'minecraft:air')
                     self.water.append((x,z))
                     self.built.add(self.nodes[self.node_pointers[(x,z)]])
-            return True
+                    well_nodes.add(self.nodes[self.node_pointers[(x,z)]])
+        return well_nodes, highest_y
 
     def init_main_st(self):
-        if len(self.water) <= 0:
-            sx = randint(0, self.len_x)
-            sz = randint(0, self.len_z)
-            while self.create_well(sx, sz, 4, 4) is False:
-                sx = randint(0, self.len_x)
-                sz = randint(0, self.len_z)
+        if len(self.water) <= 10:
+            sx = randint(0, self.last_node_pointer_x)
+            sz = randint(0, self.last_node_pointer_z)
+            result, y = self.create_well(sx, sz, 4, 4)
+            while result is False:
+                sx = randint(0, self.last_node_pointer_x)
+                sz = randint(0, self.last_node_pointer_z)
+                result, y = self.create_well(sx, sz, 4, 4)
+            well_y = y-1
+            if well_y >= 0:
+                self.place_platform(found_nodes_iter=result, build_y=well_y)
         (x1, y1) = choice(self.water)
         n_pos = self.node_pointers[(x1, y1)]
         water_checks = 100
@@ -1484,7 +1515,8 @@ class State:
                 continue
             if src.manipulation.is_log(self, x, y + 1, z):
                 src.manipulation.flood_kill_logs(self, x, y + 1, z)
-                self.trees.remove((x,z))
+                if (x, z) in self.trees:  # when sniped
+                    self.trees.remove((x,z))
             if random() < inner_block_rate:
                 # kill tree
                 check_next_road = True
@@ -1499,6 +1531,7 @@ class State:
                     set_state_block(self, x, y + 1, z, choice(road_block_slabs))
                 else:
                     set_state_block(self, x, y, z, choice(road_blocks))
+                src.manipulation.flood_kill_leaves(self,x, y+2, z, 10)
                 last_road_y = y
 
         aux_paths = []
@@ -1742,7 +1775,7 @@ class State:
 
 
 def set_state_block(state, x, y, z, block_name):
-    if state.out_of_bounds_2D(x,z): return False
+    if state.out_of_bounds_3D(x,y,z): return False
     state.traverse_from[x][z] = max(y, state.traverse_from[x][z])
     state.blocks[x][y][z] = block_name
     state.changed_blocks_xz.add((x,z))

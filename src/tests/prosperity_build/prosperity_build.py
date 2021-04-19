@@ -32,10 +32,10 @@ from enum import Enum
 # x2 = 2250
 # z2 = 2250
 
-x1 = 11150
-z1 = 11150
-x2 = 11100
-z2 = 11100
+x1 = 12000
+z1 = 12000
+x2 = 12050
+z2 = 12050
 # x2 = 11150
 # z2 = 11150
 
@@ -69,15 +69,6 @@ while sim.start() == False:
     # sim = src.simulation.Simulation(area, rendering_step_duration=0.0,
     #                             is_rendering_each_step=False)
 # sim.step(1)
-## ROADS
-# for r in sim.state.roads:
-#     if r in sim.state.construction:
-#         # sim.state.construction.discard(r)
-#         pass
-#     x = r.center[0]
-#     z = r.center[1]
-#     y = sim.state.rel_ground_hm[x][z] + 1
-    # sim.state.set_block(x,y,z,"minecraft:redstone_block")
 
 ## CONSTRUCTION
 # for b in sim.state.construction:
@@ -91,7 +82,7 @@ while sim.start() == False:
 
 print("road_segs is ")
 print(sim.state.road_segs)
-sim.step(400, is_rendering=True)
+sim.step(1000, is_rendering=True)
 for built in sim.state.built:
     # src.states.set_state_block(sim.state, built.center[0], sim.state.rel_ground_hm[built.center[0]][built.center[1]]+11, built.center[1], 'minecraft:red_wool')
     pass
@@ -103,6 +94,16 @@ for x in range(sim.state.len_x):
         pass
         # src.states.set_state_block(sim.state,x,sim.state.rel_ground_hm[x][z],z, 'minecraft:pumpkin')
 
+
+## ROADS
+# for r in sim.state.roads:
+#     if r in sim.state.construction:
+#         # sim.state.construction.discard(r)
+#         pass
+#     x = r.center[0]
+#     z = r.center[1]
+#     y = sim.state.rel_ground_hm[x][z] + 1
+#     sim.state.set_block(x,y,z,"minecraft:redstone_block")
 sim.step(1, is_rendering=True)
 # pprint(sim.state.rel_ground_hm)
 # print(sim.state.static_ground_hm)

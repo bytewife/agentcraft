@@ -113,7 +113,7 @@ areaFlex = [0, 0, 10, 10] # default build area
 
 # # tiny house 1
 # x1 = 155
-# y1 = 96
+# y1 = 95
 # z1 = -45
 # x2 = 163
 # y2 = 102
@@ -122,7 +122,7 @@ areaFlex = [0, 0, 10, 10] # default build area
 
 # tiny house 2
 # x1 = 153
-# y1 = 91
+# y1 = 90
 # z1 = -61
 # x2 = 159
 # y2 = 100
@@ -140,7 +140,7 @@ areaFlex = [0, 0, 10, 10] # default build area
 
 # small house 3 (cabin from ire)
 # x1 = 134
-# y1 = 96
+# y1 = 95
 # z1 = -59
 # x2 = 142
 # y2 = 105
@@ -191,12 +191,12 @@ areaFlex = [0, 0, 10, 10] # default build area
 # z2 = -71
 
 # # # market stall 3
-x1 = 177
-y1 = 66
-z1 = 252
-x2 = 182
-y2 = 70
-z2 = 257
+# x1 = 177
+# y1 = 66
+# z1 = 252
+# x2 = 182
+# y2 = 70
+# z2 = 257
 
 
 # # # med house 5
@@ -266,7 +266,7 @@ z2 = 257
 # z2 = 189
 
 
-file_name = "../schemes/market_stall_3"
+file_name = "../schemes/tiny_house_1"
 src.scheme_utils.download_schematic(x1, y1, z1, x2, y2, z2, file_name)
 src.scheme_utils.download_schematic(x1, y1, z1, x2, y2, z2, file_name+"_flex", flexible_tiles=True, leave_dark_oak=False)
 # src.scheme_utils.download_schematic(x1, y1, z1, x2, y2, z2, file_name+"_flex_keep_dark", flexible_tiles=True, leave_dark_oak=True)
