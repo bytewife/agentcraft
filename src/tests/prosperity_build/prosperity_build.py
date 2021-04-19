@@ -60,6 +60,10 @@ http_framework.interfaceUtils.runCommand(clean_agents)
 sim = src.simulation.Simulation(area, rendering_step_duration=0.0, is_rendering_each_step=False)
 while sim.start() == False:
     sim.state.reset_for_restart()
+# for x in range(len(sim.state.blocks)):
+#     for z in range(len(sim.state.blocks[0][0])):
+#         y = sim.state.static_ground_hm[x][z]
+#         src.states.set_state_block(sim.state, x, y, z, "minecraft:oak_sign")
     # sim = src.simulation.Simulation(area, precomp_world_slice=sim.world_slice)#, precomp_legal_actions=sim.state.legal_actions, precomp_types=sim.state.types, precomp_sectors=sim.state.sectors, precamp_pathfinder=sim.state.pathfinder, rendering_step_duration=0.0, is_rendering_each_step=False)#, precomp_nodes=sim.state.nodes, precomp_node_pointers=sim.state.node_pointers)
     # sim = src.simulation.Simulation(area, rendering_step_duration=0.0, is_rendering_each_step=False)
     # sim = src.simulation.Simulation(area, rendering_step_duration=0.0,

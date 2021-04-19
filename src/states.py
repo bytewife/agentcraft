@@ -55,7 +55,7 @@ class State:
 
             self.blocks, self.world_y, self.len_y, self.abs_ground_hm = self.gen_blocks_array(world_slice)
             self.rel_ground_hm = self.gen_rel_ground_hm(self.abs_ground_hm)  # a heightmap based on the state's y values. -1
-            self.static_ground_hm = np.copy(self.rel_ground_hm)  # use this for placing roads
+            self.static_ground_hm = self.gen_static_ground_hm(self.rel_ground_hm)  # use this for placing roads
             self.heightmaps = world_slice.heightmaps
             self.built = set()
             self.foreign_built = set()
@@ -165,6 +165,16 @@ class State:
         self.changed_blocks_xz.clear()
         self.agents_in_nodes = self.init_agents_in_nodes()
 
+
+    def gen_static_ground_hm(self, a):
+        hm = np.copy(a)
+        for x in range(len(a)):
+            for z in range(len(a[0])):
+                y = a[x][z] - 1
+                while y > 0 and src.manipulation.is_log(self,x,y,z):
+                    y-=1
+                hm[x][z] = y+1
+        return hm
 
 
     def init_agents_in_nodes(self):
@@ -387,7 +397,7 @@ class State:
             nx += i * self.node_size * (use_x ^ 0) * ctrn_dir[0]
             nz += i * self.node_size * (use_x ^ 1) * ctrn_dir[1]
             for r in range(-1, 2):
-                set_state_block(self, nx + r * (use_x ^ 0) + (use_x ^ 1) * offset, 20, nz + r * (use_x ^ 1) + (use_x ^ 0) * offset, "minecraft:gold_block")
+                # set_state_block(self, nx + r * (use_x ^ 0) + (use_x ^ 1) * offset, 20, nz + r * (use_x ^ 1) + (use_x ^ 0) * offset, "minecraft:gold_block")
                 front_tiles.append((nx + r * (use_x ^ 0) + (use_x ^ 1) * offset, nz + r * (use_x ^ 1) + (use_x ^ 0) * offset))
             node_ptr = self.node_pointers[(nx, nz)]
             if node_ptr is None: continue
@@ -1470,9 +1480,13 @@ class State:
             x = block_path[i][0]
             z = block_path[i][1]
             y = int(self.static_ground_hm[x][z]) - 1
-            if self.blocks[x][y][z] == "minecraft:water" or src.manipulation.is_log(self, x, y, z):
+            if self.blocks[x][y][z] == "minecraft:water":
                 continue
+            if src.manipulation.is_log(self, x, y + 1, z):
+                src.manipulation.flood_kill_logs(self, x, y + 1, z)
+                self.trees.remove((x,z))
             if random() < inner_block_rate:
+                # kill tree
                 check_next_road = True
                 if i >= length-1:
                     check_next_road = False
