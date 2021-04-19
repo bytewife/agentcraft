@@ -1,5 +1,5 @@
 import src.scheme_utils
-import src.my_utils
+# import src.my_utils
 import http_framework.worldLoader
 
 areaFlex = [0, 0, 10, 10] # default build area
@@ -104,16 +104,171 @@ areaFlex = [0, 0, 10, 10] # default build area
 # z2 = 831
 
 # # Sector test 1
-x1 = 0
-y1 = 63
-z1 = 0
-x2 = 2
-y2 = 66
-z2 = 2
+# x1 = 0
+# y1 = 63
+# z1 = 0
+# x2 = 2
+# y2 = 66
+# z2 = 2
 
-file_name = "../schemes/Sector_test_2"
+# # tiny house 1
+# x1 = 155
+# y1 = 96
+# z1 = -45
+# x2 = 163
+# y2 = 102
+# z2 = -37
+
+
+# tiny house 2
+# x1 = 153
+# y1 = 91
+# z1 = -61
+# x2 = 159
+# y2 = 100
+# z2 = -53
+
+
+# cart 2
+# x1 = 131
+# y1 = 88
+# z1 = -49
+# x2 = 136
+# y2 = 90
+# z2 = -45
+
+
+# small house 3 (cabin from ire)
+# x1 = 134
+# y1 = 96
+# z1 = -59
+# x2 = 142
+# y2 = 105
+# z2 = -48
+
+
+# tiny house 3 (next to armorery from ire)
+# x1 = 144
+# y1 = 108
+# z1 = -13
+# x2 = 152
+# y2 = 119
+# z2 = -5
+
+
+# tiny house 4 (armory)
+# x1 = 161
+# y1 = 113
+# z1 = -22
+# x2 = 169
+# y2 = 120
+# z2 = -14
+
+
+# storage 1
+# x1 = 172
+# y1 = 105
+# z1 = -40
+# x2 = 177
+# y2 = 111
+# z2 = -31
+
+# # ornamental tree 1
+# x1 = 199
+# y1 = 114
+# z1 = -74
+# x2 = 201
+# y2 = 121
+# z2 = -72
+
+
+# # cart 3
+# x1 = 205
+# y1 = 120
+# z1 = -75
+# x2 = 210
+# y2 = 122
+# z2 = -71
+
+# # # market stall 3
+# x1 = 184
+# y1 = 55
+# z1 = 238
+# x2 = 189
+# y2 = 60
+# z2 = 244
+
+
+# # # med house 5
+# x1 = 130
+# y1 = 50
+# z1 = 168
+# x2 = 140
+# y2 = 60
+# z2 = 178
+
+# # # bell
+# x1 = 62
+# y1 = 50
+# z1 = 180
+# x2 = 64
+# y2 = 56
+# z2 = 182
+
+
+# # # hay 1
+# x1 = 25
+# y1 = 39
+# z1 = 168
+# x2 = 27
+# y2 = 41
+# z2 = 170
+
+# # # small house 4
+# x1 = 39
+# y1 = 57
+# z1 = 160
+# x2 = 47
+# y2 = 72
+# z2 = 169
+
+# # # # logs 1
+# x1 = 41
+# y1 = 57
+# z1 = 183
+# x2 = 43
+# y2 = 58
+# z2 = 185
+
+
+# # # tower 1
+# x1 = 63
+# y1 = 53
+# z1 = 221
+# x2 = 71
+# y2 = 87
+# z2 = 227
+
+# # # # lamp 1
+# x1 = 145
+# y1 = 49
+# z1 = 195
+# x2 = 147
+# y2 = 57
+# z2 = 197
+
+# # # # lamp 2
+x1 = 143
+y1 = 53
+z1 = 187
+x2 = 145
+y2 = 60
+z2 = 189
+
+
+file_name = "../schemes/lamp_2"
 src.scheme_utils.download_schematic(x1, y1, z1, x2, y2, z2, file_name)
-# src.scheme_utils.download_schematic(x1, y1, z1, x2, y2, z2, file_name+"_flex", flexible_tiles=True, leave_dark_oak=False)
+src.scheme_utils.download_schematic(x1, y1, z1, x2, y2, z2, file_name+"_flex", flexible_tiles=True, leave_dark_oak=False)
 # src.scheme_utils.download_schematic(x1, y1, z1, x2, y2, z2, file_name+"_flex_keep_dark", flexible_tiles=True, leave_dark_oak=True)
 
 # src.scheme_utils.place_schematic_in_world(file_name, x2, y2 + y2 - y2 + 5, z2, dir_z=-1)

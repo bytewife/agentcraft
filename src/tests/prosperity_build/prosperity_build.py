@@ -32,10 +32,10 @@ from enum import Enum
 # x2 = 2250
 # z2 = 2250
 
-x1 = 7001
-z1 = 7001
-x2 = 7149
-z2 = 7149
+x1 = 11000
+z1 = 11000
+x2 = 11250
+z2 = 11250
 
 # x1 = 10000
 # z1 = 10000
@@ -56,9 +56,10 @@ http_framework.interfaceUtils.runCommand(clean_agents)
 
 # sim = src.simulation.Simulation(area, rendering_step_duration=0.0)
 sim = src.simulation.Simulation(area, rendering_step_duration=0.0, is_rendering_each_step=False)
-sim.start()
 while sim.start() == False:
-    sim = src.simulation.Simulation(area, precomp_world_slice=sim.world_slice, precomp_legal_actions=sim.state.legal_actions, precomp_types=sim.state.types, precomp_sectors=sim.state.sectors, rendering_step_duration=0.0, is_rendering_each_step=False)
+    sim.state.reset_for_restart()
+    # sim = src.simulation.Simulation(area, precomp_world_slice=sim.world_slice)#, precomp_legal_actions=sim.state.legal_actions, precomp_types=sim.state.types, precomp_sectors=sim.state.sectors, precamp_pathfinder=sim.state.pathfinder, rendering_step_duration=0.0, is_rendering_each_step=False)#, precomp_nodes=sim.state.nodes, precomp_node_pointers=sim.state.node_pointers)
+    # sim = src.simulation.Simulation(area, rendering_step_duration=0.0, is_rendering_each_step=False)
     # sim = src.simulation.Simulation(area, rendering_step_duration=0.0,
     #                             is_rendering_each_step=False)
 # sim.step(1)

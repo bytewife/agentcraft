@@ -11,12 +11,12 @@ import names
 class Simulation:
 
     # with names? Let's look after ensembles and other's data scructure for max flexibility
-    def __init__(self, XZXZ, precomp_world_slice=None, precomp_legal_actions = None, precomp_types = None, run_start=True, precomp_sectors = None, phase=0, maNum=5, miNum=400, byNum= 2000, brNum=1000, buNum=10, pDecay=0.98, tDecay=0.25, corNum=5, times=1, is_rendering_each_step=True, rendering_step_duration=0.8):
-        # if precomp_world_slice == None:
-        self.world_slice = http_framework.worldLoader.WorldSlice(XZXZ)
-        # else:
-        #     self.world_slice = precomp_world_slice
-        self.state = src.states.State(self.world_slice, precomp_legal_actions=precomp_legal_actions)
+    def __init__(self, XZXZ, precomp_world_slice=None, precomp_legal_actions = None, precamp_pathfinder=None, precomp_types = None, run_start=True, precomp_sectors = None, precomp_nodes=None, precomp_node_pointers=None, phase=0, maNum=5, miNum=400, byNum= 2000, brNum=1000, buNum=10, pDecay=0.98, tDecay=0.25, corNum=5, times=1, is_rendering_each_step=True, rendering_step_duration=0.8):
+        if precomp_world_slice == None:
+            self.world_slice = http_framework.worldLoader.WorldSlice(XZXZ)
+        else:
+            self.world_slice = precomp_world_slice
+        self.state = src.states.State(self.world_slice, precomp_pathfinder=precamp_pathfinder, precomp_legal_actions=precomp_legal_actions, precomp_types=precomp_types, precomp_sectors=precomp_sectors, precomp_nodes=precomp_nodes, precomp_node_pointers=precomp_node_pointers)
         # if precomp_legal_actions:
         #     self.state.legal_actions = precomp_legal_actions
         # if precomp_types:
@@ -52,11 +52,9 @@ class Simulation:
 
     # this needs to be run manually so that we can rerun the sim if needed
     def start(self):
-        print("started")
-
         result = False  # returns agent positions or False
         i=0
-        max_tries = 200
+        max_tries = 50
         while result is False:
             if i > max_tries: return False
             result = self.state.init_main_st()
@@ -72,23 +70,29 @@ class Simulation:
 
         construction_site = random.choice(list(self.state.construction))
         c_center = construction_site.center
-        nearest_tree_pos = self.state.get_nearest_tree(*c_center, 20)[0]
+        positions = self.state.get_nearest_tree(*c_center, 30)
+        if len(positions) < 1:
+            print("Error: could not find trees!")
+            return False
+        nearest_tree_pos = positions[0]
 
         wood_type = self.state.blocks[nearest_tree_pos[0]]\
             [self.state.rel_ground_hm[nearest_tree_pos[0]][nearest_tree_pos[1]]]\
             [nearest_tree_pos[1]]
         wood = src.my_utils.get_wood_type(wood_type)
         i = 0
-        build_tries = 1  # 1 because the while loop is now in find_build
         # rx = random.randint(0,self.state.last_node_pointer_x)
         # rz = random.randint(0,self.state.last_node_pointer_z)
-        schematic_args = self.state.find_build_location(0,0,building,wood,ignore_sector=True)
-        while schematic_args is False or self.state.place_schematic(*schematic_args) is False and self.state.place_platform(*schematic_args) is False:  # flip the x and z
-            schematic_args = self.state.find_build_location(0,0,building,wood,ignore_sector=True)
-            if i < build_tries:
-                return False
-            i+=1
+        schematic_args = self.state.find_build_location(0,0,building,wood,ignore_sector=True, max_y_diff=6)
+        if schematic_args is False:  # flip the x and z
+            print("Error: could not find build location!")
+            return False
+        self.state.place_schematic(*schematic_args)
+        self.state.place_platform(*schematic_args)
         self.state.step()  # check if this affects agent pahs. it seems to.
+        print("Finished simulation init!!")
+        fixed_pos = (schematic_args[0].center[0]+self.state.world_x,schematic_args[0].center[1]+self.state.world_z)
+        print("Successfully initialized main street! Go to position "+str(fixed_pos))
         return True
 
 
@@ -138,11 +142,11 @@ class Simulation:
                 if node.local_prosperity > self.brNum:  # bridge/new lot minimum
                     # print("built major bridge road")
                     # self.state.append_road(point=(i, j), road_type=src.my_utils.TYPE.MAJOR_ROAD.name, leave_lot=True, correction=self.corNum, bend_if_needed=True)
-                    self.state.append_road(point=(i, j), road_type=src.my_utils.TYPE.MAJOR_ROAD.name, correction=self.corNum, bend_if_needed=True)
+                    self.state.append_road(point=(i, j), road_type=src.my_utils.TYPE.MAJOR_ROAD.name, correction=self.corNum, bend_if_needed=True, only_place_if_walkable=True)
                     print("road 1: at point "+str((i,j)))
                 else:
                     # print("built major normal road")
-                    self.state.append_road(point=(i, j), road_type=src.my_utils.TYPE.MAJOR_ROAD.name, correction=self.corNum, bend_if_needed=True)
+                    self.state.append_road(point=(i, j), road_type=src.my_utils.TYPE.MAJOR_ROAD.name, correction=self.corNum, bend_if_needed=True, only_place_if_walkable=True)
                     print("road 2: at point " + str((i, j)))
             if node.local_prosperity > self.buNum and road_found_near:
                 # print("prosperity fulfilled; creating building")
@@ -161,7 +165,7 @@ class Simulation:
                     # print("building minor road")
                     # if not len([n for n in node.plot() if Type.BUILDING not in n.type]):
                     pass
-                    self.state.append_road((i, j), src.my_utils.TYPE.MINOR_ROAD.name, correction=self.corNum)
+                    self.state.append_road((i, j), src.my_utils.TYPE.MINOR_ROAD.name, correction=self.corNum, bend_if_needed=True)
 
                 # calculate reservations of greenery
                 elif src.my_utils.TYPE.TREE.name in node.get_type() or src.my_utils.TYPE.GREEN.name in node.get_type():

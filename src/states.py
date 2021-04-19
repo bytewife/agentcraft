@@ -15,6 +15,7 @@ from scipy.interpolate import interp1d
 import src.linedrawing
 import src.manipulation
 import names
+import enum
 
 class State:
 
@@ -29,8 +30,8 @@ class State:
 
 
     ## Create surface grid
-    def __init__(self, world_slice=None, precomp_legal_actions=None, blocks_file=None, max_y_offset=tallest_building_height):
-        if not world_slice is None:
+    def __init__(self, world_slice, precomp_legal_actions=None, blocks_file=None, precomp_pathfinder=None, precomp_sectors=None, precomp_types=None, precomp_nodes=None, precomp_node_pointers=None,max_y_offset=tallest_building_height):
+        if world_slice:
             self.rect = world_slice.rect
             self.world_slice = world_slice
             self.rect = world_slice.rect
@@ -58,24 +59,48 @@ class State:
             self.heightmaps = world_slice.heightmaps
             self.built = set()
             self.foreign_built = set()
-            self.types = self.gen_types(self.rel_ground_hm)  # 2D array. Exclude leaves because it would be hard to determine tree positions
+
+            if precomp_types == None:
+                self.types = self.gen_types(self.rel_ground_hm)  # 2D array. Exclude leaves because it would be hard to determine tree positions
+            else:
+                self.types = precomp_types
+
             self.world_x = world_slice.rect[0]
             self.world_z = world_slice.rect[1]
             self.len_x = world_slice.rect[2] - world_slice.rect[0]
             self.len_z = world_slice.rect[3] - world_slice.rect[1]
             self.end_x = world_slice.rect[2]
             self.end_z = world_slice.rect[3]
-            if precomp_legal_actions == None:
+
+            if precomp_legal_actions is None:
                 self.legal_actions = src.movement.gen_all_legal_actions(
                     self.blocks, vertical_ability=self.agent_jump_ability, heightmap=self.rel_ground_hm,
                     actor_height=self.agent_height, unwalkable_blocks=["minecraft:water", 'minecraft:lava']
                 )
             else:
                 self.legal_actions = precomp_legal_actions
-            self.pathfinder = src.pathfinding.Pathfinding(self)
-            self.sectors = self.pathfinder.create_sectors(self.heightmaps["MOTION_BLOCKING_NO_LEAVES"],
-                                            self.legal_actions)  # add tihs into State
-            self.nodes, self.node_pointers = self.gen_nodes(self.len_x, self.len_z, self.node_size)
+
+            if precomp_pathfinder is None:
+                self.pathfinder = src.pathfinding.Pathfinding(self)
+            else:
+                self.pathfinder = precomp_pathfinder
+
+            if precomp_sectors is None:
+                self.sectors = self.pathfinder.create_sectors(self.heightmaps["MOTION_BLOCKING_NO_LEAVES"],
+                                                self.legal_actions)  # add tihs into State
+            else:
+                self.sectors = precomp_sectors
+
+            if precomp_nodes is None or precomp_node_pointers is None:
+                self.nodes, self.node_pointers = self.gen_nodes(self.len_x, self.len_z, self.node_size)
+            else:
+                self.nodes = precomp_nodes
+                self.node_pointers = precomp_node_pointers
+                nodes_in_x = int(self.len_x / self.node_size)
+                nodes_in_z = int(self.len_z / self.node_size)
+                self.last_node_pointer_x = nodes_in_x * self.node_size - 1  # TODO verify the -1
+                self.last_node_pointer_z = nodes_in_z * self.node_size - 1
+
             self.prosperity = np.zeros((self.len_x, self.len_z))
             self.traffic = np.zeros((self.len_x, self.len_z))
             self.updateFlags = np.zeros((self.len_x, self.len_z))
@@ -126,6 +151,21 @@ class State:
                 return dx, dy, dz, blocks3D
             self.len_x, self.len_y, self.len_z, self.blocks = parse_blocks_file(blocks_file)
 
+    def reset_for_restart(self):
+        self.built.clear()
+        self.roads.clear()
+        self.agents.clear()
+        self.new_agents.clear()
+        self.construction.clear()
+        self.road_nodes = []
+        self.road_segs.clear()
+        self.nodes, self.node_pointers = self.gen_nodes(self.len_x, self.len_z, self.node_size)
+        self.agents_in_nodes.clear()
+        self.changed_blocks.clear()
+        self.changed_blocks_xz.clear()
+        self.agents_in_nodes = self.init_agents_in_nodes()
+
+
 
     def init_agents_in_nodes(self):
         result = dict()
@@ -135,16 +175,16 @@ class State:
 
 
 
-    def find_build_location(self, agentx, agentz, building_file, wood_type, ignore_sector=False):
+    def find_build_location(self, agentx, agentz, building_file, wood_type, ignore_sector=False, max_y_diff=4):
         f = open(building_file, "r")
         size = f.readline()
         f.close()
         x_size, y_size, z_size = [int(n) for n in size.split(' ')]
         i = 0
-        build_tries = 200
+        build_tries = 25
         while i < build_tries:
             construction_site = choice(list(self.construction))
-            result = self.check_build_spot(construction_site, building_file, x_size, z_size, wood_type)
+            result = self.check_build_spot(construction_site, building_file, x_size, z_size, wood_type, max_y_diff=max_y_diff)
             if result != None:
                 # check if any of the nodes are in built
                 if result[1] in self.built:
@@ -169,7 +209,7 @@ class State:
         return False
 
 
-    def check_build_spot(self, ctrn_node, bld, bld_lenx, bld_lenz, wood_type):
+    def check_build_spot(self, ctrn_node, bld, bld_lenx, bld_lenz, wood_type, max_y_diff):
         # check if theres adequate space by getting nodes, and move the building to center it if theres extra space
         # if not ctrn_node in self.construction: return
         # for every orientation of this node+neighbors whose lenx and lenz are the min space required to place building at
@@ -239,7 +279,7 @@ class State:
             else:
                 found_nodes.clear()
 
-        max_y_diff = 4
+        max_y_diff = max_y_diff  # was 4, but increased to 5 bc placing the initial building took too long
         for tile in found_road.get_tiles():
             ny = self.rel_ground_hm[tile[0]][tile[1]]
             if ny > highest_y: highest_y = ny
@@ -252,6 +292,18 @@ class State:
         found_road, ctrn_node, found_nodes, ctrn_dir, bld, rot, min_nodes_in_x, min_nodes_in_z, self.built,
         wood_type)
 
+
+    def get_highest_height_in_node(self, node, hm):
+        i = 0
+        highest_tile = 0
+        for tile in node.get_tiles():
+            x = tile[0]
+            z = tile[1]
+            y = hm[x][z]
+            if y > highest_tile:
+                highest_tile = y
+            i+=1
+        return highest_tile
 
 
     def add_prosperity_from_tile(self, x, z, amt):
@@ -269,7 +321,8 @@ class State:
         return result
 
     def place_platform(self, found_road, ctrn_node, found_nodes, ctrn_dir, bld, rot, min_nodes_in_x, min_nodes_in_z, built_arr, wood_type):
-        py = self.static_ground_hm[found_road.center[0]][found_road.center[1]]
+        # py = self.static_ground_hm[found_road.center[0]][found_road.center[1]] - 1
+        py = self.get_highest_height_in_node(found_road,self.static_ground_hm) - 1
         for node in found_nodes:
             for tile in node.get_tiles():
                 tx = tile[0]
@@ -278,12 +331,13 @@ class State:
                 block = self.blocks[tx][py][tz]
                 if block in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.PASSTHROUGH.value] or block in src.my_utils.ROAD_SETS['default_slabs']:
                     # block = self.blocks[tx][self.static_ground_hm[tx][tz]-1][tz]
-                    block = self.blocks[tx][self.static_ground_hm[tx][tz]][tz]
                     # print("block is "+str(block))
+                    block = self.blocks[tx][self.static_ground_hm[tx][tz] - 1][tz]
                     if len(traverse) > 0:
-                        block = wood_type + '_planks'
                         for y in traverse:
-                            set_state_block(self, tx, y, tz, "minecraft:cobblestone")
+                            set_state_block(self, tx, y, tz, "minecraft:scaffolding")
+                        block = wood_type + '_planks'
+                        # block = self.last + '_planks'
                     set_state_block(self,tx, py, tz, block)
         return True
 
@@ -296,7 +350,8 @@ class State:
         zf = min(z1, z2)
         # find lowest y
         # lowest_y = self.rel_ground_hm[ctrn_node.center[0]][ctrn_node.center[1]]
-        lowest_y = self.static_ground_hm[found_road.center[0]][found_road.center[1]]
+        # lowest_y = self.static_ground_hm[found_road.center[0]][found_road.center[1]]
+        lowest_y = self.get_highest_height_in_node(found_road, self.static_ground_hm)
         radius = math.ceil(ctrn_node.size / 2)
         for node in found_nodes.union({ctrn_node}):
             for x in range(-radius, radius + 1):
@@ -309,7 +364,8 @@ class State:
                         pass
                         # lowest_y = by
         y = lowest_y  # This should be the lowest y in the
-        base_y = lowest_y + 1
+        # base_y = lowest_y + 1
+        base_y = lowest_y
         status, building_heightmap, exterior_heightmap = src.scheme_utils.place_schematic_in_state(self, bld, xf,
                                                                                                    y, zf,
                                                                                                    rot=rot,
@@ -341,7 +397,7 @@ class State:
                 attenuate = 0.8
                 if random() > inv_chance * attenuate and y < base_y:
                     block = choice(src.my_utils.ROAD_SETS['default'])
-                    src.states.set_state_block(self, x, y, z, block)
+                    # src.states.set_state_block(self, x, y, z, block)
         y = self.rel_ground_hm[xf][zf] + 5
         # extend road to fill building front
 
@@ -500,8 +556,8 @@ class State:
     #     return True
 
 
-    def get_nearest_tree(self,x,z, iterations=10):
-        return src.movement.find_nearest(self, x,z,self.trees, 5, iterations, 5)
+    def get_nearest_tree(self,x,z, iterations=5):
+        return src.movement.find_nearest(self, x,z,self.trees, 10, iterations, 15)
 
 
     # note: not every block has a node. These will point to None
@@ -538,9 +594,9 @@ class State:
     class Node:
 
         ACTION_COSTS = {
-            src.my_utils.TYPE.MINOR_ROAD.name: 50,
-            src.my_utils.TYPE.MAJOR_ROAD.name: 50,
-            src.my_utils.TYPE.BUILT.name: 50,
+            # src.my_utils.TYPE.MINOR_ROAD.name: 50,
+            # src.my_utils.TYPE.MAJOR_ROAD.name: 50,
+            # src.my_utils.TYPE.BUILT.name: 50,
         }
         local = set()
         def __init__(self, state, center, types, size):
@@ -1064,7 +1120,7 @@ class State:
             if node in self.construction:
                 self.construction.discard(node)
             self.roads.append(node)  # put node in roads array
-            node.action_cost = src.states.State.Node.ACTION_COSTS[src.my_utils.TYPE.MINOR_ROAD.name]
+            node.action_cost = 50#src.states.State.Node.ACTION_COSTS[src.my_utils.TYPE.MINOR_ROAD.name]
 
 
     def create_well(self, sx, sz, len_x, len_z):
@@ -1110,13 +1166,15 @@ class State:
         while n_pos == None:
             if i > water_checks:
                 print("Error: could not find suitable water source!")
-                return
+                return False
             (x1, y1) = choice(self.water)
             n_pos = self.node_pointers[(x1, y1)]
             i+=1
         n = self.nodes[n_pos]
         n1_options = list(set(n.range) - set(n.local))  # Don't put water right next to water, depending on range
-        if len(n1_options) < 1: return False
+        if len(n1_options) < 1:
+            print("Error: no n1_options")
+            return False
         n1 = np.random.choice(n1_options, replace=False)  # Pick random point of the above
         def is_valid(node):
             return src.my_utils.TYPE.WATER.name not in node.type and src.my_utils.TYPE.LAVA.name not in node.type and src.my_utils.TYPE.FOREIGN_BUILT.name not in node.type
@@ -1127,11 +1185,14 @@ class State:
         while not is_valid(n1):  # generate and test until n1 isn't water
             n1 = np.random.choice(n1_options, replace=False)
             if i >= water_checks:
-                self.init_main_st()
-                return
+                # self.init_main_st()
+                print("Error: could not find valid n1_option")
+                return False
             i+=1
         n2_options = list(set(n1.range) - set(n1.local))  # the length of the main road is the difference between the local and the range
-        if len(n2_options) < 1: return False
+        if len(n2_options) < 1:
+            print("Error: no n2_options")
+            return False
         n2 = np.random.choice(n2_options, replace=False)  # n2 is based off of n1's range, - local to make it farther
         points = src.linedrawing.get_line((n1.center[0], n1.center[1]), (n2.center[0], n2.center[1]))
         find_new_n2 = True
@@ -1139,6 +1200,7 @@ class State:
         i = 0
         while find_new_n2:
             if i > limit:
+                print("Error: could not find new n2")
                 return False
             find_new_n2 = False
             for p in points:
@@ -1172,11 +1234,15 @@ class State:
         p1 = (x1, y1)
         p2 = (x2, y2)
         self.init_lots(*p1, *p2)  # main street is a lot
-        self.create_road(node_pos1=p1, node_pos2=p2, road_type=src.my_utils.TYPE.MAJOR_ROAD.name)
+        if self.create_road(node_pos1=p1, node_pos2=p2, road_type=src.my_utils.TYPE.MAJOR_ROAD.name) == False:
+            print("Error: failed to build road")
+            return False
 
+        if self.sectors[x1, y1] != self.sectors[x2][y2]:
+            p1 = p2  # make sure agents spawn in same sector
         # add starter agents
         for agent_pos in [p1, p2]:
-            print("adding agent at "+str(agent_pos))
+            # print("adding agent at "+str(agent_pos))
             head = choice(State.agent_heads)
             new_agent = src.agent.Agent(self, *agent_pos, walkable_heightmap=self.rel_ground_hm,
                                         name=names.get_first_name(), head=head)
@@ -1246,7 +1312,9 @@ class State:
             for i in range(1, len(path)):
                 y = state.rel_ground_hm[path[i][0]][path[i][1]]
                 dy = abs(last_y - y)
+                # print("dy is "+str(dy))
                 if dy > state.agent_jump_ability:
+                    # print("returning")
                     return False
                 last_y = y
             return True
@@ -1257,7 +1325,7 @@ class State:
             block_path = points
 
         if bend_if_needed:
-            print("IN_BEIDNGRNGNRMTR")
+            found_road = False
             tile_coords = {tilepos for node in self.built for tilepos in node.get_tiles()}
             if any(not is_valid(self, tile) in tile_coords for tile in block_path) or not is_walkable(self, block_path):
                 # get nearest built
@@ -1317,7 +1385,9 @@ class State:
                             if status is False: continue
                             if any(not is_valid(self, tile) for tile in raycast_path) or not is_walkable(self, raycast_path): continue
                             p2_to_diag = raycast_path
-
+                            found_road = True
+                        else:
+                            found_road = True
                         # # debug
                         # for tile in p1_to_diag:
                         #     set_state_block(self, tile[0], self.rel_ground_hm[tile[0]][tile[1]] + 10, tile[1],
@@ -1325,14 +1395,17 @@ class State:
                         # for tile in p2_to_diag:
                         #     set_state_block(self, tile[0], self.rel_ground_hm[tile[0]][tile[1]] + 10, tile[1],
                         #                     'minecraft:emerald_block')
-
                         block_path = p1_to_diag + p2_to_diag  # concat two, building-free roads
                         self.bends += 1
                         found_bend = True
                         break
+            else:
+                found_road = True
+            if not found_road:
+                return False
         elif only_place_if_walkable:
             if not is_walkable(self, block_path):
-                return
+                return False
 
         # add road segnmets
         middle_nodes = []
@@ -1418,7 +1491,8 @@ class State:
                 return (x,z)
             # aux1 = src.linedrawing.get_line( p1, p2 )
             aux_path = [clamp_to_state_coords(self, block[0]+card[0], block[1]+card[1]) for block in block_path]
-            aux_paths.append(aux_path)
+            if is_walkable(self,aux_path):
+                aux_paths.append(aux_path)
 
         ## borders
         for aux_path in aux_paths:
@@ -1504,7 +1578,7 @@ class State:
     #     self.init_lots(x1, y1, x2, y2)  # main street is a lot
 
 
-    def append_road(self, point, road_type, leave_lot=False, correction=5, bend_if_needed = False):
+    def append_road(self, point, road_type, leave_lot=False, correction=5, bend_if_needed = False, only_place_if_walkable=False):
         # convert point to node
         point = self.node_pointers[point]
         node = self.nodes[point]
@@ -1523,20 +1597,22 @@ class State:
             return
         (x2, y2) = closest_point
         closest_point = None
-        print("given point is ")
-        print("path point is "+str(path_points))
+        # print("given point is ")
+        # print("path point is "+str(path_points))
         if road_type == src.my_utils.TYPE.MINOR_ROAD.name:
             closest_point = self.get_point_to_close_gap_minor(*point, path_points)  # connects 2nd end of minor roads to the nearest major or minor road. I think it's a single point
         elif road_type == src.my_utils.TYPE.MAJOR_ROAD.name:  # extend major
             closest_point = self.get_point_to_close_gap_major(node, *point, path_points)  # "extends a major road to the edge of a lot"
 
-        print("closest point is "+str(closest_point))
+        # print("closest point is "+str(closest_point))
         if closest_point is not None:
             point = closest_point
             path_points.extend(src.linedrawing.get_line((x2, y2), point))  # append to the points list the same thing in reverse? or is this a diff line?
-            print("path points is "+str(path_points))
+            # print("path points is "+str(path_points))
 
-        self.create_road(point, (x2, y2), road_type=road_type, points=path_points, bend_if_needed=bend_if_needed)
+        status = self.create_road(point, (x2, y2), road_type=road_type, points=path_points, bend_if_needed=bend_if_needed, only_place_if_walkable=only_place_if_walkable)
+        if status == False:
+            return False
 
 
     def get_point_to_close_gap_minor(self, x1, z1, points):
@@ -1551,17 +1627,17 @@ class State:
             landtype = self.nodes[self.node_pointers[(x2, z2)]].get_type()
             if src.my_utils.TYPE.GREEN.name in landtype or src.my_utils.TYPE.TREE.name in landtype or src.my_utils.TYPE.WATER.name in landtype:
                 break
-            if src.my_utils.TYPE.MAJOR_ROAD.name in landtype or src.my_utils.TYPE.MINOR_ROAD.name in landtype and src.my_utils.TYPE.BYPASS.name not in landtype:
+            if src.my_utils.TYPE.MAJOR_ROAD.name in landtype or src.my_utils.TYPE.MINOR_ROAD.name in landtype:# and src.my_utils.TYPE.BYPASS.name not in landtype:
                 return (x2, z2)
             (x2, z2) = (x2 + x, z2 + z)
         return None
 
 
     def get_point_to_close_gap_major(self, node, x1, z1, points):
-        print("EXTENDING MAJOR ROAD")
-        print('node is ' + str(node.center))
-        print('with xz ' + str((x1, z1)))
-        print('points is  to is ' + str(points))
+        # print("EXTENDING MAJOR ROAD")
+        # print('node is ' + str(node.center))
+        # print('with xz ' + str((x1, z1)))
+        # print('points is  to is ' + str(points))
         # extends a major road to the edge of a lot
         if node.lot is None:
             return None

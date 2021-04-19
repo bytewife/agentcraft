@@ -302,7 +302,9 @@ def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, bui
                     bz = ez - xi
                 # trim leaves
                 if src.manipulation.is_leaf(state.blocks[bx][by][bz]):
-                    src.manipulation.flood_kill_leaves(state, bx, by, bz)
+                    src.manipulation.flood_kill_leaves(state, bx, by, bz, 0)
+                if src.manipulation.is_log(state.blocks[bx][by][bz]):
+                    src.manipulation.flood_kill_logs(state, bx, by, bz, 0)
                 if use_head == False:
                     src.states.set_state_block(state, bx, by, bz, block)
                 traverse_up_to_air(bx, by, bz, block, building_heightmap, height_traversal, exterior_heightmap, agent_height)

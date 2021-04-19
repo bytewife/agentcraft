@@ -88,11 +88,10 @@ def is_log(state, x, y, z):
     if state.out_of_bounds_3D(x, y, z):
         return False
     block = state.blocks[x][y][z]
-    if  block is not None and block[-3:] == 'log' and block[:2] != "st":  # let's ignore stripped
+    # print("it's a "+str(block))
+    if block is not None and block[-3:] == 'log' and block[:2] != "st":  # let's ignore stripped
         return True
     return False
-
-
 
 
 def collect_water_at(state, x, y, z, times=1):
@@ -111,7 +110,7 @@ def cut_tree_at(state, x, y, z, times=1):
                   or is_leaf(state.get_adjacent_block(x, y, z, -1, 0, 0)) \
                   or is_leaf(state.get_adjacent_block(x, y, z, 0, 0, 1)) \
                   or is_leaf(state.get_adjacent_block(x, y, z, 0, 0, -1)):
-              flood_kill_leaves(state, x, y + 1, z)
+              flood_kill_leaves(state, x, y + 1, z, 0)
         if not is_log(state, x, y - 1, z):  # place sapling
             # find green around here
             new_x = x
@@ -156,19 +155,28 @@ def cut_tree_at(state, x, y, z, times=1):
     return TASK_OUTCOME.IN_PROGRESS.name
 
 
-def do_recur_on_adjacent(state, x, y, z, target_block_checker, recur_func, forward_call):
+def do_recur_on_adjacent(state, x, y, z, target_block_checker, recur_func, forward_call, itr):
+    if itr > 20: return
     forward_call(state.blocks, x, y, z)
     adj_blocks = state.get_all_adjacent_blocks(x, y, z)
     for block in adj_blocks:
         if target_block_checker(block[0]):
-            recur_func(state, block[1], block[2], block[3], target_block_checker, recur_func, forward_call)
+            itr+=1
+            recur_func(state, block[1], block[2], block[3], target_block_checker, recur_func, forward_call, itr)
 
 
-def flood_kill_leaves(state, leaf_x, leaf_y, leaf_z):
+def flood_kill_leaves(state, leaf_x, leaf_y, leaf_z, itr):
     def leaf_to_air(blocks, x, y, z):
         # src.states.set_state_block(x,y,z, 'minecraft:air')
         src.states.set_state_block(state, x, y, z, 'minecraft:air')
-    do_recur_on_adjacent(state, leaf_x, leaf_y, leaf_z, is_leaf, do_recur_on_adjacent, leaf_to_air)
+    do_recur_on_adjacent(state, leaf_x, leaf_y, leaf_z, is_leaf, do_recur_on_adjacent, leaf_to_air, itr)
+
+
+def flood_kill_logs(state, log_x, log_y, log_z, itr):
+    def to_air(blocks, x, y, z):
+        # src.states.set_state_block(x,y,z, 'minecraft:air')
+        src.states.set_state_block(state, x, y, z, 'minecraft:air')
+    do_recur_on_adjacent(state, log_x, log_y, log_z, is_log, do_recur_on_adjacent, to_air, itr)
 
 
 def is_leaf(block_name):

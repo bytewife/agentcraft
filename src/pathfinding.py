@@ -222,7 +222,11 @@ class Pathfinding:
 
         if count_xor(legal_actions[x][z], old_legal_actions[x][z]) > 0:
             changed = legal_actions[x][z] ^ old_legal_actions[x][z]
-            # rmost = rindex(legal_actions[x][z], True)
+            rmost = -1
+            try:
+                rmost = rindex(legal_actions[x][z], True)
+            except ValueError:
+                rmost = -1
             # print(str(old_legal_actions[x][z]) +" and "+str(legal_actions[x][z])+" give rise to "+str(changed))
             i = 0
             new_sector_created = False
@@ -253,16 +257,24 @@ class Pathfinding:
                     if not new_sector_created:
                         if self.sectors[x][z] != self.sectors[ox][oz]:  # already done
                             continue
-                        # #_if a this tile is now connected to another sector, append to that instead
-                        # if rmost != bit:
-                        # else:
-                        sector = self.sectors[x][z]
-                        self.sector_sizes[sector] -= 1
-                        self.n_sectors += 1
-                        self.sector_sizes[self.n_sectors] = 1
-                        self.sectors[x][z] = self.n_sectors
-                        # if this is ever called, dont call it again
-                        self.propagate_sector_depth_limited(x, z, sector=self.n_sectors, sectors=sectors, sector_sizes=sector_sizes, legal_actions=legal_actions, is_redoing=True)
+                        # #_if a this tile is now connected to another sector, append to that instead. might break it?
+                        if rmost != -1:
+                            dir = src.movement.Directions[rmost]
+                            nx = x+dir[0]
+                            nz = z+dir[1]
+                            old_sector = self.sectors[x][z]
+                            new_sector = self.sectors[nx][nz]
+                            self.sectors[x][z] = new_sector
+                            self.sector_sizes[old_sector] -= 1
+                            self.sector_sizes[new_sector] += 1
+                        else:
+                            sector = self.sectors[x][z]
+                            self.sector_sizes[sector] -= 1
+                            self.n_sectors += 1
+                            self.sector_sizes[self.n_sectors] = 1
+                            self.sectors[x][z] = self.n_sectors
+                            # if this is ever called, dont call it again
+                            self.propagate_sector_depth_limited(x, z, sector=self.n_sectors, sectors=sectors, sector_sizes=sector_sizes, legal_actions=legal_actions, is_redoing=True)
                         new_sector_created = True
                     # src.pathfinding.a+=1
                     # print(src.pathfinding.a)

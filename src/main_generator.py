@@ -18,7 +18,6 @@ def global_to_state_coords(world_x, world_z, build_area):
     z = world_z - build_area[1]
     return (x, z)
 
-
 def get_state_surface_y(state_x, state_z, state_heightmap, state_y):
     return state_heightmap[state_x][state_z] - state_y
 ##############

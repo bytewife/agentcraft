@@ -111,6 +111,7 @@ class Agent:
         self.tree_grow_iteration = 0
         self.tree_grow_iterations_max = randint(3,5)
         self.tree_leaves_height = randint(5,7)
+        self.last_log_type = 'oak_log'
         self.is_placing_sapling = False
         self.turns_staying_still = 0
         self.walk_stage = 0  # whether moving left or right. do XOR with 1 and this
@@ -421,12 +422,19 @@ class Agent:
             return True
 
     def do_log_task(self):
+
         status, sx, sz = self.collect_from_adjacent_spot(self.state, check_func=src.manipulation.is_log, manip_func=src.manipulation.cut_tree_at, prosperity_inc=src.my_utils.ACTION_PROSPERITY.LOGGING)
+        # get log type
+        y = self.state.rel_ground_hm[sx][sz]
+        if y - 1 >= 0:
+            if src.manipulation.is_log(self.state,sx,y,sz):
+                self.last_log_type = self.state.blocks[sx][y][sz]
+                print(self.last_log_type)
         # face tree
         self.dx = sx - self.x
         self.dz = sz - self.z
         if status == src.manipulation.TASK_OUTCOME.SUCCESS.name:
-            src.agent.Agent.shared_resources['oak_log'] += 1
+            src.agent.Agent.shared_resources[self.last_log_type] += 1
             self.set_motive(self.Motive.IDLE)
             return True
         elif status == src.manipulation.TASK_OUTCOME.FAILURE.name:  # if they got sniped
@@ -441,7 +449,7 @@ class Agent:
             self.set_motive(self.Motive.IDLE)
             return False
         else:
-            src.agent.Agent.shared_resources['oak_log'] += 1
+            src.agent.Agent.shared_resources[self.last_log_type] += 1
             return True
 
     # prepares for motive
@@ -472,7 +480,7 @@ class Agent:
                 # there are no build spots. so let's do something else
                 self.set_motive(self.Motive.LOGGING)
         elif new_motive.name == self.Motive.LOGGING.name:
-            self.set_path_to_nearest_spot(self.state.trees, 20, 10, 20, search_neighbors_instead=True)
+            self.set_path_to_nearest_spot(self.state.trees, 5, 15, 5, search_neighbors_instead=True)
             if len(self.path) < 1:  # if no trees were found
                 self.set_motive(self.Motive.REPLENISH_TREE)
         elif new_motive.name == self.Motive.REPLENISH_TREE.name:
@@ -533,7 +541,7 @@ class Agent:
                         self.set_path(path)
                         return True
                     closed.add(chosen_spot)
-        print(self.name+" could not find a spot!")
+        # print(self.name+" could not find a spot!")
         self.set_path([])
         return False
 

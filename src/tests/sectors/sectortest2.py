@@ -31,7 +31,7 @@ sim.state.construction.add(sim.state.nodes[sim.state.node_pointers[(1,1)]])
 
 print(sim.state.construction)
 i = 0
-build_tries = 300
+build_tries = 150
 while sim.state.place_building_at(sim.state.nodes[sim.state.node_pointers[(0,0)]], building, int(r[0]), int(r[2])) is False and i < build_tries:  # flip the x and z construction_site = random.choice(list(sim.state.construction))
     i+=1
 sim.step(1)
