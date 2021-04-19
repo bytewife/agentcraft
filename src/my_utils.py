@@ -6,7 +6,7 @@ import src.agent
 # https://stackoverflow.com/questions/34470597/is-there-a-dedicated-way-to-get-the-number-of-items-in-a-python-enum
 
 ROAD_SETS = {
-	'default': ["minecraft:bricks	", "minecraft:granite", "minecraft:coarse_dirt", "minecraft:grass_path"],
+	'default': ["minecraft:bricks	", "minecraft:granite", "minecraft:coarse_dirt", "minecraft:polished_granite"],
 	'default_slabs': ["minecraft:brick_slab", "minecraft:granite_slab"]
 }
 

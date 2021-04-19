@@ -405,6 +405,9 @@ class State:
             offset = 1 if ctrn_node.center[0] > found_road.center[0] else -1
         front_tiles = []
         front_nodes = []
+        highest_y = self.static_ground_hm[ctrn_node.center[0]][ctrn_node.center[1]] # for checking if the diff is too large, and putting it at top if it is
+        lowest_y = highest_y
+        y_sum = 0
         for i in range(front_length-1, -1, -1):
             front_length = min_nodes_in_z
             nx, nz = ctrn_node.center
@@ -414,13 +417,25 @@ class State:
             nz += i * self.node_size * (use_x ^ 1) * ctrn_dir[1]
             for r in range(-1, 2):
                 # set_state_block(self, nx + r * (use_x ^ 0) + (use_x ^ 1) * offset, 20, nz + r * (use_x ^ 1) + (use_x ^ 0) * offset, "minecraft:gold_block")
-                front_tiles.append((nx + r * (use_x ^ 0) + (use_x ^ 1) * offset, nz + r * (use_x ^ 1) + (use_x ^ 0) * offset))
+                fx = nx + r * (use_x ^ 0) + (use_x ^ 1) * offset
+                fz = nz + r * (use_x ^ 1) + (use_x ^ 0) * offset
+                front_tiles.append((fx, fz))
+                fy = self.static_ground_hm[fx,fz]
+                if highest_y < fy:
+                    highest_y = fy
+                elif lowest_y > fy:
+                    lowest_y = fy
+                y_sum+=fy
             node_ptr = self.node_pointers[(nx, nz)]
             if node_ptr is None: continue
             node = self.nodes[node_ptr]
             if node in self.roads or node in self.built or node.center in self.water or node in self.foreign_built: continue
             front_nodes.append(node)  # to use for later
-        mean_y = round(sum([self.static_ground_hm[t[0],t[1]] for t in front_tiles]) / len(front_tiles))
+        mean_y = round(y_sum / len(front_tiles))
+        adjusting_y_diff = 3
+        if highest_y - lowest_y > adjusting_y_diff:
+            mean_y = highest_y
+        # mean_y = round(sum([self.static_ground_hm[t[0],t[1]] for t in front_tiles]) / len(front_tiles))
 
         status, building_heightmap, exterior_heightmap = src.scheme_utils.place_schematic_in_state(self, bld, xf,
                                                                                                    mean_y, zf,
@@ -1166,7 +1181,7 @@ class State:
             return False
         height = 2
         well_nodes = set()
-        if self.out_of_bounds_Node(sx, sz) or self.out_of_bounds_Node(sx + len_x, sz + len_z) :
+        if self.out_of_bounds_Node(sx-6, sz-6) or self.out_of_bounds_Node(sx + len_x, sz + len_z) :
             return False, -1
         else:
             endpoints_x = [sx, sx+len_x-1]
@@ -1531,7 +1546,8 @@ class State:
                     set_state_block(self, x, y + 1, z, choice(road_block_slabs))
                 else:
                     set_state_block(self, x, y, z, choice(road_blocks))
-                src.manipulation.flood_kill_leaves(self,x, y+2, z, 10)
+                if src.manipulation.is_leaf(self.blocks[x][y+2][z]):
+                    src.manipulation.flood_kill_leaves(self,x, y+2, z, 10)
                 last_road_y = y
 
         aux_paths = []
