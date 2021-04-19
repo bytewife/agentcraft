@@ -171,7 +171,7 @@ areaFlex = [0, 0, 10, 10] # default build area
 # z1 = -40
 # x2 = 177
 # y2 = 111
-# z2 = -31
+# z2 = -32
 
 # # ornamental tree 1
 # x1 = 199
@@ -191,12 +191,12 @@ areaFlex = [0, 0, 10, 10] # default build area
 # z2 = -71
 
 # # # market stall 3
-# x1 = 184
-# y1 = 55
-# z1 = 238
-# x2 = 189
-# y2 = 60
-# z2 = 244
+x1 = 177
+y1 = 66
+z1 = 252
+x2 = 182
+y2 = 70
+z2 = 257
 
 
 # # # med house 5
@@ -258,15 +258,15 @@ areaFlex = [0, 0, 10, 10] # default build area
 # z2 = 197
 
 # # # # lamp 2
-x1 = 143
-y1 = 53
-z1 = 187
-x2 = 145
-y2 = 60
-z2 = 189
+# x1 = 143
+# y1 = 53
+# z1 = 187
+# x2 = 145
+# y2 = 60
+# z2 = 189
 
 
-file_name = "../schemes/lamp_2"
+file_name = "../schemes/market_stall_3"
 src.scheme_utils.download_schematic(x1, y1, z1, x2, y2, z2, file_name)
 src.scheme_utils.download_schematic(x1, y1, z1, x2, y2, z2, file_name+"_flex", flexible_tiles=True, leave_dark_oak=False)
 # src.scheme_utils.download_schematic(x1, y1, z1, x2, y2, z2, file_name+"_flex_keep_dark", flexible_tiles=True, leave_dark_oak=True)
