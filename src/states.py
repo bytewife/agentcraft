@@ -320,9 +320,10 @@ class State:
             result.append(y)
         return result
 
-    def place_platform(self, found_road, ctrn_node, found_nodes, ctrn_dir, bld, rot, min_nodes_in_x, min_nodes_in_z, built_arr, wood_type):
+    def place_platform(self, found_road, ctrn_node, found_nodes, ctrn_dir, bld, rot, min_nodes_in_x, min_nodes_in_z, built_arr, wood_type, build_y):
         # py = self.static_ground_hm[found_road.center[0]][found_road.center[1]] - 1
-        py = self.get_highest_height_in_node(found_road,self.static_ground_hm) - 1
+        # py = self.get_highest_height_in_node(found_road,self.static_ground_hm) - 1
+        py = build_y - 1
         for node in found_nodes:
             for tile in node.get_tiles():
                 tx = tile[0]
@@ -366,8 +367,37 @@ class State:
         y = lowest_y  # This should be the lowest y in the
         # base_y = lowest_y + 1
         base_y = lowest_y
+
+        ### Front
+        front_length = min_nodes_in_x
+        use_x = False
+        if rot == 1 or rot == 3:
+            use_x = True
+        if use_x:
+            offset = 1 if ctrn_node.center[1] > found_road.center[1] else -1
+        else:
+            offset = 1 if ctrn_node.center[0] > found_road.center[0] else -1
+        front_tiles = []
+        front_nodes = []
+        for i in range(front_length-1, -1, -1):
+            front_length = min_nodes_in_z
+            nx, nz = ctrn_node.center
+            nx += (use_x ^ 1) * self.node_size * (rot - 1)
+            nz += (use_x ^ 0) * self.node_size * (rot - 2)
+            nx += i * self.node_size * (use_x ^ 0) * ctrn_dir[0]
+            nz += i * self.node_size * (use_x ^ 1) * ctrn_dir[1]
+            for r in range(-1, 2):
+                set_state_block(self, nx + r * (use_x ^ 0) + (use_x ^ 1) * offset, 20, nz + r * (use_x ^ 1) + (use_x ^ 0) * offset, "minecraft:gold_block")
+                front_tiles.append((nx + r * (use_x ^ 0) + (use_x ^ 1) * offset, nz + r * (use_x ^ 1) + (use_x ^ 0) * offset))
+            node_ptr = self.node_pointers[(nx, nz)]
+            if node_ptr is None: continue
+            node = self.nodes[node_ptr]
+            if node in self.roads or node in self.built or node.center in self.water or node in self.foreign_built: continue
+            front_nodes.append(node)  # to use for later
+        mean_y = int(sum([self.static_ground_hm[t[0],t[1]] for t in front_tiles]) / len(front_tiles))
+
         status, building_heightmap, exterior_heightmap = src.scheme_utils.place_schematic_in_state(self, bld, xf,
-                                                                                                   y, zf,
+                                                                                                   mean_y, zf,
                                                                                                    rot=rot,
                                                                                                    built_arr=self.built,
                                                                                                    wood_type=wood_type)
@@ -401,28 +431,8 @@ class State:
         y = self.rel_ground_hm[xf][zf] + 5
         # extend road to fill building front
 
-        front_length = min_nodes_in_x
-        use_x = False
-        # if ctrn_dir in [(0,1), (0,-1)]:
-        #     print("going by Z")
-        if rot == 1 or rot == 3:
-            use_x = True
-        for i in range(front_length-1, -1, -1):
-            front_length = min_nodes_in_z
-            nx, nz = ctrn_node.center
-            ## offset it
-            # print("nx is "+str((use_x ^ 0) * self.node_size * (rot - 2)))
-            # print("nx is "+str((use_x ^ 1) * self.node_size * (rot - 1)))
-            nx += (use_x ^ 1) * self.node_size * (rot - 1)
-            nz += (use_x ^ 0) * self.node_size * (rot - 2)
-            nx += i * self.node_size * (use_x ^ 0) * ctrn_dir[0]
-            nz += i * self.node_size * (use_x ^ 1) * ctrn_dir[1]
-            # set_state_block(self, nx, self.rel_ground_hm[nx][nz]+12, nz, "minecraft:diamond_ore")
-            node_ptr = self.node_pointers[(nx, nz)]
-            if node_ptr is None: continue
-            node = self.nodes[node_ptr]
-            if node in self.roads or node in self.built or node.center in self.water or node in self.foreign_built: continue
-            self.append_road((nx, nz), src.my_utils.TYPE.MINOR_ROAD.name)
+        for n in front_nodes:
+            self.append_road(n.center, src.my_utils.TYPE.MINOR_ROAD.name)
 
 
         # debug
@@ -443,7 +453,7 @@ class State:
                 if tile in self.saplings:
                     self.saplings.remove(tile)
                     node.type = node.get_type()  # update Types to remove saplings
-        return True
+        return True, mean_y
 
 
     # def place_building_at(self, ctrn_node, bld, bld_lenx, bld_lenz, wood_type):
@@ -882,6 +892,7 @@ class State:
 
     def traverse_down_till_block(self,x,z):
         y = self.traverse_from[x][z]+1  # don't start from top, but from max_building_height from rel
+        # if y >= self.len_y: return False
         while y > 0:
             if self.blocks[x][y][z] not in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.PASSTHROUGH.value]:
                 break

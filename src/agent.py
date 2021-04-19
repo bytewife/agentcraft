@@ -171,8 +171,8 @@ class Agent:
 
 
     def do_build_task(self, found_road, ctrn_node, found_nodes, ctrn_dir, bld, rot, min_nodes_in_x, min_nodes_in_z, built_arr, wood_type):
-        self.state.place_schematic(found_road, ctrn_node, found_nodes, ctrn_dir, bld, rot, min_nodes_in_x, min_nodes_in_z, built_arr, wood_type)
-        self.state.place_platform(found_road, ctrn_node, found_nodes, ctrn_dir, bld, rot, min_nodes_in_x, min_nodes_in_z, built_arr, wood_type)
+        status, build_y = self.state.place_schematic(found_road, ctrn_node, found_nodes, ctrn_dir, bld, rot, min_nodes_in_x, min_nodes_in_z, built_arr, wood_type)
+        self.state.place_platform(found_road, ctrn_node, found_nodes, ctrn_dir, bld, rot, min_nodes_in_x, min_nodes_in_z, built_arr, wood_type, build_y)
 
     def auto_motive(self):
         new_motive = self.calc_motive()
@@ -429,7 +429,8 @@ class Agent:
         if y - 1 >= 0:
             if src.manipulation.is_log(self.state,sx,y,sz):
                 self.last_log_type = self.state.blocks[sx][y][sz]
-                print(self.last_log_type)
+                if self.last_log_type[:2] == "mi":
+                    self.last_log_type = self.last_log_type[10:]
         # face tree
         self.dx = sx - self.x
         self.dz = sz - self.z

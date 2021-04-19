@@ -172,11 +172,13 @@ def flood_kill_leaves(state, leaf_x, leaf_y, leaf_z, itr):
     do_recur_on_adjacent(state, leaf_x, leaf_y, leaf_z, is_leaf, do_recur_on_adjacent, leaf_to_air, itr)
 
 
+def is_log_flood(block):
+    return block is not None and block[-3:] == 'log' and block[:2] != "st"
+
 def flood_kill_logs(state, log_x, log_y, log_z, itr):
     def to_air(blocks, x, y, z):
-        # src.states.set_state_block(x,y,z, 'minecraft:air')
         src.states.set_state_block(state, x, y, z, 'minecraft:air')
-    do_recur_on_adjacent(state, log_x, log_y, log_z, is_log, do_recur_on_adjacent, to_air, itr)
+    do_recur_on_adjacent(state, log_x, log_y, log_z, is_log_flood, do_recur_on_adjacent, to_air, itr)
 
 
 def is_leaf(block_name):

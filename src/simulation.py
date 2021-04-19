@@ -87,8 +87,8 @@ class Simulation:
         if schematic_args is False:  # flip the x and z
             print("Error: could not find build location!")
             return False
-        self.state.place_schematic(*schematic_args)
-        self.state.place_platform(*schematic_args)
+        status, build_y = self.state.place_schematic(*schematic_args)
+        self.state.place_platform(*schematic_args, build_y)
         self.state.step()  # check if this affects agent pahs. it seems to.
         print("Finished simulation init!!")
         fixed_pos = (schematic_args[0].center[0]+self.state.world_x,schematic_args[0].center[1]+self.state.world_z)
