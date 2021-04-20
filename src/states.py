@@ -432,7 +432,7 @@ class State:
             if node in self.roads or node in self.built or node.center in self.water or node in self.foreign_built: continue
             front_nodes.append(node)  # to use for later
         mean_y = round(y_sum / len(front_tiles))
-        adjusting_y_diff = 3
+        adjusting_y_diff = 4
         if highest_y - lowest_y > adjusting_y_diff:
             mean_y = highest_y
         # mean_y = round(sum([self.static_ground_hm[t[0],t[1]] for t in front_tiles]) / len(front_tiles))
@@ -1563,11 +1563,11 @@ class State:
         #             if node in self.built:
         #                 static_temp[x][z] = self.static_ground_hm[x][z]
         # static_temp = self.static_ground_hm.copy()
-        # for x in range(len(static_temp)):
-        #     for z in range(len(static_temp[0])):
-        #         rel_y = self.rel_ground_hm[x][z]
-        #         if static_temp[x][z] > rel_y:
-        #             static_temp[x][z] = rel_y
+        for x in range(len(static_temp)):
+            for z in range(len(static_temp[0])):
+                static_y = self.static_ground_hm[x][z]
+                if static_temp[x][z] > static_y:
+                    static_temp[x][z] = static_y
         for i in range(length):
             x = block_path[i][0]
             z = block_path[i][1]
@@ -1605,10 +1605,10 @@ class State:
                     (0,1): "south",
                     (-1, 0): "west",
                     (0, -1): "north",
-                    (1, 1): "south",  # works with the above
-                    (1, -1): "west",
-                    (-1, -1): "north",
-                    (-1, 1): "east",
+                    (1, 1): "west",  # works with the above
+                    (1, -1): "south",
+                    (-1, -1): "east",
+                    (-1, 1): "north",
                 }
                 if check_next_road:
                     next_road_y = static_temp[block_path[i+1][0]][block_path[i+1][1]] - 1
@@ -1640,7 +1640,16 @@ class State:
                         py+=1
                         dx = block_path[i+1][0] - block_path[i][0]
                         dz = block_path[i+1][1] - block_path[i][1]
-                        block = """minecraft:oak_stairs[facing={facing}]""".format(facing=STAIRS_FACING_DIRS[(dx,dz)])
+                        if dx > 0:
+                            facing = "east"
+                        elif dx < 0:
+                            facing = "west"
+                        elif dz > 0:
+                            facing = "south"
+                        else:
+                            facing = "north"
+
+                        block = """minecraft:oak_stairs[facing={facing}]""".format(facing=facing)
                     elif ndy < 0 and nndy > 0 : # flatten next block to get slope 0
                         set_state_block(self,px, py, pz, "minecraft:oak_planks")
                         px = block_path[i+1][0]
@@ -1654,7 +1663,16 @@ class State:
                         # py-=1
                         dx = block_path[i + 1][0] - block_path[i][0]
                         dz = block_path[i + 1][1] - block_path[i][1]
-                        block = """minecraft:oak_stairs[facing={facing}]""".format(facing=STAIRS_FACING_DIRS[(dx, dz)])
+                        if dx > 0:
+                            facing = "west"
+                        elif dx < 0:
+                            facing = "east"
+                        elif dz > 0:
+                            facing = "north"
+                        else:
+                            facing = "south"
+                        block = """minecraft:oak_stairs[facing={facing}]""".format(facing=facing)
+
                     elif ndy > 0 and nndy < 0: # flatten (lower) next block to get slope 0
                         set_state_block(self,px, py, pz, "minecraft:oak_planks")  # for curr
                         px = block_path[i+1][0]
