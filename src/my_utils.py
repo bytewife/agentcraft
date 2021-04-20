@@ -222,6 +222,9 @@ class TYPE_TILES:
 			"minecraft:dandelion",
 			"minecraft:large_fern",
 			"minecraft:lily_pad",
+			"minecraft:allium",
+			"minecraft:red_tulip",
+			"minecraft:rose_bush",
 		},
 		TYPE.BUILT.value: {  # TODO hook this up with settingg the nodes to be built on start
 			"minecraft:oak_stairs",
