@@ -446,11 +446,20 @@ class State:
             for node in found_nodes.union({ctrn_node}):
                 self.built.remove(node)  # since this was set early in check_build_spot, remove it
             return False, None
+
+        # src.states.set_state_block(self,found_road.center[0], 20, found_road.center[1], "minecraft:diamond_block")
+        self.place_platform(found_road, ctrn_node, found_nodes, ctrn_dir, bld, rot, min_nodes_in_x, min_nodes_in_z, built_arr, wood_type, mean_y)
+
+        built_list = list(building_heightmap.keys())
+        ext_list = list(exterior_heightmap.keys())
+        for tile in built_list+ext_list:  # let's see if this stops tiles from being placed in buildings, where there used to be ground
+            self.update_heightmaps_for_block(*tile, built_list, ext_list)
+
         self.built_heightmap.update(building_heightmap)
         self.exterior_heightmap.update(exterior_heightmap)
         # build road from the road to the building
         self.create_road(found_road.center, ctrn_node.center, road_type="None", points=None, leave_lot=False,
-                               add_as_road_type=False, only_place_if_walkable=True)
+                               add_as_road_type=False, only_place_if_walkable=True, )
         xmid = int((x2 + x1) / 2)
         zmid = int((z2 + z1) / 2)
         distmax = math.dist((ctrn_node.center[0] - ctrn_dir[0], ctrn_node.center[1] - ctrn_dir[1]), (xmid, zmid))
@@ -473,8 +482,8 @@ class State:
         # extend road to fill building front
 
         for n in front_nodes:
-            self.append_road(n.center, src.my_utils.TYPE.MINOR_ROAD.name)
-
+            if n not in self.roads:
+                self.append_road(n.center, src.my_utils.TYPE.MINOR_ROAD.name)
 
         # debug
         # for n in found_nodes:
@@ -931,6 +940,25 @@ class State:
         return
 
 
+    def update_heightmaps_for_block(self, x, z, built_hm, ext_hm):
+        if (x,z) in self.built_heightmap: # ignore buildings
+            y = self.built_heightmap[(x,z)] - 1
+            self.abs_ground_hm[x][z] = y + self.world_y
+            self.rel_ground_hm[x][z] = y + 1
+        elif (x,z) in self.exterior_heightmap:
+            y = self.exterior_heightmap[(x,z)] - 1
+            self.abs_ground_hm[x][z] = y + self.world_y
+            self.rel_ground_hm[x][z] = y + 1
+        else:  # traverse down to find first non passable block
+            y = self.traverse_down_till_block(x, z) + 1
+            self.abs_ground_hm[x][z] = y + self.world_y - 1
+            self.rel_ground_hm[x][z] = y
+        curr_height = self.rel_ground_hm[x][z]
+        if self.static_ground_hm[x][z] > curr_height:  # don't reduce heightmap ever. this is to avoid bugs rn
+            self.static_ground_hm[x][z] = curr_height
+        return
+
+
     def traverse_down_till_block(self,x,z):
         y = self.traverse_from[x][z]+1  # don't start from top, but from max_building_height from rel
         # if y >= self.len_y: return False
@@ -1284,12 +1312,12 @@ class State:
         points = self.points_to_nodes(points)  # points is the path of nodes from the chosen
         (x1, y1) = points[0]
         (x2, y2) = points[len(points) - 1]
-        self.set_type_road(points, src.my_utils.TYPE.MAJOR_ROAD.name) # TODO check if the fact that this leads to repeats causes issue
+        ## self.set_type_road(points, src.my_utils.TYPE.MAJOR_ROAD.name) # TODO check if the fact that this leads to repeats causes issue
         middle_nodes = []
         if len(points) > 2:
             middle_nodes = points[1:len(points) - 1]
-        self.road_segs.add(
-            RoadSegment(self.nodes[(x1,y1)], self.nodes[(x2,y2)], middle_nodes, src.my_utils.TYPE.MAJOR_ROAD.name, self.road_segs, self))
+        ## self.road_segs.add(
+        ##     RoadSegment(self.nodes[(x1,y1)], self.nodes[(x2,y2)], middle_nodes, src.my_utils.TYPE.MAJOR_ROAD.name, self.road_segs, self))
         for (x, y) in points:
             # adjacent = self.nodes[(x,y)].adjacent
             # adjacent = self.nodes[(x,y)].local  # this is where we increase building range
@@ -1304,6 +1332,10 @@ class State:
         if self.create_road(node_pos1=p1, node_pos2=p2, road_type=src.my_utils.TYPE.MAJOR_ROAD.name, only_place_if_walkable=True) == False:
             print("Error: failed to build road")
             return False
+
+        # debug
+        # for node in self.roads:
+        #     src.states.set_state_block(self,node.center[0], 19, node.center[1], 'minecraft:emerald_block')
 
         if self.sectors[x1, y1] != self.sectors[x2][y2]:
             p1 = p2  # make sure agents spawn in same sector
@@ -1438,7 +1470,7 @@ class State:
                             found_raycast = False
                             leeway = 0
                             dist = len(p2_to_diag) + leeway
-                            steps = 45
+                            steps = 60
                             step_amt = 360/steps
                             status = False
                             raycast_path = None
@@ -1521,7 +1553,21 @@ class State:
         ## render
         prev_road_y = self.static_ground_hm[block_path[0][0]][block_path[0][1]] - 1
         length = len(block_path)
-        static_temp = self.static_ground_hm.copy()
+        static_temp = self.rel_ground_hm.copy()
+        # for x in range(len(self.rel_ground_hm)):
+        #     for z in range(len(self.rel_ground_hm[0])):
+        #         rel_y = self.rel_ground_hm[x][z]
+        #         node_ptr = self.node_pointers[(x,z)]
+        #         if node_ptr:
+        #             node = self.nodes[node_ptr]
+        #             if node in self.built:
+        #                 static_temp[x][z] = self.static_ground_hm[x][z]
+        # static_temp = self.static_ground_hm.copy()
+        # for x in range(len(static_temp)):
+        #     for z in range(len(static_temp[0])):
+        #         rel_y = self.rel_ground_hm[x][z]
+        #         if static_temp[x][z] > rel_y:
+        #             static_temp[x][z] = rel_y
         for i in range(length):
             x = block_path[i][0]
             z = block_path[i][1]
@@ -1548,8 +1594,8 @@ class State:
                     (1, 0): "straight",
                     (0, 1): "straight",
                     (-1, 0): "straight",
-                    (0, -1): "staight",
-                    (1, 1): "inner_left",
+                    (0, -1): "straight",
+                    (1, 1): "inner_left",  # these are broken in 1.16
                     (1, -1): "inner_left",
                     (-1, -1): "inner_left",
                     (-1, 1): "inner_left",
@@ -1592,23 +1638,32 @@ class State:
                         block = "minecraft:oak_slab"
                     elif ndy > 0 and nndy > 0: # slope 1
                         py+=1
-                        block = "minecraft:oak_stairs"
+                        dx = block_path[i+1][0] - block_path[i][0]
+                        dz = block_path[i+1][1] - block_path[i][1]
+                        block = """minecraft:oak_stairs[facing={facing}]""".format(facing=STAIRS_FACING_DIRS[(dx,dz)])
                     elif ndy < 0 and nndy > 0 : # flatten next block to get slope 0
+                        set_state_block(self,px, py, pz, "minecraft:oak_planks")
                         px = block_path[i+1][0]
                         pz = block_path[i+1][1]
                         set_state_block(self,px, py, pz, "minecraft:oak_planks")
                         py = static_temp[px][pz] + 1
                         block = "minecraft:air"
+                        # block = "minecraft:diamond_block"
                     elif ndy < 0 and nndy < 0: # slope -1
                         # print("did this")
                         # py-=1
-                        block = "minecraft:oak_stairs"
+                        dx = block_path[i + 1][0] - block_path[i][0]
+                        dz = block_path[i + 1][1] - block_path[i][1]
+                        block = """minecraft:oak_stairs[facing={facing}]""".format(facing=STAIRS_FACING_DIRS[(dx, dz)])
                     elif ndy > 0 and nndy < 0: # flatten (lower) next block to get slope 0
+                        set_state_block(self,px, py, pz, "minecraft:oak_planks")  # for curr
                         px = block_path[i+1][0]
                         pz = block_path[i+1][1]
-                        set_state_block(self,px, py, pz, "minecraft:oak_planks")
+                        set_state_block(self,px, py, pz, "minecraft:oak_planks")  # for ahead
                         py = static_temp[px][pz] - 1
                         block = "minecraft:air"
+                        # block = "minecraft:diamond_block"
+
                 elif check_next_road:
                     if ndy > 0:
                         px = block_path[i+1][0]

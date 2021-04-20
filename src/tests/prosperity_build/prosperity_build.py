@@ -96,14 +96,14 @@ for x in range(sim.state.len_x):
 
 
 ## ROADS
-# for r in sim.state.roads:
-#     if r in sim.state.construction:
-#         # sim.state.construction.discard(r)
-#         pass
-#     x = r.center[0]
-#     z = r.center[1]
-#     y = sim.state.rel_ground_hm[x][z] + 1
-#     sim.state.set_block(x,y,z,"minecraft:redstone_block")
+for r in sim.state.roads:
+    if r in sim.state.construction:
+        # sim.state.construction.discard(r)
+        pass
+    x = r.center[0]
+    z = r.center[1]
+    y = sim.state.rel_ground_hm[x][z] + 1
+    sim.state.set_block(x,y,z,"minecraft:redstone_block")
 sim.step(1, is_rendering=True)
 # pprint(sim.state.rel_ground_hm)
 # print(sim.state.static_ground_hm)
