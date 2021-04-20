@@ -125,6 +125,8 @@ class State:
             self.phase2threshold = 200
             self.phase3threshold = 500
             self.traverse_from = np.copy(self.rel_ground_hm)
+            # self.traverse_update_flags = np.zeros(len(self.rel_ground_hm), len(self.rel_ground_hm[0])))
+            self.traverse_update_flags = np.full((len(self.rel_ground_hm), len(self.rel_ground_hm[0])), False, dtype=bool)
 
             # print(self.types)
             # print(self.nodes[self.node_pointers[(5,5)]].get_type())
@@ -931,14 +933,18 @@ class State:
                     self.abs_ground_hm[x][z] = y + self.world_y
                     self.rel_ground_hm[x][z] = y + 1
                 else:  # traverse down to find first non passable block
-                    y = self.traverse_down_till_block(x, z) + 1
+                    y = None
+                    if self.traverse_update_flags[x][z] is True:
+                        y = self.traverse_down_till_block(x, z) + 1
+                        self.traverse_update_flags[x][z] = False
+                    else:
+                        y = self.rel_ground_hm[x][z]
                     self.abs_ground_hm[x][z] = y + self.world_y - 1
                     self.rel_ground_hm[x][z] = y
                 curr_height = self.rel_ground_hm[x][z]
                 if self.static_ground_hm[x][z] > curr_height:  # don't reduce heightmap ever. this is to avoid bugs rn
                     self.static_ground_hm[x][z] = curr_height
         return
-
 
     def update_heightmaps_for_block(self, x, z, built_hm, ext_hm):
         if (x,z) in self.built_heightmap: # ignore buildings
@@ -950,14 +956,13 @@ class State:
             self.abs_ground_hm[x][z] = y + self.world_y
             self.rel_ground_hm[x][z] = y + 1
         else:  # traverse down to find first non passable block
-            y = self.traverse_down_till_block(x, z) + 1
+            y = self.traverse_down_till_block(x, z) + 1 # only call this if needs traversing
             self.abs_ground_hm[x][z] = y + self.world_y - 1
             self.rel_ground_hm[x][z] = y
         curr_height = self.rel_ground_hm[x][z]
         if self.static_ground_hm[x][z] > curr_height:  # don't reduce heightmap ever. this is to avoid bugs rn
             self.static_ground_hm[x][z] = curr_height
         return
-
 
     def traverse_down_till_block(self,x,z):
         y = self.traverse_from[x][z]+1  # don't start from top, but from max_building_height from rel
@@ -1413,7 +1418,6 @@ class State:
                 dy = abs(last_y - y)
                 if dy > state.agent_jump_ability:
                     # print("returning")
-                    print("breaking with "+str(y)+" "+str(last_y))
                     return False
                 last_y = y
             return True
@@ -1978,6 +1982,7 @@ class State:
 def set_state_block(state, x, y, z, block_name):
     if state.out_of_bounds_3D(x,y,z): return False
     state.traverse_from[x][z] = max(y, state.traverse_from[x][z])
+    state.traverse_update_flags[x][z] = True
     state.blocks[x][y][z] = block_name
     state.changed_blocks_xz.add((x,z))
     state.total_changed_blocks_xz.add((x,z))
