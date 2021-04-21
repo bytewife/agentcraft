@@ -84,7 +84,7 @@ while sim.start() == False:
 
 print("road_segs is ")
 print(sim.state.road_segs)
-sim.step(1000, is_rendering=True)
+sim.step(300, is_rendering=True)
 for built in sim.state.built:
     # src.states.set_state_block(sim.state, built.center[0], sim.state.rel_ground_hm[built.center[0]][built.center[1]]+11, built.center[1], 'minecraft:red_wool')
     pass
@@ -98,14 +98,14 @@ for x in range(sim.state.len_x):
 
 
 ## ROADS
-# for r in sim.state.roads:
-#     if r in sim.state.construction:
-#         # sim.state.construction.discard(r)
-#         pass
-#     x = r.center[0]
-#     z = r.center[1]
-#     y = sim.state.rel_ground_hm[x][z] + 1
-#     sim.state.set_block(x,y,z,"minecraft:redstone_block")
+for r in sim.state.roads:
+    if r in sim.state.construction:
+        # sim.state.construction.discard(r)
+        pass
+    x = r.center[0]
+    z = r.center[1]
+    y = sim.state.rel_ground_hm[x][z] + 1
+    sim.state.set_block(x,y,z,"minecraft:redstone_block")
 sim.step(1, is_rendering=True)
 # pprint(sim.state.rel_ground_hm)
 # print(sim.state.static_ground_hm)

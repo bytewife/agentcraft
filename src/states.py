@@ -483,8 +483,9 @@ class State:
         # extend road to fill building front
 
         for n in front_nodes:
-            if n not in self.roads:
-                self.append_road(n.center, src.my_utils.TYPE.MINOR_ROAD.name)
+            self.append_road(n.center, src.my_utils.TYPE.MINOR_ROAD.name)
+            # if n not in self.roads:
+            #     self.append_road(n.center, src.my_utils.TYPE.MINOR_ROAD.name)
 
         # debug
         # for n in found_nodes:
@@ -930,24 +931,26 @@ class State:
         self.types[x][z] = new_type
 
     def update_heightmaps(self):
-        for x, z in list(self.heightmap_tiles_to_update):
-            if (x,z) in self.built_heightmap: # ignore buildings
+        for pos in list(self.heightmap_tiles_to_update):
+            x, z = pos
+            if (x,z) in self.built_heightmap.keys(): # ignore buildings
                 y = self.built_heightmap[(x,z)] - 1
                 self.abs_ground_hm[x][z] = y + self.world_y
                 self.rel_ground_hm[x][z] = y + 1
-            elif (x,z) in self.exterior_heightmap:
+            elif (x,z) in self.exterior_heightmap.keys():
                 y = self.exterior_heightmap[(x,z)] - 1
                 self.abs_ground_hm[x][z] = y + self.world_y
                 self.rel_ground_hm[x][z] = y + 1
             else:  # traverse down to find first non passable block
-                y = None
-                if self.traverse_update_flags[x][z] is True:
+                if self.traverse_update_flags[x][z] == True:
                     y = self.traverse_down_till_block(x, z) + 1
                     self.traverse_update_flags[x][z] = False
+                    self.abs_ground_hm[x][z] = y + self.world_y - 1
+                    self.rel_ground_hm[x][z] = y
                 else:
                     y = self.rel_ground_hm[x][z]
-                self.abs_ground_hm[x][z] = y + self.world_y - 1
-                self.rel_ground_hm[x][z] = y
+                    self.abs_ground_hm[x][z] = y + self.world_y - 1
+                    self.rel_ground_hm[x][z] = y
             curr_height = self.rel_ground_hm[x][z]
             if self.static_ground_hm[x][z] > curr_height:  # don't reduce heightmap ever. this is to avoid bugs rn
                 self.static_ground_hm[x][z] = curr_height
@@ -1325,12 +1328,12 @@ class State:
         points = self.points_to_nodes(points)  # points is the path of nodes from the chosen
         (x1, y1) = points[0]
         (x2, y2) = points[len(points) - 1]
-        ## self.set_type_road(points, src.my_utils.TYPE.MAJOR_ROAD.name) # TODO check if the fact that this leads to repeats causes issue
+        self.set_type_road(points, src.my_utils.TYPE.MAJOR_ROAD.name) # TODO check if the fact that this leads to repeats causes issue
         middle_nodes = []
         if len(points) > 2:
             middle_nodes = points[1:len(points) - 1]
-        ## self.road_segs.add(
-        ##     RoadSegment(self.nodes[(x1,y1)], self.nodes[(x2,y2)], middle_nodes, src.my_utils.TYPE.MAJOR_ROAD.name, self.road_segs, self))
+        self.road_segs.add(
+            RoadSegment(self.nodes[(x1,y1)], self.nodes[(x2,y2)], middle_nodes, src.my_utils.TYPE.MAJOR_ROAD.name, self.road_segs, self))
         for (x, y) in points:
             # adjacent = self.nodes[(x,y)].adjacent
             # adjacent = self.nodes[(x,y)].local  # this is where we increase building range
