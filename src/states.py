@@ -179,14 +179,11 @@ class State:
                 hm[x][z] = y+1
         return hm
 
-
     def init_agents_in_nodes(self):
         result = dict()
         for node in self.nodes.values():
             result[node] = list()
         return result
-
-
 
     def find_build_location(self, agentx, agentz, building_file, wood_type, ignore_sector=False, max_y_diff=4):
         f = open(building_file, "r")
@@ -462,7 +459,8 @@ class State:
         self.exterior_heightmap.update(exterior_heightmap)
         # build road from the road to the building
         self.create_road(found_road.center, ctrn_node.center, road_type="None", points=None, leave_lot=False,
-                               add_as_road_type=False, only_place_if_walkable=True, )
+                               add_as_road_type=True, only_place_if_walkable=True, )
+                                # add_as_road_type = False, only_place_if_walkable = True, )
         xmid = int((x2 + x1) / 2)
         zmid = int((z2 + z1) / 2)
         distmax = math.dist((ctrn_node.center[0] - ctrn_dir[0], ctrn_node.center[1] - ctrn_dir[1]), (xmid, zmid))
@@ -678,9 +676,11 @@ class State:
             self.adjacent_radius = 1
             self.state = state
             self.action_cost = 100
+            self.tiles = self.gen_tiles()
+            self.type = None
             # self.type = set()  # to cache type()
 
-        def get_tiles(self):
+        def gen_tiles(self):
             tiles = []
             radius = math.floor(self.size / 2)
             for x in range(-radius, radius + 1):
@@ -691,6 +691,10 @@ class State:
             return tiles
 
 
+        def get_tiles(self):
+            return self.tiles
+
+
         # the tiles' types + mask_type (like building or roads
         def get_type(self):
             if self in self.state.built:
@@ -698,10 +702,11 @@ class State:
             all_types = set()
             for tile_pos in self.get_tiles():
                 tx, tz = tile_pos
-                if self.state.out_of_bounds_Node(tx, tz): continue
+                # if self.state.out_of_bounds_Node(tx, tz): continue
                 all_types.add(self.state.types[tx][tz])  # each block has a single type
-            for t in self.mask_type:
-                all_types.add(t)
+            # for t in self.mask_type:
+            #     all_types.add(t)
+            all_types.update(self.mask_type)
             self.type = all_types
             return all_types
 
@@ -792,13 +797,15 @@ class State:
                         if state.out_of_bounds_Node(x, z):
                             continue
                         node = nodes[node_pointers[(x, z)]]
-                        if src.my_utils.TYPE.WATER.name in node.get_type():
+                        if node.type == None:
+                            node.get_type()
+                        if "WATER" in node.type:
                             continue
-                        if src.my_utils.TYPE.WATER.name in node.type:
-                            water_neighbors.append(node)
-                        if src.my_utils.TYPE.TREE.name in node.type \
-                                or src.my_utils.TYPE.GREEN.name in node.type \
-                                or src.my_utils.TYPE.CONSTRUCTION.name in node.type:
+                        # if src.my_utils.TYPE.WATER.name in node.type:
+                        #     water_neighbors.append(node)
+                        if "TREE" in node.type \
+                                or "GREEN" in node.type \
+                                or "CONSTRUCTION" in node.type:
                                 resource_neighbors.append(node)
                         local.add(node)
             return local, water_neighbors, resource_neighbors
@@ -1983,6 +1990,8 @@ class State:
 def set_state_block(state, x, y, z, block_name):
     if state.out_of_bounds_3D(x,y,z): return False
     state.traverse_from[x][z] = max(y, state.traverse_from[x][z])
+    # if y > state.traverse_from[x][z]:
+    #     state.traverse_from[x][z] = y
     state.traverse_update_flags[x][z] = True
     state.heightmap_tiles_to_update.add((x,z))
     state.blocks[x][y][z] = block_name

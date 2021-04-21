@@ -32,10 +32,12 @@ from enum import Enum
 # x2 = 2250
 # z2 = 2250
 
-x1 = 12000
-z1 = 12000
-x2 = 12250
-z2 = 12250
+x1 = 1500
+z1 = 1500
+x2 = 1600
+z2 = 1600
+# x2 = 1024
+# z2 = 1024
 # x2 = 11150
 # z2 = 11150
 
@@ -57,7 +59,7 @@ clean_agents = "kill @e[type=minecraft:armor_stand,x={},y=64,z={},distance=..100
 http_framework.interfaceUtils.runCommand(clean_agents)
 
 # sim = src.simulation.Simulation(area, rendering_step_duration=0.0)
-sim = src.simulation.Simulation(area, rendering_step_duration=0.0, is_rendering_each_step=False)
+sim = src.simulation.Simulation(area, rendering_step_duration=0.05, is_rendering_each_step=False)
 while sim.start() == False:
     sim.state.reset_for_restart()
 # for x in range(len(sim.state.blocks)):
@@ -96,14 +98,14 @@ for x in range(sim.state.len_x):
 
 
 ## ROADS
-for r in sim.state.roads:
-    if r in sim.state.construction:
-        # sim.state.construction.discard(r)
-        pass
-    x = r.center[0]
-    z = r.center[1]
-    y = sim.state.rel_ground_hm[x][z] + 1
-    sim.state.set_block(x,y,z,"minecraft:redstone_block")
+# for r in sim.state.roads:
+#     if r in sim.state.construction:
+#         # sim.state.construction.discard(r)
+#         pass
+#     x = r.center[0]
+#     z = r.center[1]
+#     y = sim.state.rel_ground_hm[x][z] + 1
+#     sim.state.set_block(x,y,z,"minecraft:redstone_block")
 sim.step(1, is_rendering=True)
 # pprint(sim.state.rel_ground_hm)
 # print(sim.state.static_ground_hm)

@@ -17,6 +17,7 @@ class Simulation:
         else:
             self.world_slice = precomp_world_slice
         self.state = src.states.State(self.world_slice, precomp_pathfinder=precamp_pathfinder, precomp_legal_actions=precomp_legal_actions, precomp_types=precomp_types, precomp_sectors=precomp_sectors, precomp_nodes=precomp_nodes, precomp_node_pointers=precomp_node_pointers)
+        # exit(0)
         # if precomp_legal_actions:
         #     self.state.legal_actions = precomp_legal_actions
         # if precomp_types:
@@ -144,11 +145,11 @@ class Simulation:
                     # print("built major bridge road")
                     # self.state.append_road(point=(i, j), road_type=src.my_utils.TYPE.MAJOR_ROAD.name, leave_lot=True, correction=self.corNum, bend_if_needed=True)
                     self.state.append_road(point=(i, j), road_type=src.my_utils.TYPE.MAJOR_ROAD.name, correction=self.corNum, bend_if_needed=True, only_place_if_walkable=True)
-                    print("road 1: at point "+str((i,j)))
+                    # print("road 1: at point "+str((i,j)))
                 else:
                     # print("built major normal road")
                     self.state.append_road(point=(i, j), road_type=src.my_utils.TYPE.MAJOR_ROAD.name, correction=self.corNum, bend_if_needed=True, only_place_if_walkable=True)
-                    print("road 2: at point " + str((i, j)))
+                    # print("road 2: at point " + str((i, j)))
             if node.local_prosperity > self.buNum and road_found_near:
                 # print("prosperity fulfilled; creating building")
                 self.state.set_type_building(node.local) # wait, the local is a building?
