@@ -1,0 +1,21 @@
+3 5 3
+air                                air                                air                                
+air                                oak_leaves                         air                                
+air                                air                                air                                
+
+air                                oak_leaves                         air                                
+oak_leaves                         oak_log                            oak_leaves                         
+air                                oak_leaves                         air                                
+
+air                                air                                air                                
+air                                oak_log                            air                                
+air                                air                                air                                
+
+air                                air                                air                                
+air                                oak_log                            air                                
+air                                air                                air                                
+
+grass_block                        grass_block                        grass_block                        
+grass_block                        grass_block                        grass_block                        
+grass_block                        grass_block                        grass_block                        
+
