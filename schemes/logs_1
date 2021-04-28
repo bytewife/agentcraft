@@ -1,0 +1,9 @@
+3 2 3
+air[]                                                                                                air[]                                                                                                air[]                                                                                                
+oak_button[face=wall,facing=west,powered=false]                                                      oak_log[axis=x]                                                                                      oak_log[axis=x]                                                                                      
+air[]                                                                                                air[]                                                                                                campfire[facing=east,lit=false,signal_fire=false,waterlogged=false]                                  
+
+air[]                                                                                                campfire[facing=south,lit=false,signal_fire=false,waterlogged=false]                                 air[]                                                                                                
+oak_log[axis=x]                                                                                      oak_log[axis=x]                                                                                      oak_log[axis=x]                                                                                      
+oak_button[face=wall,facing=west,powered=false]                                                      oak_log[axis=x]                                                                                      oak_log[axis=x]                                                                                      
+

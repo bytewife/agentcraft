@@ -1,0 +1,13 @@
+3 3 3
+air[]                                                                                                air[]                                                                                                air[]                                                                                                
+air[]                                                                                                air[]                                                                                                air[]                                                                                                
+air[]                                                                                                air[]                                                                                                air[]                                                                                                
+
+air[]                                                                                                hay_block[axis=y]                                                                                    hay_block[axis=y]                                                                                    
+air[]                                                                                                air[]                                                                                                hay_block[axis=y]                                                                                    
+air[]                                                                                                air[]                                                                                                air[]                                                                                                
+
+hay_block[axis=y]                                                                                    hay_block[axis=y]                                                                                    hay_block[axis=y]                                                                                    
+air[]                                                                                                hay_block[axis=z]                                                                                    hay_block[axis=z]                                                                                    
+grass[]                                                                                              air[]                                                                                                hay_block[axis=y]                                                                                    
+
