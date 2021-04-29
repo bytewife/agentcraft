@@ -1,6 +1,5 @@
 # ! /usr/bin/python3
-"""### Provides tools for maps and heightmaps.
-
+"""### Provides tools for maps and heightmaps
 This module contains functions to:
 * Calculate a heightmap ideal for building
 * Visualise numpy arrays
@@ -14,14 +13,10 @@ import numpy as np
 
 
 def calcGoodHeightmap(worldSlice):
-    """**Calculate a heightmap ideal for building**.
-
+    """**Calculates a heightmap ideal for building.**
     Trees are ignored and water is considered ground.
-
     Args:
-        worldSlice (WorldSlice): an instance of the WorldSlice class
-                                 containing the raw heightmaps and block data
-
+        worldSlice (WorldSlice): an instance of the WorldSlice class containing the raw heightmaps and block data
     Returns:
         any: numpy array containing the calculated heightmap
     """
@@ -34,7 +29,7 @@ def calcGoodHeightmap(worldSlice):
             while True:
                 y = heightmapNoTrees[x, z]
                 block = worldSlice.getBlockAt(
-                    area[0] + x, y - 1, area[1] + z)
+                    (area[0] + x, y - 1, area[1] + z))
                 if block[-4:] == '_log':
                     heightmapNoTrees[x, z] -= 1
                 else:
@@ -44,13 +39,10 @@ def calcGoodHeightmap(worldSlice):
 
 
 def visualize(*arrays, title=None, autonormalize=True):
-    """**Visualizes one or multiple numpy arrays**.
-
+    """**Visualizes one or multiple numpy arrays.**
     Args:
         title (str, optional): display title. Defaults to None.
-        autonormalize (bool, optional): Normalizes the array to be between
-                                        0 (black) and 255 (white).
-                                        Defaults to True.
+        autonormalize (bool, optional): Normalizes the array to be between 0 (black) and 255 (white). Defaults to True.
     """
     for array in arrays:
         if autonormalize:
@@ -60,10 +52,10 @@ def visualize(*arrays, title=None, autonormalize=True):
         if title:
             plt.title(title)
         plt_image = cv2.cvtColor(array, cv2.COLOR_BGR2RGB)
-        imgplot = plt.imshow(plt_image)  # NOQA
+        imgplot = plt.imshow(plt_image)
     plt.show()
 
 
 def normalize(array):
-    """**Normalize the array to contain values from 0 to 1**."""
+    """**Normalizes the array to contain values from 0 to 1.**"""
     return (array - array.min()) / (array.max() - array.min())

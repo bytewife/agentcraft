@@ -54,6 +54,7 @@ class State:
             self.lots = set()
 
             self.blocks, self.world_y, self.len_y, self.abs_ground_hm = self.gen_blocks_array(world_slice)
+            self.interface = http_framework.interfaceUtils.Interface(x=self.rect[0], y=self.world_y, z=self.world_z, buffering=True, caching=True)
             self.rel_ground_hm = self.gen_rel_ground_hm(self.abs_ground_hm)  # a heightmap based on the state's y values. -1
             self.static_ground_hm = self.gen_static_ground_hm(self.rel_ground_hm)  # use this for placing roads
             self.heightmaps = world_slice.heightmaps
@@ -899,7 +900,7 @@ class State:
             for y in range(y1, y2):
                 zi = 0
                 for z in range(z1, z2):
-                    block = world_slice.getBlockAt((x, y, z))
+                    block = world_slice.getBlockAt(x, y, z)
                     blocks[xi][yi][zi] = block
                     zi += 1
                 yi += 1
@@ -1062,7 +1063,7 @@ class State:
         for line in blocks:
             position_raw, block = line.split(';')
             state_x, state_y, state_z = src.my_utils.convert_key_to_coords(position_raw)
-            http_framework.interfaceUtils.placeBlockBatched(
+            self.interface.placeBlockBatched(
                 self.world_x + state_x, self.world_y + state_y, self.world_z + state_z, block, n_blocks
             )
             i += 1
@@ -1084,7 +1085,7 @@ class State:
         for position, block in changed_arr.items():
             x,y,z = position
             if is_rendering == True:
-                http_framework.interfaceUtils.placeBlockBatched(self.world_x + x, self.world_y + y, self.world_z + z, block, n_blocks)
+                self.interface.placeBlockBatched(self.world_x + x, self.world_y + y, self.world_z + z, block, n_blocks)
             i += 1
         self.update_heightmaps()  # must wait until all assets are placed
         for position in changed_arr_xz:
