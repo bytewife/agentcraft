@@ -52,9 +52,16 @@ class State:
             self.road_segs = set()
             self.construction = set()  # nodes where buildings can be placed
             self.lots = set()
+            self.world_x = world_slice.rect[0]
+            self.world_z = world_slice.rect[1]
+            self.len_x = world_slice.rect[2] - world_slice.rect[0]
+            self.len_z = world_slice.rect[3] - world_slice.rect[1]
+            self.end_x = world_slice.rect[2]
+            self.end_z = world_slice.rect[3]
 
-            self.blocks, self.world_y, self.len_y, self.abs_ground_hm = self.gen_blocks_array(world_slice)
-            self.interface = http_framework.interfaceUtils.Interface(x=self.rect[0], y=self.world_y, z=self.world_z, buffering=True, caching=True)
+            self.interface, self.blocks, self.world_y, self.len_y, self.abs_ground_hm = self.gen_blocks_array(world_slice)
+            exit(0)
+
             self.rel_ground_hm = self.gen_rel_ground_hm(self.abs_ground_hm)  # a heightmap based on the state's y values. -1
             self.static_ground_hm = self.gen_static_ground_hm(self.rel_ground_hm)  # use this for placing roads
             self.heightmaps = world_slice.heightmaps
@@ -66,12 +73,6 @@ class State:
             else:
                 self.types = precomp_types
 
-            self.world_x = world_slice.rect[0]
-            self.world_z = world_slice.rect[1]
-            self.len_x = world_slice.rect[2] - world_slice.rect[0]
-            self.len_z = world_slice.rect[3] - world_slice.rect[1]
-            self.end_x = world_slice.rect[2]
-            self.end_z = world_slice.rect[3]
 
             if precomp_legal_actions is None:
                 self.legal_actions = src.movement.gen_all_legal_actions(
@@ -885,6 +886,9 @@ class State:
             return lowest, highest
         y1, y2  = get_y_bounds(abs_ground_hm)  # keep range not too large
         y2 += max_y_offset
+        world_y = y1
+        interface = http_framework.interfaceUtils.Interface(x=self.world_x, y=world_y, z=self.world_z,
+                                                                 buffering=True, caching=True)
         if (y2 > 150):
             print("warning: Y bound is really high!")
 
@@ -895,19 +899,20 @@ class State:
         xi = 0
         yi = 0
         zi = 0
+        http_framework.interfaceUtils.globalWorldSlice = self.world_slice
+        http_framework.interfaceUtils.globalDecay = np.zeros((self.len_x, 255, self.len_z), dtype=bool)
         for x in range(x1, x2):
             yi = 0
             for y in range(y1, y2):
                 zi = 0
                 for z in range(z1, z2):
-                    block = world_slice.getBlockAt(x, y, z)
+                    block = self.world_slice.getBlockAt(x, y, z)#, self.world_x, self.world_y, self.world_z)
                     blocks[xi][yi][zi] = block
                     zi += 1
                 yi += 1
             xi += 1
-        world_y = y1
         len_y = y2 - y1
-        return blocks, world_y, len_y, abs_ground_hm
+        return interface, blocks, world_y, len_y, abs_ground_hm
 
 
     def gen_rel_ground_hm(self, abs_ground_hm):

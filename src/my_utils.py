@@ -225,6 +225,7 @@ class TYPE_TILES:
 			"minecraft:allium",
 			"minecraft:red_tulip",
 			"minecraft:rose_bush",
+			"minecraft:sweet_berry_bush",
 		},
 		TYPE.BUILT.value: {  # TODO hook this up with settingg the nodes to be built on start
 			"minecraft:oak_stairs",

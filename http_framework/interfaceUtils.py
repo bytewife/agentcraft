@@ -66,16 +66,16 @@ class Interface():
         """**Clean up before destruction**."""
         self.sendBlocks()
 
-    def getBlock(self, x, y, z):
+    def getBlock(self, x, y, z, w_x, w_y, w_z):
         """**Return the name of a block in the world**."""
-        x, y, z = self.local2global(x, y, z)
+        # gx, gy, gz = self.local2global(x, y, z)
 
         url = 'http://localhost:9000/blocks?x={}&y={}&z={}'.format(x, y, z)
         if self.caching and (x, y, z) in self.cache:
             return self.cache[(x, y, z)]
 
         if self.caching and globalWorldSlice is not None:
-            if not globalDecay[x][y][z]:
+            if not globalDecay[x-w_x][y-w_y][z-w_z]:
                 block = globalWorldSlice.getBlockAt(x, y, z)
                 self.cache[(x, y, z)] = block
                 return block
