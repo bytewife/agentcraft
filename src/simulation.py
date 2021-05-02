@@ -119,7 +119,7 @@ class Simulation:
         for (i, j) in indices:  # update a specific random numbor of tiles
             self.state.updateFlags[i][j] = 0
             node_pos = self.state.node_pointers[(i,j)]  # possible optimization here
-            node = self.state.nodes[(node_pos)]
+            node = self.state.nodes(*node_pos)
 
             # calculate roads
             if not (src.my_utils.TYPE.GREEN.name in node.get_type() or src.my_utils.TYPE.TREE.name in node.type or src.my_utils.TYPE.CONSTRUCTION.name in node.type):
@@ -127,13 +127,13 @@ class Simulation:
                 return
 
 
-            node.local_prosperity = sum([n.prosperity() for n in node.local])
+            node.local_prosperity = sum([n.prosperity() for n in node.local()])
             # print("going because local prosp is "+str(node.local_prosperity))
-            node.local_traffic = sum([n.traffic() for n in node.range if not self.state.out_of_bounds_Node(n.center[0], n.center[1])])
+            node.local_traffic = sum([n.traffic() for n in node.range() if not self.state.out_of_bounds_Node(n.center[0], n.center[1])])
 
-            road_found_far = len(set(node.range) & set(self.state.roads))
+            road_found_far = len(set(node.range()) & set(self.state.roads))
             # print("road found far is "+str(road_found_far))
-            road_found_near = len(set(node.local) & set(self.state.roads))
+            road_found_near = len(set(node.local()) & set(self.state.roads))
             # print("road found near is "+str(road_found_far))
 
             # major roads
@@ -150,7 +150,7 @@ class Simulation:
                     # print("road 2: at point " + str((i, j)))
             if node.local_prosperity > self.buNum and road_found_near:
                 # print("prosperity fulfilled; creating building")
-                self.state.set_type_building(node.local) # wait, the local is a building?
+                self.state.set_type_building(node.local()) # wait, the local is a building?
 
             # if self.phase >= 2:
             #     # bypasses
@@ -169,7 +169,7 @@ class Simulation:
 
                 # calculate reservations of greenery
                 elif src.my_utils.TYPE.TREE.name in node.get_type() or src.my_utils.TYPE.GREEN.name in node.get_type():
-                    if len(node.neighbors & self.state.construction):
+                    if len(node.neighbors() & self.state.construction):
                         lot = node.get_lot()
                         if lot is not None:
                             # if random.random() < 0.5:

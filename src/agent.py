@@ -82,7 +82,7 @@ class Agent:
         self.z = self.rendered_z = state_z
         self.y = self.rendered_y = walkable_heightmap[state_x][state_z] + 0
         self.state = state
-        self.node = self.state.nodes[self.state.node_pointers[(self.x,self.z)]]
+        self.node = self.state.nodes(*self.state.node_pointers[(self.x,self.z)])
         self.dx = self.dz = 1  # temp
         self.name = name
         self.parent_1 = parent_1
@@ -130,7 +130,7 @@ class Agent:
     def socialize(self):
         self.socialize_want += 1
         if self.socialize_want >= self.socialize_threshold: return  # TODO unlock this somewhere
-        for agent in self.state.agents_in_nodes[self.node]:
+        for agent in self.state.agents_in_nodes[self.node.center]:
             if agent == self: continue
             if not self.socialize_want >= self.socialize_threshold: continue
             elif agent == self.lover:
@@ -245,11 +245,11 @@ class Agent:
         self.state.agents[self] = (self.x, self.y, self.z)
 
     def update_node_occupancy(self, x1, z1, x2, z2):
-        n1 = self.state.nodes[self.state.node_pointers[(x1,z1)]]
-        n2 = self.state.nodes[self.state.node_pointers[(x2,z2)]]
+        n1 = self.state.nodes(*self.state.node_pointers[(x1,z1)])
+        n2 = self.state.nodes(*self.state.node_pointers[(x2,z2)])
         if n1 != n2:
-            self.state.agents_in_nodes[n1].remove(self)
-            self.state.agents_in_nodes[n2].append(self)
+            self.state.agents_in_nodes[n1.center].remove(self)
+            self.state.agents_in_nodes[n2.center].append(self)
             self.node = n2
 
     def set_path(self, path):
@@ -497,7 +497,7 @@ class Agent:
                     tx = randint(self.x - rad, self.x + rad)
                     tz = randint(self.z - rad, self.z + rad)
                     if self.state.out_of_bounds_Node(tx, tz): continue
-                    node = self.state.nodes[self.state.node_pointers[(tx, tz)]]
+                    node = self.state.nodes(*self.state.node_pointers[(tx, tz)])
                     tries+=1
                 if tries > max_tries:
                     print("Error: no places to put sapling")

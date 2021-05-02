@@ -28,7 +28,7 @@ print(sim.state.roads)
 print("neighbors")
 # print(sim.state.nodes[(10,10)].get_neighbors_positions())
 # print(len(sim.state.nodes[(13,13)].get_ranges_positions()))
-for node in sim.state.nodes[(13,13)].range:
+for node in sim.state.nodes(13,13).range:
     y = sim.state.rel_ground_hm[node.center[0]][ node.center[1]] - 1
     sim.state.set_block(node.center[0], y,node.center[1], "minecraft:white_wool")
 #

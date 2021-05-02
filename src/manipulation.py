@@ -125,7 +125,7 @@ def cut_tree_at(state, x, y, z, times=1):
                 ttype = state.types[tx][tz]
                 node_ptr = state.node_pointers[(tx,tz)]
                 if node_ptr == None: continue
-                node = state.nodes[node_ptr]
+                node = state.nodes(*node_ptr)
                 if ttype == src.my_utils.TYPE.GREEN.name \
                     and node not in state.built \
                     and node not in state.roads: # check if right
