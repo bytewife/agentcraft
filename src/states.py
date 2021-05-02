@@ -129,7 +129,6 @@ class State:
             # self.traverse_update_flags = np.zeros(len(self.rel_ground_hm), len(self.rel_ground_hm[0])))
             self.traverse_update_flags = np.full((len(self.rel_ground_hm), len(self.rel_ground_hm[0])), False, dtype=bool)
             self.heightmap_tiles_to_update = set()
-            # exit(0)
 
             # print(self.types)
             # print(self.nodes[self.node_pointers[(5,5)]].get_type())
@@ -156,7 +155,7 @@ class State:
                 return dx, dy, dz, blocks3D
             self.len_x, self.len_y, self.len_z, self.blocks_arr = parse_blocks_file(blocks_file)
 
-    def reset_for_restart(self):
+    def reset_for_restart(self, use_heavy=True):
         self.built.clear()
         self.roads.clear()
         self.agents.clear()
@@ -166,9 +165,15 @@ class State:
         self.road_segs.clear()
         self.nodes_dict, self.node_pointers = self.gen_nodes(self.len_x, self.len_z, self.node_size)
         self.agents_in_nodes.clear()
+        for pos in self.changed_blocks.keys():
+            x,y,z = pos
+            self.blocks_arr[x][y][z] = 0
         self.changed_blocks.clear()
+        self.total_changed_blocks = {}
+        self.total_changed_blocks_xz.clear()
         self.changed_blocks_xz.clear()
-        self.agents_in_nodes = self.init_agents_in_nodes()
+        if use_heavy:
+            self.agents_in_nodes = self.init_agents_in_nodes()
 
     def blocks(self, x, y, z):
         if self.blocks_arr[x][y][z] == 0:
@@ -1428,6 +1433,9 @@ class State:
                     i+=1
                     break
         points = self.points_to_nodes(points)  # points is the path of nodes from the chosen
+        if points == False:
+            print("Error: road points didn't stay in bounds!")
+            return False
         (x1, y1) = points[0]
         (x2, y2) = points[len(points) - 1]
         self.set_type_road(points, src.my_utils.TYPE.MAJOR_ROAD.name) # TODO check if the fact that this leads to repeats causes issue
@@ -1437,6 +1445,9 @@ class State:
         self.road_segs.add(
             RoadSegment(self.nodes(x1,y1), self.nodes(x2,y2), middle_nodes, src.my_utils.TYPE.MAJOR_ROAD.name, self.road_segs, self))
         for (x, y) in points:
+            if self.out_of_bounds_Node(x,y):
+                print("Error: tried to build road outside of bounds!")
+                return False
             # adjacent = self.nodes[(x,y)].adjacent
             # adjacent = self.nodes[(x,y)].local  # this is where we increase building range
             adjacent = self.nodes(x,y).range()  # this is where we increase building range
@@ -1505,6 +1516,8 @@ class State:
     def points_to_nodes(self, points):
         nodes = []
         for point in points:
+            if self.out_of_bounds_Node(point[0], point[1]):
+                return False
             node = self.node_pointers[point]  # node coords
             if node not in nodes:
                 nodes.append(node)

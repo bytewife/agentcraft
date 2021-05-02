@@ -14,6 +14,7 @@ class Pathfinding:
 
     def __init__(self, state):
         self.state = state
+        self.sectors_nodes = {}
         pass
 
 
@@ -108,6 +109,16 @@ class Pathfinding:
         return round(sqrt((x1 - x2) ** 2 + (z1 - z2) ** 2) * cardinal_cost)
 
 
+    def merge_sectors(self, state, sectors, to_remove, new):
+        for pos in list(self.sectors_nodes[to_remove]):
+            x,z = pos
+            sectors[x][z] = new
+        self.sectors_nodes[new].update(self.sectors_nodes[to_remove])
+        self.sectors_nodes.pop(to_remove)
+        self.sector_sizes[new] += self.sector_sizes[to_remove]
+        self.sector_sizes.pop(to_remove)
+
+
     def create_sectors(self, heightmap, legal_actions):
         self.sectors = full_like(heightmap, -1, int)
         self.n_sectors = 0
@@ -117,50 +128,54 @@ class Pathfinding:
                 if self.sectors[x][z] == -1:
                     self.n_sectors +=1
                     self.sector_sizes[self.n_sectors] = 0
+                    self.sectors_nodes[self.n_sectors] = set()
                     self.propagate_sector(x, z, self.n_sectors, self.sectors, self.sector_sizes, legal_actions)
                 z += 1
             x += 1
         return self.sectors
 
-    def propagate_sector1(self, x, z, sector, sectors, sector_sizes, legal_actions, is_redoing=False):
-        open = [(x, z)]
-        closed = set()
-        while len(open) > 0:  # search all adjacent until you cant go anymore
-            pos = open.pop(0)
-            nx, nz = pos
-            if not is_redoing and sectors[nx][nz] != -1:
-                continue
-            sectors[nx][nz] = sector
-            sector_sizes[sector] += 1
-            for n in range(len(legal_actions[nx][nz])):  # check tiles reachable from here
-                if legal_actions[nx][nz][n] == True:
-                    dir = src.movement.directions[n]
-                    cx = nx + dir[0]
-                    cz = nz + dir[1]
-                    if cx < 0 or cx >= len(legal_actions) or cz < 0 or cz >= len(legal_actions[0]):
-                        continue
-                    childs_sector = sectors[cx][cz]
-                    if childs_sector != sector or childs_sector == -1:  # if the tile doesn't have a sector, add to list to expand
-                        child_pos = (cx, cz)
-                        if not child_pos in closed:
-                            open.append(child_pos)
-                        closed.add(child_pos)
-                    elif childs_sector != sector:
-                        sector_sizes[childs_sector] -= 1
-                        child_pos = (cx, cz)
-                        if not child_pos in closed:
-                            open.append(child_pos)  # the or allows re-sectoring
-                        closed.add(child_pos)
+    # def propagate_sector1(self, x, z, sector, sectors, sector_sizes, legal_actions, is_redoing=False):
+    #     open = [(x, z)]
+    #     closed = set()
+    #     while len(open) > 0:  # search all adjacent until you cant go anymore
+    #         pos = open.pop(0)
+    #         nx, nz = pos
+    #         if not is_redoing and sectors[nx][nz] != -1:
+    #             continue
+    #         sectors[nx][nz] = sector
+    #         sector_sizes[sector] += 1
+    #         for n in range(len(legal_actions[nx][nz])):  # check tiles reachable from here
+    #             if legal_actions[nx][nz][n] == True:
+    #                 dir = src.movement.directions[n]
+    #                 cx = nx + dir[0]
+    #                 cz = nz + dir[1]
+    #                 if cx < 0 or cx >= len(legal_actions) or cz < 0 or cz >= len(legal_actions[0]):
+    #                     continue
+    #                 childs_sector = sectors[cx][cz]
+    #                 if childs_sector != sector or childs_sector == -1:  # if the tile doesn't have a sector, add to list to expand
+    #                     child_pos = (cx, cz)
+    #                     if not child_pos in closed:
+    #                         open.append(child_pos)
+    #                     closed.add(child_pos)
+    #                 elif childs_sector != sector:
+    #                     sector_sizes[childs_sector] -= 1
+    #                     child_pos = (cx, cz)
+    #                     if not child_pos in closed:
+    #                         open.append(child_pos)  # the or allows re-sectoring
+    #                     closed.add(child_pos)
 
     def propagate_sector_depth_limited(self, x, z, sector, sectors, sector_sizes, legal_actions, is_redoing=False):
         open = [(x, z)]
         closed = set()
+        if sector not in self.sectors_nodes.keys():
+            self.sectors_nodes[sector] = set()
         while len(open) > 0:  # search all adjacent until you cant go anymore
             pos = open.pop(0)
             nx, nz = pos
             if not is_redoing and sectors[nx][nz] != -1:
                 continue
             sectors[nx][nz] = sector
+            self.sectors_nodes[sector].add(pos)
             sector_sizes[sector] += 1
             for n in range(len(legal_actions[nx][nz])):  # check tiles reachable from here
                 depth = 0
@@ -180,6 +195,7 @@ class Pathfinding:
                     elif childs_sector != sector:
                         sector_sizes[childs_sector] -= 1
                         child_pos = (cx, cz)
+                        self.sectors_nodes[childs_sector].remove(child_pos)
                         if not child_pos in closed:
                             open.append(child_pos)  # the or allows re-sectoring
                         closed.add(child_pos)
@@ -194,6 +210,7 @@ class Pathfinding:
             if not is_redoing and sectors[nx][nz] != -1:
                 continue
             sectors[nx][nz] = sector
+            self.sectors_nodes[sector].add(pos)
             sector_sizes[sector] += 1
             for n in range(len(legal_actions[nx][nz])):  # check tiles reachable from here
                 if legal_actions[nx][nz][n] == True:
@@ -211,6 +228,7 @@ class Pathfinding:
                     elif childs_sector != sector:
                         sector_sizes[childs_sector] -= 1
                         child_pos = (cx,cz)
+                        self.sectors_nodes[childs_sector].remove(child_pos)
                         if not child_pos in closed:
                             open.append(child_pos)  # the or allows re-sectoring
                         closed.add(child_pos)
@@ -251,8 +269,10 @@ class Pathfinding:
                         coord_to_prop_into = (ox, oz)
                         sector_to_prop_into = osector
                         sector_to_remove = sector
-                    self.sector_sizes[sector_to_remove] = 0
-                    self.propagate_sector1(*coord_to_prop_into, sector=sector_to_prop_into, sectors=sectors, sector_sizes=sector_sizes, legal_actions=legal_actions, is_redoing=True)
+                    self.merge_sectors(self.state, sectors, sector_to_remove, sector_to_prop_into)
+                    # self.sector_sizes[sector_to_remove] = 0
+                    # TODO one thing we can do here is keep an array of the tiles in each sector, and simply append them toghether when merging, rather than propagaping
+                    # self.propagate_sector1(*coord_to_prop_into, sector=sector_to_prop_into, sectors=sectors, sector_sizes=sector_sizes, legal_actions=legal_actions, is_redoing=True)
                 else:  # tiles are no longer connected, propagate into this tile's sector, append new sector
                     if not new_sector_created:
                         if self.sectors[x][z] != self.sectors[ox][oz]:  # already done

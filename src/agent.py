@@ -377,7 +377,7 @@ class Agent:
                     # get log type
                     leaf = 'minecraft:oak_leaves'
                     if src.manipulation.is_log(self.state, x,self.state.rel_ground_hm[x][z], z):
-                        log = self.state.blocks(x<self.state.rel_ground_hm[x][z],z)
+                        log = self.state.blocks(x,self.state.rel_ground_hm[x][z],z)
                         leaf = log[:-3] + "leaves[distance=7]"
                     # grow leaves there
                     # src.manipulation.grow_leaves(self.state, x, self.state.rel_ground_hm[x][z], z, 'minecraft:oak_leaves[distance=7]', leaves_height=self.tree_leaves_height)
@@ -481,7 +481,7 @@ class Agent:
                 # there are no build spots. so let's do something else
                 self.set_motive(self.Motive.LOGGING)
         elif new_motive.name == self.Motive.LOGGING.name:
-            self.set_path_to_nearest_spot(self.state.trees, 5, 15, 5, search_neighbors_instead=True)
+            self.set_path_to_nearest_spot(self.state.trees, 5, 10, 5, search_neighbors_instead=True)
             if len(self.path) < 1:  # if no trees were found
                 self.set_motive(self.Motive.REPLENISH_TREE)
         elif new_motive.name == self.Motive.REPLENISH_TREE.name:

@@ -57,6 +57,9 @@ class Simulation:
         i=0
         max_tries = 50
         while result is False:
+            self.state.reset_for_restart(use_heavy=True)
+            # self.state.construction.clear()
+            # self.state.roads.clear()
             if i > max_tries: return False
             result = self.state.init_main_st()
             i+=1

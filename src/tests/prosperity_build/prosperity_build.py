@@ -37,10 +37,10 @@ z1 = 1500
 x2 = 1600
 z2 = 1600
 
-# x1 = 1500
-# z1 = 1500
-# x2 = 1600
-# z2 = 1600
+# x1 = 500
+# z1 = 500
+# x2 = 1500
+# z2 = 1500
 # z2 = 10250
 
 area = [x1,z1,x2,z2]
@@ -67,19 +67,11 @@ while sim.start() == False:
     #                             is_rendering_each_step=False)
 # sim.step(1)
 
-## CONSTRUCTION
-# for b in sim.state.construction:
-#     x = b.center[0]
-#     z = b.center[1]
-#     y = sim.state.rel_ground_hm[x][z] + 1
-#     # sim.state.set_block(x,y,z,"minecraft:gold_block")
-#     if src.my_utils.TYPE.WATER.name in b.get_type():
-#         pass
         # print("water found!")
 
 print("road_segs is ")
 print(sim.state.road_segs)
-sim.step(300, is_rendering=True)
+sim.step(400, is_rendering=True)
 for built in sim.state.built:
     # src.states.set_state_block(sim.state, built.center[0], sim.state.rel_ground_hm[built.center[0]][built.center[1]]+11, built.center[1], 'minecraft:red_wool')
     pass
@@ -101,6 +93,17 @@ for r in sim.state.roads:
     z = r.center[1]
     y = sim.state.rel_ground_hm[x][z] + 1
     sim.state.set_block(x,y,z,"minecraft:redstone_block")
+
+## CONSTRUCTION
+for b in sim.state.construction:
+    x = b.center[0]
+    z = b.center[1]
+    y = sim.state.rel_ground_hm[x][z] + 1
+    sim.state.set_block(x,y,z,"minecraft:gold_block")
+    # if src.my_utils.TYPE.WATER.name in b.get_type():
+    #     pass
+
+
 sim.step(1, is_rendering=True)
 # pprint(sim.state.rel_ground_hm)
 # print(sim.state.static_ground_hm)

@@ -155,6 +155,7 @@ class TYPE_TILES:
 			"minecraft:air",
 			"minecraft:cave_air",
 			"minecraft:snow",
+			"minecraft:sunflower",
 			"minecraft:spruce_wall_sign",
 			"minecraft:oak_wall_sign[facing=north]",
 			"minecraft:oak_wall_sign[facing=south]",
