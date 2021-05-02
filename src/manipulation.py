@@ -18,25 +18,25 @@ def grow_tree_at(state, x, y, z, times=1):
     # get sapling type, or if that fails get nearest log type because sometimes there's no sapling here.
     type = ''
     if is_sapling(state, x, y, z):
-        type = state.blocks[x][y][z][:-8] + "_log"  # I hope it's not "minecraft:..."
+        type = state.blocks(x,y,z)[:-8] + "_log"  # I hope it's not "minecraft:..."
     elif is_log(state, x, y, z):  # get log underneath instead
-        type = state.blocks[x][y][z]
+        type = state.blocks(x,y,z)
     elif state.get_nearest_tree(x, z):  # get nearest log instead
         i = 0
         max = 20
         tx, tz = choice(state.get_nearest_tree(x, z))
-        type = state.blocks[tx][y][tz]
-        while state.blocks[tx][y][tz] not in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.TREE.value]:
+        type = state.blocks(tx,y,tz)
+        while state.blocks(tx,y,tz )not in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.TREE.value]:
             if i > max:
                 type = "oak_log"
                 break
             tx, tz = choice(state.get_nearest_tree(x, z))
             i+=1
-            type = state.blocks[tx][y][tz]
+            type = state.blocks(tx,y,tz)
     else:
         type = "oak_log"
     for i in range(growth_rate):
-        print("placing "+type+" at "+state.blocks[x][y+i][z])
+        print("placing "+type+" at "+state.blocks(x,y+i,z))
         src.states.set_state_block(state, x, y, z, type)
 
 
@@ -59,7 +59,7 @@ def grow_leaves(state, x, tree_top_y, z, type, leaves_height):
                 if state.out_of_bounds_2D(lx, lz):
                     continue
                 dist = math.dist((lx,lz), (x,z))
-                if dist <= rad and not state.out_of_bounds_3D(lx,y,lz) and state.blocks[lx][y][lz] in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.PASSTHROUGH.value]:
+                if dist <= rad and not state.out_of_bounds_3D(lx,y,lz) and state.blocks(lx,y,lz )in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.PASSTHROUGH.value]:
                     src.states.set_state_block(state, lx, y, lz, type)
 
 
@@ -68,7 +68,7 @@ def grow_leaves(state, x, tree_top_y, z, type, leaves_height):
 def is_sapling(state, x, y, z):
     if state.out_of_bounds_3D(x, y, z):
         return False
-    block = state.blocks[x][y][z]
+    block = state.blocks(x,y,z)
     if not block is None and block[-7:] == 'sapling':
         return True
     return False
@@ -78,7 +78,7 @@ def is_sapling(state, x, y, z):
 def is_water(state, x, y, z):
     if state.out_of_bounds_3D(x, y, z):
         return False
-    block = state.blocks[x][y][z]
+    block = state.blocks(x,y,z)
     if not block is None and block[-5:] == 'water':
         return True
     return False
@@ -87,7 +87,7 @@ def is_water(state, x, y, z):
 def is_log(state, x, y, z):
     if state.out_of_bounds_3D(x, y, z):
         return False
-    block = state.blocks[x][y][z]
+    block = state.blocks(x,y,z)
     # print("it's a "+str(block))
     if block is not None and block[-3:] == 'log' and block[:2] != "st":  # let's ignore stripped
         return True
@@ -102,7 +102,7 @@ def collect_water_at(state, x, y, z, times=1):
 
 def cut_tree_at(state, x, y, z, times=1):
     for i in range(times):
-        log_type = get_log_type(state.blocks[x][y][z])
+        log_type = get_log_type(state.blocks(x,y,z))
         replacement = "minecraft:air"
         src.states.set_state_block(state, x, y, z, replacement)
         if is_leaf(state.get_adjacent_block(x, y, z, 0, 1, 0)) \
@@ -137,7 +137,7 @@ def cut_tree_at(state, x, y, z, times=1):
             new_replacement = "minecraft:" + log_type + "_sapling"
             # new_replacement = "minecraft:air"
             yoff = -1
-            if state.blocks[x][y-1][z] == "minecraft:air":
+            if state.blocks(x,y-1,z )== "minecraft:air":
                 new_replacement = "minecraft:air"
                 yoff = 0  # needs verification
             src.states.set_state_block(state, x, y, z, "minecraft:air")

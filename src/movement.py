@@ -62,7 +62,7 @@ idirections = cardinals + diagonals + ([0,0],)
 ##           0  1  2  3  4  5  6  7
 
 
-def gen_all_legal_actions(blocks, vertical_ability, heightmap, actor_height, unwalkable_blocks):
+def gen_all_legal_actions(state, blocks, vertical_ability, heightmap, actor_height, unwalkable_blocks):
     rx = len(blocks)
     rz = len(blocks[0][0])
     # print(rx)
@@ -71,34 +71,35 @@ def gen_all_legal_actions(blocks, vertical_ability, heightmap, actor_height, unw
     for x in range(rx):
         for z in range(rz):
             # pass
-            result[x][z] = get_legal_actions_from_block(blocks, x, z, vertical_ability, heightmap, actor_height, unwalkable_blocks)
+            result[x][z] = get_legal_actions_from_block(state, blocks, x, z, vertical_ability, heightmap, actor_height, unwalkable_blocks)
     return result
 
 
-def get_legal_actions_from_block(blocks, x, z, vertical_ability, heightmap, actor_height, unwalkable_blocks):
+def get_legal_actions_from_block(state, blocks, x, z, vertical_ability, heightmap, actor_height, unwalkable_blocks):
     result = bitarray.bitarray('00000000')
     # the choice of heightmap here is important. It should be the on the ground, not 1 block above imo
     y = heightmap[x][z]
     for n in range(len(cardinals)):
         cardinal = cardinals[n]
-        if check_if_legal_move(blocks, x, y, z, *cardinal, vertical_ability, heightmap, actor_height, unwalkable_blocks):
+        if check_if_legal_move(state, blocks, x, y, z, *cardinal, vertical_ability, heightmap, actor_height, unwalkable_blocks):
             result[n] = True
     for n in range(len(diagonals)):
         if result[n] is True and result[(n+1) % len(cardinals)] is True:  # Make sure the surrounding walls of the diagonal are passable to avoid skipping
             diagonal = diagonals[n]
-            if check_if_legal_move(blocks, x, y, z, *diagonal, vertical_ability, heightmap, actor_height, unwalkable_blocks):
+            if check_if_legal_move(state, blocks, x, y, z, *diagonal, vertical_ability, heightmap, actor_height, unwalkable_blocks):
                 result[n + 4] = True
     return result
 
 
-def check_if_legal_move(blocks, x, y, z, x_offset, z_offset, jump_ability, heightmap, actor_height, unwalkable_blocks):
+def check_if_legal_move(state, blocks, x, y, z, x_offset, z_offset, jump_ability, heightmap, actor_height, unwalkable_blocks):
     y_max = len(blocks[0]) - 1
     target_x = x + x_offset
     target_z = z + z_offset
-    if (target_x < 0 or target_z < 0 or target_x >= len(blocks) or target_z >= len(blocks[0][0])):
+    if state.out_of_bounds_2D(target_x, target_z):
+    # if (target_x < 0 or target_z < 0 or target_x >= len(blocks) or target_z >= len(blocks[0][0])):
         return False
     target_y = heightmap[target_x][target_z]# make sure that the heightmap starts from the ground
-    target_block = blocks[target_x][target_y - 1][target_z]
+    target_block = state.blocks(target_x,target_y - 1,target_z)
     if target_block in unwalkable_blocks: return False
     y_diff = abs(y - target_y)
     if y_diff > jump_ability: return False
@@ -106,7 +107,7 @@ def check_if_legal_move(blocks, x, y, z, x_offset, z_offset, jump_ability, heigh
     for i in range(0, actor_height):
         open_space = target_y + i
         if open_space > y_max: return False  # out of bounds
-        target = blocks[target_x][target_y + i][target_z]
+        target = state.blocks(target_x,target_y + i,target_z)
         # find [] and remove it
         if '[' in target:
             idx = target.index('[')

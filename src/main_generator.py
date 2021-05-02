@@ -84,8 +84,6 @@ print("sector is ")
 print(sim.state.legal_actions[0][2])
 print(sim.state.sectors[0,5])
 yb = sim.state.abs_ground_hm[0, 5] - sim.state.world_y
-print(sim.state.blocks[0][yb][5])
-print("walkable is ")
 print(sim.state.rel_ground_hm[0][5])
 src.manipulation.cut_tree_at(sim.state, 0, yb, 5)
 sim.state.step()

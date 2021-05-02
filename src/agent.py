@@ -377,7 +377,7 @@ class Agent:
                     # get log type
                     leaf = 'minecraft:oak_leaves'
                     if src.manipulation.is_log(self.state, x,self.state.rel_ground_hm[x][z], z):
-                        log = self.state.blocks[x][self.state.rel_ground_hm[x][z]][z]
+                        log = self.state.blocks(x<self.state.rel_ground_hm[x][z],z)
                         leaf = log[:-3] + "leaves[distance=7]"
                     # grow leaves there
                     # src.manipulation.grow_leaves(self.state, x, self.state.rel_ground_hm[x][z], z, 'minecraft:oak_leaves[distance=7]', leaves_height=self.tree_leaves_height)
@@ -428,7 +428,7 @@ class Agent:
         y = self.state.rel_ground_hm[sx][sz]
         if y - 1 >= 0:
             if src.manipulation.is_log(self.state,sx,y,sz):
-                self.last_log_type = self.state.blocks[sx][y][sz]
+                self.last_log_type = self.state.blocks(sx,y,sz)
                 if self.last_log_type[:2] == "mi":
                     self.last_log_type = self.last_log_type[10:]
         # face tree

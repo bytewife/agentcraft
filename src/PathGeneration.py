@@ -177,7 +177,7 @@ class PathGenerator:
                 x = int(xi + self.minx)
                 z = int(zi + self.minz)
                 y = int(self.grid[xi][zi]) - self.level.world_y  # TODO change this to be cleaner
-                currentBlock = self.level.blocks[x][y][z]
+                currentBlock = self.level.blocks(x,y,z)
                 ground_map[xi][zi] = 1  #mine
 
                 # if currentBlock in PathGenerator.GROUND_BLOCKS:
@@ -188,43 +188,43 @@ class PathGenerator:
         return ground_map
 
 
-    def makePath(self, safe=False):
-        if safe:
-            try:
-                return self.makePath()
-            except Exception:
-                print ("Path fail")
-                return False
-        else:
-            if self.v:
-                print ("Calculating...")
-            calc = self.calculatePath()
-            if calc:
-                if self.v: print("Generating...")
-                self.generatePath()
-            return calc
-
-    # Set ground assets on path to path assets
-    def generatePath(self):
-        paved = np.full_like(self.ground, False)
-        for xi in range(len(self.path)):
-            for zi in range(len(self.path[xi])):
-                if self.path[xi, zi]:
-                    if self.ground[xi, zi] and not paved[xi, zi]:
-                        x = int(xi + self.hmap.minx)
-                        y = int(self.hmap[xi][zi])
-                        z = int(zi + self.minz)
-                        i = randint(0, len(self.data_list) - 1)
-                        self.level.blocks[x][y][z] = self.block_list[i]
-                        # self.level.setBlockDataAt(x, y, z, self.data_list[i])
-                        y2 = y + 1
-                        while self.level.blocks[x][y2][z] in TYPE_TILES.tile_sets[TYPE.CITY_GARDEN]:
-                            if y2 - y > 2:
-                                break
-                            self.level.blocks[x][y2][z] = 'minecraft:gold_block'
-                            # self.level.setBlockDataAt(x, y2, z, 0)
-                            y2 += 1
-                        paved[xi][zi] = True
+    # def makePath(self, safe=False):
+    #     if safe:
+    #         try:
+    #             return self.makePath()
+    #         except Exception:
+    #             print ("Path fail")
+    #             return False
+    #     else:
+    #         if self.v:
+    #             print ("Calculating...")
+    #         calc = self.calculatePath()
+    #         if calc:
+    #             if self.v: print("Generating...")
+    #             self.generatePath()
+    #         return calc
+    #
+    # # Set ground assets on path to path assets
+    # def generatePath(self):
+    #     paved = np.full_like(self.ground, False)
+    #     for xi in range(len(self.path)):
+    #         for zi in range(len(self.path[xi])):
+    #             if self.path[xi, zi]:
+    #                 if self.ground[xi, zi] and not paved[xi, zi]:
+    #                     x = int(xi + self.hmap.minx)
+    #                     y = int(self.hmap[xi][zi])
+    #                     z = int(zi + self.minz)
+    #                     i = randint(0, len(self.data_list) - 1)
+    #                     self.level.get_blocks(x,y,z)= self.block_list[i]
+    #                     # self.level.setBlockDataAt(x, y, z, self.data_list[i])
+    #                     y2 = y + 1
+    #                     while self.level.get_blocks(x,y2,z )in TYPE_TILES.tile_sets[TYPE.CITY_GARDEN]:
+    #                         if y2 - y > 2:
+    #                             break
+    #                         self.level.get_blocks(x,y2,z )= 'minecraft:gold_block'
+    #                         # self.level.setBlockDataAt(x, y2, z, 0)
+    #                         y2 += 1
+    #                     paved[xi][zi] = True
 
     def setPath(self, node):
         while node is not None:

@@ -42,7 +42,7 @@ class State:
             self.len_x = 0
             self.len_y = 0
             self.len_z = 0
-            self.blocks = []  # 3D Array of all the assets in the state
+            self.blocks_arr = []  # 3D Array of all the assets in the state
             self.trees = []
             self.saplings = []
             self.water = []  # tile positions
@@ -59,8 +59,7 @@ class State:
             self.end_x = world_slice.rect[2]
             self.end_z = world_slice.rect[3]
 
-            self.interface, self.blocks, self.world_y, self.len_y, self.abs_ground_hm = self.gen_blocks_array(world_slice)
-            exit(0)
+            self.interface, self.blocks_arr, self.world_y, self.len_y, self.abs_ground_hm = self.gen_blocks_array(world_slice)
 
             self.rel_ground_hm = self.gen_rel_ground_hm(self.abs_ground_hm)  # a heightmap based on the state's y values. -1
             self.static_ground_hm = self.gen_static_ground_hm(self.rel_ground_hm)  # use this for placing roads
@@ -75,8 +74,8 @@ class State:
 
 
             if precomp_legal_actions is None:
-                self.legal_actions = src.movement.gen_all_legal_actions(
-                    self.blocks, vertical_ability=self.agent_jump_ability, heightmap=self.rel_ground_hm,
+                self.legal_actions = src.movement.gen_all_legal_actions(self,
+                    self.blocks_arr, vertical_ability=self.agent_jump_ability, heightmap=self.rel_ground_hm,
                     actor_height=self.agent_height, unwalkable_blocks=["minecraft:water", 'minecraft:lava']
                 )
             else:
@@ -154,7 +153,7 @@ class State:
                             inv_y = dy - 1 - y
                             blocks3D[x][inv_y][z] = "minecraft:"+blocks[index]
                 return dx, dy, dz, blocks3D
-            self.len_x, self.len_y, self.len_z, self.blocks = parse_blocks_file(blocks_file)
+            self.len_x, self.len_y, self.len_z, self.blocks_arr = parse_blocks_file(blocks_file)
 
     def reset_for_restart(self):
         self.built.clear()
@@ -169,6 +168,11 @@ class State:
         self.changed_blocks.clear()
         self.changed_blocks_xz.clear()
         self.agents_in_nodes = self.init_agents_in_nodes()
+
+    def blocks(self, x, y, z):
+        if self.blocks_arr[x][y][z] == 0:
+            self.blocks_arr[x][y][z] = self.world_slice.getBlockAt(self.world_x+x, self.world_y+y, self.world_z+z)#, self.world_x, self.world_y, self.world_z)
+        return self.blocks_arr[x][y][z]
 
 
     def gen_static_ground_hm(self, a):
@@ -357,11 +361,11 @@ class State:
                 tx = tile[0]
                 tz = tile[1]
                 traverse = self.traverse_up(tx, tz, py-1)
-                block = self.blocks[tx][py][tz]
+                block = self.blocks(tx,py,tz)
                 if block in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.PASSTHROUGH.value] or block in src.my_utils.ROAD_SETS['default_slabs']:
                     # block = self.blocks[tx][self.static_ground_hm[tx][tz]-1][tz]
                     # print("block is "+str(block))
-                    block = self.blocks[tx][self.static_ground_hm[tx][tz] - 1][tz]
+                    block = self.blocks(tx,self.static_ground_hm[tx][tz] - 1,tz)
                     if len(traverse) > 0:
                         for y in traverse:
                             set_state_block(self, tx, y, tz, "minecraft:scaffolding")
@@ -895,7 +899,7 @@ class State:
         len_z = abs(z2 - z1)
         len_y = abs(y2 - y1)
         len_x = abs(x2 - x1)
-        blocks = [[[0 for z in range(len_z)] for y in range(len_y)] for x in range(len_x)] # the format of the state isn't the same as the file's.
+        blocks_arr = [[[0 for z in range(len_z)] for y in range(len_y)] for x in range(len_x)] # the format of the state isn't the same as the file's.
         xi = 0
         yi = 0
         zi = 0
@@ -906,13 +910,13 @@ class State:
             for y in range(y1, y2):
                 zi = 0
                 for z in range(z1, z2):
-                    block = self.world_slice.getBlockAt(x, y, z)#, self.world_x, self.world_y, self.world_z)
-                    blocks[xi][yi][zi] = block
+                    # block = self.world_slice.getBlockAt(x, y, z)#, self.world_x, self.world_y, self.world_z)
+                    # blocks_arr[xi][yi][zi] = block
                     zi += 1
                 yi += 1
             xi += 1
         len_y = y2 - y1
-        return interface, blocks, world_y, len_y, abs_ground_hm
+        return interface, blocks_arr, world_y, len_y, abs_ground_hm
 
 
     def gen_rel_ground_hm(self, abs_ground_hm):
@@ -985,7 +989,7 @@ class State:
         y = self.traverse_from[x][z]+1  # don't start from top, but from max_building_height from rel
         # if y >= self.len_y: return False
         while y > 0:
-            if self.blocks[x][y][z] not in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.PASSTHROUGH.value]:
+            if self.blocks(x,y,z) not in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.PASSTHROUGH.value]:
                 break
             y-=1
         return y
@@ -1013,8 +1017,10 @@ class State:
     #     return types
 
     def gen_types(self, heightmap):
-        xlen = len(self.blocks)
-        zlen = len(self.blocks[0][0])
+        xlen = self.len_x
+        zlen = self.len_z
+        if xlen == 0 or zlen == 0:
+            print("Error: gen_types has empty lengths.")
         types = [["str" for j in range(zlen)] for i in range(xlen)]
         for x in range(xlen):
             for z in range(zlen):
@@ -1035,7 +1041,7 @@ class State:
 
     def determine_type(self, x, z, heightmap, yoffset = 0):
         block_y = int(heightmap[x][z]) - 1 + yoffset
-        block = self.blocks[x][block_y][z]
+        block = self.blocks(x,block_y,z)
         for i in range(1, len(src.my_utils.TYPE) + 1):
             if block in src.my_utils.TYPE_TILES.tile_sets[i]:
                 return src.my_utils.TYPE(i)
@@ -1045,9 +1051,9 @@ class State:
 
     def save_state(self, state, file_name):
         f = open(file_name, 'w')
-        len_x = len(state.blocks)
-        len_y = len(state.blocks[0])
-        len_z = len(state.blocks[0][0])
+        len_x = state.len_x
+        len_y = state.len_y
+        len_z = state.len_z
         f.write('{}, {}, {}, {}\n'.format(len_x, state.world_y, len_y, len_z))
         i = 0
         for position,block in self.changed_blocks.items():
@@ -1126,7 +1132,7 @@ class State:
                 if self.out_of_bounds_2D(bx, bz):
                     continue
                 # also need to update legal actions for neighbors
-                self.legal_actions[bx][bz] = src.movement.get_legal_actions_from_block(self.blocks, bx, bz, self.agent_jump_ability,
+                self.legal_actions[bx][bz] = src.movement.get_legal_actions_from_block(self, self.blocks_arr, bx, bz, self.agent_jump_ability,
                                                                                    self.rel_ground_hm, self.agent_height,
                                                                                    self.unwalkable_blocks)
 
@@ -1142,7 +1148,7 @@ class State:
         z_target = z_origin + z_off
         if self.out_of_bounds_3D(x_target, y_target, z_target):
             return None
-        return self.blocks[x_target][y_target][z_target]
+        return self.blocks(x_target,y_target,z_target)
 
 
     def get_all_adjacent_blocks(self, x_origin, y_origin, z_origin):
@@ -1169,9 +1175,9 @@ class State:
 
     def out_of_bounds_3D(self, x, y, z):
         return True if \
-            x >= len(self.blocks) \
-            or y >= len(self.blocks[0]) \
-            or z >= len(self.blocks[0][0]) \
+            x >= self.len_x \
+            or y >=self.len_y \
+            or z >=self.len_z \
             or x < 0 \
             or y < 0 \
             or z < 0 \
@@ -1179,7 +1185,7 @@ class State:
 
 
     def out_of_bounds_2D(self, x, z):
-        return True if x < 0 or z < 0 or x >= len(self.blocks) or z >= len(self.blocks[0][0]) \
+        return True if x < 0 or z < 0 or x >= self.len_x or z >= self.len_z \
             else False
 
     def out_of_bounds_Node(self, x, z):
@@ -1189,8 +1195,10 @@ class State:
         return False
 
 
+    ### USED BY DEBUG ONLY
     def set_block(self, x, y, z, block_name):
-        self.blocks[x][y][z] = block_name
+        # self.blocks[x][y][z] = block_name
+        self.blocks_arr[x][y][z] = block_name
         key = src.my_utils.convert_coords_to_key(x, y, z)
         self.changed_blocks[key] = block_name
 
@@ -1324,7 +1332,7 @@ class State:
                 x = self.node_pointers[p][0]
                 z = self.node_pointers[p][1]
                 y = self.rel_ground_hm[x][z] - 1
-                b = self.blocks[x][y][z]
+                b = self.blocks(x,y,z)
                 if not is_valid_block(b):
                     n2 = np.random.choice(n2_options, replace=False)
                     points = src.linedrawing.get_line((n1.center[0], n1.center[1]), (n2.center[0], n2.center[1]))
@@ -1578,7 +1586,7 @@ class State:
             x = block_path[i][0]
             z = block_path[i][1]
             y = int(static_temp[x][z]) - 1
-            if self.blocks[x][y][z] == "minecraft:water":
+            if self.blocks(x,y,z )== "minecraft:water":
                 continue
             if src.manipulation.is_log(self, x, y + 1, z):
                 src.manipulation.flood_kill_logs(self, x, y + 1, z)
@@ -1666,7 +1674,7 @@ class State:
                         block += "_slab"
                 static_temp[px][pz] = py+1
                 set_state_block(self, px, py, pz, block)
-                if src.manipulation.is_leaf(self.blocks[x][y+2][z]):
+                if src.manipulation.is_leaf(self.blocks(x,y+2,z)):
                     src.manipulation.flood_kill_leaves(self,x, y+2, z, 10)
 
         aux_paths = []
@@ -1695,8 +1703,8 @@ class State:
                 x = aux_path[i][0]
                 z = aux_path[i][1]
                 y = int(self.static_ground_hm[x][z]) - 1
-                block = self.blocks[x][y][z]
-                if self.blocks[x][y][z] == "minecraft:water" or src.manipulation.is_log(self, x, y, z):
+                block = self.blocks(x,y,z)
+                if self.blocks(x,y,z )== "minecraft:water" or src.manipulation.is_log(self, x, y, z):
                     continue
                 if random() < outer_block_rate:
                     check_next_road = True
@@ -1783,7 +1791,7 @@ class State:
                             block = block+"_slab"
                     static_temp[px][pz] = py + 1
                     set_state_block(self, px, py, pz, block)
-                    if src.manipulation.is_leaf(self.blocks[x][y + 2][z]):
+                    if src.manipulation.is_leaf(self.blocks(x,y + 2,z)):
                         src.manipulation.flood_kill_leaves(self, x, y + 2, z, 10)
                     ### OG ALG
                     # check_next_road = True
@@ -2003,7 +2011,7 @@ def set_state_block(state, x, y, z, block_name):
     #     state.traverse_from[x][z] = y
     state.traverse_update_flags[x][z] = True
     state.heightmap_tiles_to_update.add((x,z))
-    state.blocks[x][y][z] = block_name
+    state.blocks_arr[x][y][z]= block_name
     state.changed_blocks_xz.add((x,z))
     state.total_changed_blocks_xz.add((x,z))
     state.changed_blocks[(x,y,z)] = block_name

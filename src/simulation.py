@@ -77,9 +77,7 @@ class Simulation:
             return False
         nearest_tree_pos = positions[0]
 
-        wood_type = self.state.blocks[nearest_tree_pos[0]]\
-            [self.state.rel_ground_hm[nearest_tree_pos[0]][nearest_tree_pos[1]]]\
-            [nearest_tree_pos[1]]
+        wood_type = self.state.blocks(nearest_tree_pos[0], self.state.rel_ground_hm[nearest_tree_pos[0]][nearest_tree_pos[1]], nearest_tree_pos[1])
         wood = src.my_utils.get_wood_type(wood_type)
         i = 0
         # rx = random.randint(0,self.state.last_node_pointer_x)

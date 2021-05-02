@@ -301,7 +301,7 @@ def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, bui
                     bx = ex - zi
                     bz = ez - xi
                 # trim leaves
-                pblock = state.blocks[bx][by][bz]
+                pblock = state.blocks(bx,by,bz)
                 if src.manipulation.is_leaf(pblock):
                     src.manipulation.flood_kill_leaves(state, bx, by, bz, 0)
                 if src.manipulation.is_log_flood(pblock):
@@ -378,7 +378,7 @@ def arrayXZ_to_schema(blocks, dx, dz, file_out_name):
     block_string = ''
     for x in range(dx):
         for z in range(dz):
-            block = str(blocks[x][z]).ljust(100, ' ')  # polished_blackstone_brick_stairs
+            block = str(blocks[x][z]).ljust(100, ' ')  # polished_blackstone_brick_stairs  # TODO update the blocks arr
             block_string = block_string + block + " "
         block_string+="\n"
     out.write(block_string)
