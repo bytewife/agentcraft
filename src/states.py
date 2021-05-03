@@ -163,6 +163,7 @@ class State:
         self.construction.clear()
         self.road_nodes = []
         self.road_segs.clear()
+        self.nodes_dict = {}
         self.nodes_dict, self.node_pointers = self.gen_nodes(self.len_x, self.len_z, self.node_size)
         self.agents_in_nodes.clear()
         for pos in self.changed_blocks.keys():
@@ -684,7 +685,7 @@ class State:
             node.neighbors_centers = node.gen_neighbors_centers(self)
             # node = node.gen_local()
             node.local_centers = node.gen_local_centers(self)
-            node.range_centers, node.water_resources, node.resource_neighbors = node.gen_range_centers(self)
+            node.range_centers = node.gen_range_centers(self)
             self.nodes_dict[(x,z)] = node
         return self.nodes_dict[(x,z)]
 
@@ -696,6 +697,11 @@ class State:
             # src.my_utils.TYPE.MAJOR_ROAD.name: 50,
             # src.my_utils.TYPE.BUILT.name: 50,
         }
+        locality_radius = 3
+        range_radius = 4
+        neighborhood_radius = 1
+        adjacent_radius = 1
+
         # local = set()
         def __init__(self, state, center, types, size):
             self.center = center
@@ -704,10 +710,6 @@ class State:
             self.mask_type = set()
             self.mask_type.update(types)
             self.lot = None
-            self.locality_radius = 3
-            self.range_radius = 4
-            self.neighborhood_radius = 1
-            self.adjacent_radius = 1
             self.state = state
             self.action_cost = 100
             self.tiles = self.gen_tiles()
@@ -848,10 +850,10 @@ class State:
 
 
         def gen_neighbors_centers(self, state):
-            neighbors = set()
+            neighbors = self.adjacent_centers.copy()
             i = 0
-            for r in range(1, self.neighborhood_radius+1):
-                for ox in range(-r, r+1):
+            for r in range(2,state.Node.neighborhood_radius+1):
+                for ox in range(-r, r+1, 2*r):
                     for oz in range(-r, r+1):
                         if ox == 0 and oz == 0: continue
                         x = (self.center[0])+ox*self.size
@@ -860,52 +862,59 @@ class State:
                             continue
                         # node = state.nodes(*state.node_pointers[(x, z)])
                         neighbors.add((x,z))
-            return neighbors
-
-
-        # get local nodes
-        def gen_local_centers(self, state):
-            local = set()
-            i = 0
-            for r in range(1, self.locality_radius + 1):
                 for ox in range(-r, r + 1):
-                    for oz in range(-r, r + 1):
-                        # if ox == 0 and oz == 0: continue
-                        x = (self.center[0]) + ox * self.size
-                        z = (self.center[1]) + oz * self.size
-                        if state.out_of_bounds_Node(x, z):
-                            continue
-                        # node = state.nodes(*state.node_pointers[(x, z)])
-                        # if src.my_utils.TYPE.WATER.name in node.get_type():
-                        #     continue
-                        local.add((x,z))
-            return local
-
-
-        def gen_range_centers(self, state):
-            local = set()
-            local.add(self.center)
-            water_neighbors = []
-            resource_neighbors = []
-            for r in range(1, self.range_radius + 1):
-                for ox in range(-r, r + 1):
-                    for oz in range(-r, r + 1):
+                    for oz in range(-r, r + 1, 2*r):
                         if ox == 0 and oz == 0: continue
                         x = (self.center[0]) + ox * self.size
                         z = (self.center[1]) + oz * self.size
                         if state.out_of_bounds_Node(x, z):
                             continue
                         # node = state.nodes(*state.node_pointers[(x, z)])
-                        # if node.type == None:
-                        #     node.get_type()
-                        # if "WATER" in node.type:
+                        neighbors.add((x, z))
+            return neighbors
+
+
+        # get local nodes
+        def gen_local_centers(self, state):
+            local = self.neighbors_centers.copy()
+            i = 0
+            for r in range(state.Node.neighborhood_radius+1, state.Node.locality_radius + 1):
+                for ox in range(-r, r + 1, 2*r):
+                    for oz in range(-r, r + 1):
+                        x = (self.center[0]) + ox * self.size
+                        z = (self.center[1]) + oz * self.size
+                        # node = state.nodes(*state.node_pointers[(x, z)])
+                        # if src.my_utils.TYPE.WATER.name in node.get_type():
                         #     continue
-                        # if "TREE" in node.type \
-                        #         or "GREEN" in node.type \
-                        #         or "CONSTRUCTION" in node.type:
-                        #         resource_neighbors.append(node)
-                        local.add((x,z))
-            return local, water_neighbors, resource_neighbors
+                        local.add((min(max(1, x), state.last_node_pointer_x),min(max(1, z), state.last_node_pointer_z)))
+                for ox in range(-r, r + 1):
+                    for oz in range(-r, r + 1, 2*r):
+                        x = (self.center[0]) + ox * self.size
+                        z = (self.center[1]) + oz * self.size
+                        # node = state.nodes(*state.node_pointers[(x, z)])
+                        # if src.my_utils.TYPE.WATER.name in node.get_type():
+                        #     continue
+                        local.add((min(max(1, x), state.last_node_pointer_x), min(max(1, z), state.last_node_pointer_z)))
+            return local
+
+
+        def gen_range_centers(self, state):
+            local = self.local_centers.copy()
+            local.add(self.center)
+            for r in range(state.Node.locality_radius+1, state.Node.range_radius + 1):
+                for ox in range(-r, r + 1, 2*r):
+                    for oz in range(-r, r + 1):
+                        # if ox == 0 and oz == 0: continue
+                        x = (self.center[0]) + ox * self.size
+                        z = (self.center[1]) + oz * self.size
+                        local.add((min(max(1, x), state.last_node_pointer_x),min(max(1, z), state.last_node_pointer_z)))
+                for ox in range(-r, r + 1):
+                    for oz in range(-r, r + 1, 2*r):
+                        # if ox == 0 and oz == 0: continue
+                        x = (self.center[0]) + ox * self.size
+                        z = (self.center[1]) + oz * self.size
+                        local.add((min(max(1, x), state.last_node_pointer_x), min(max(1, z), state.last_node_pointer_z)))
+            return local
 
 
         def get_locals_positions(self):

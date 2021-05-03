@@ -7,6 +7,7 @@ from bitarray.util import count_xor, rindex
 
 cardinal_cost = 100
 diagonal_cost = 141
+cost_diff = cardinal_cost - diagonal_cost
 a = 0
 
 
@@ -46,30 +47,25 @@ class Pathfinding:
 
 
     i = 0
+    ## this method is a bottleneck so its uglified sorta
     def expand(self, parent : PathNode, goal, max_x, max_z, all_legal_actions):  # TODO integtrate legal actions here
         children = []
         x, z = parent.pos
         curr_legal_actions = all_legal_actions[x][z]
-        for n in range(len(curr_legal_actions)):
+        for n in range(8):  # num of diff moves
             if curr_legal_actions[n] == False: continue
             dx = src.movement.directions[n][0]
             dz = src.movement.directions[n][1]
             tx = parent.pos[0] + dx
             tz = parent.pos[1] + dz
-            if (tx < 0 or tz < 0 or tx > max_x or tz > max_z):
+            if tx < 0 or tz < 0 or tx > max_x or tz > max_z:
                 continue
-            pos = (tx, tz)
-            g = parent.g
-            if n < 4:
-                g += cardinal_cost
-            else:
-                g += diagonal_cost
-            h = self.heuristic(*pos, *goal)
-            child = self.PathNode(
-                self.state, pos, g, h, parent,
+            g = parent.g + cardinal_cost + (n >= 4) * cost_diff  # optimize for 1000x1000 xD
+            h = self.heuristic(tx, tz, goal[0], goal[1])
+            children.append(self.PathNode(
+                self.state, (tx, tz), g, h, parent,
                 action_to_here=(-dx, -dz), action_cost=cardinal_cost, legal_actions=all_legal_actions[tx][tz]
-            )
-            children.append(child)
+            ))
         return children
 
 
@@ -87,7 +83,6 @@ class Pathfinding:
                 p_to_c_cost = child.action_cost
                 if child.pos in closed: continue
                 # TODO fix the below to be "if child.pos in open" and the last if.
-                if child.pos in closed: continue
                 if child.pos in g_lookup.keys() and g_lookup[child.pos] <= self.calc_g(node.pos, g_lookup, p_to_c_cost): continue # g is the action cost to get here, parent's g + parent to child g
                 g_lookup[child.pos] = child.g
                 heappush(open, child)
@@ -105,14 +100,14 @@ class Pathfinding:
 
 
     def heuristic(self, x1, z1, x2, z2):
-        # return round(dist((x1, z1), (x2, z2)))
-        return round(sqrt((x1 - x2) ** 2 + (z1 - z2) ** 2) * cardinal_cost)
+        # return round(sqrt((x1 - x2) ** 2 + (z1 - z2) ** 2) * cardinal_cost)
+        return round(sqrt((x1 - x2) ** 2 + (z1 - z2) ** 2))# * cardinal_cost)
 
 
+    # a bottleneck
     def merge_sectors(self, state, sectors, to_remove, new):
-        for pos in list(self.sectors_nodes[to_remove]):
-            x,z = pos
-            sectors[x][z] = new
+        for pos in self.sectors_nodes[to_remove]:
+            sectors[pos[0]][pos[1]] = new
         self.sectors_nodes[new].update(self.sectors_nodes[to_remove])
         self.sectors_nodes.pop(to_remove)
         self.sector_sizes[new] += self.sector_sizes[to_remove]

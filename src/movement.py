@@ -81,18 +81,17 @@ def get_legal_actions_from_block(state, blocks, x, z, vertical_ability, heightma
     y = heightmap[x][z]
     for n in range(len(cardinals)):
         cardinal = cardinals[n]
-        if check_if_legal_move(state, blocks, x, y, z, *cardinal, vertical_ability, heightmap, actor_height, unwalkable_blocks):
+        if check_if_legal_move(state, x, y, z, cardinal[0], cardinal[1], vertical_ability, heightmap, actor_height, unwalkable_blocks):
             result[n] = True
     for n in range(len(diagonals)):
         if result[n] is True and result[(n+1) % len(cardinals)] is True:  # Make sure the surrounding walls of the diagonal are passable to avoid skipping
             diagonal = diagonals[n]
-            if check_if_legal_move(state, blocks, x, y, z, *diagonal, vertical_ability, heightmap, actor_height, unwalkable_blocks):
+            if check_if_legal_move(state, x, y, z, diagonal[0], diagonal[1], vertical_ability, heightmap, actor_height, unwalkable_blocks):
                 result[n + 4] = True
     return result
 
 
-def check_if_legal_move(state, blocks, x, y, z, x_offset, z_offset, jump_ability, heightmap, actor_height, unwalkable_blocks):
-    y_max = len(blocks[0]) - 1
+def check_if_legal_move(state, x, y, z, x_offset, z_offset, jump_ability, heightmap, actor_height, unwalkable_blocks):
     target_x = x + x_offset
     target_z = z + z_offset
     if state.out_of_bounds_2D(target_x, target_z):
@@ -101,24 +100,19 @@ def check_if_legal_move(state, blocks, x, y, z, x_offset, z_offset, jump_ability
     target_y = heightmap[target_x][target_z]# make sure that the heightmap starts from the ground
     target_block = state.blocks(target_x,target_y - 1,target_z)
     if target_block in unwalkable_blocks: return False
-    y_diff = abs(y - target_y)
-    if y_diff > jump_ability: return False
-    is_legal = True
-    for i in range(0, actor_height):
-        open_space = target_y + i
-        if open_space > y_max: return False  # out of bounds
-        target = state.blocks(target_x,target_y + i,target_z)
-        # find [] and remove it
-        if '[' in target:
-            idx = target.index('[')
-            target = target[:idx]
-        if not (target in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.PASSTHROUGH.value]):
-            is_legal = False
-            break
-    if is_legal:
+    if abs(y - target_y) > jump_ability: return False
+    # for i in range(0, actor_height):
+    i = 1
+    if target_y + i > state.len_y-1: return False  # out of bounds
+    target = state.blocks(target_x,target_y + i,target_z)
+    if target[-1] == ']':
+        target = target[:target.index('[')]
+    if target in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.PASSTHROUGH.value]:
         return True
     return False
-
+    # if not target in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.PASSTHROUGH.value]:
+    #     return False
+    # return True
 
 def adjacents(state, x, z):
     adjacents = []
