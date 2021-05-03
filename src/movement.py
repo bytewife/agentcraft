@@ -1,5 +1,6 @@
 # from states import *
 import bitarray
+import bitarray.util
 import numpy as np
 import src.my_utils
 from enum import Enum
@@ -61,12 +62,11 @@ idirections = cardinals + diagonals + ([0,0],)
 ## stored as N  E  S  W  NE ES SW WN
 ##           0  1  2  3  4  5  6  7
 
-
 def gen_all_legal_actions(state, blocks, vertical_ability, heightmap, actor_height, unwalkable_blocks):
     rx = len(blocks)
     rz = len(blocks[0][0])
     # print(rx)
-    fill = bitarray.bitarray('00000000')
+    fill = bitarray.util.zeros(8)
     result = np.full((rx,rz), fill_value=fill, dtype=bitarray.bitarray)
     for x in range(rx):
         for z in range(rz):
@@ -76,19 +76,16 @@ def gen_all_legal_actions(state, blocks, vertical_ability, heightmap, actor_heig
 
 
 def get_legal_actions_from_block(state, blocks, x, z, vertical_ability, heightmap, actor_height, unwalkable_blocks):
-    result = bitarray.bitarray('00000000')
+    result = bitarray.util.zeros(8)
     # the choice of heightmap here is important. It should be the on the ground, not 1 block above imo
     y = heightmap[x][z]
-    for n in range(len(cardinals)):
-        cardinal = cardinals[n]
-        if check_if_legal_move(state, x, y, z, cardinal[0], cardinal[1], vertical_ability, heightmap, actor_height, unwalkable_blocks):
-            result[n] = True
-    for n in range(len(diagonals)):
-        if result[n] is True and result[(n+1) % len(cardinals)] is True:  # Make sure the surrounding walls of the diagonal are passable to avoid skipping
-            diagonal = diagonals[n]
-            if check_if_legal_move(state, x, y, z, diagonal[0], diagonal[1], vertical_ability, heightmap, actor_height, unwalkable_blocks):
-                result[n + 4] = True
+    for n in range(4): # amt of cardinal directions
+        result[n] = check_if_legal_move(state, x, y, z, cardinals[n][0], cardinals[n][1], vertical_ability, heightmap, actor_height, unwalkable_blocks)
+    for n in range(4): # amt of diagonal directions
+        if result[n] and result[(n+1) % 4]:  # Make sure the surrounding walls of the diagonal are passable to avoid skipping
+            result[n + 4] = check_if_legal_move(state, x, y, z, diagonals[n][0], diagonals[n][1], vertical_ability, heightmap, actor_height, unwalkable_blocks)
     return result
+
 
 
 def check_if_legal_move(state, x, y, z, x_offset, z_offset, jump_ability, heightmap, actor_height, unwalkable_blocks):
@@ -107,9 +104,7 @@ def check_if_legal_move(state, x, y, z, x_offset, z_offset, jump_ability, height
     target = state.blocks(target_x,target_y + i,target_z)
     if target[-1] == ']':
         target = target[:target.index('[')]
-    if target in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.PASSTHROUGH.value]:
-        return True
-    return False
+    return target in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.PASSTHROUGH.value]
     # if not target in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.PASSTHROUGH.value]:
     #     return False
     # return True

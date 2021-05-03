@@ -32,10 +32,10 @@ from enum import Enum
 # x2 = 2250
 # z2 = 2250
 
-x1 = -1100
-z1 = -1100
-x2 = -100
-z2 = -100
+x1 = 3400
+z1 = 3400
+x2 = 3300
+z2 = 3300
 
 # x1 = 500
 # z1 = 500
@@ -57,6 +57,7 @@ http_framework.interfaceUtils.runCommand(clean_agents)
 sim = src.simulation.Simulation(area, rendering_step_duration=0.05, is_rendering_each_step=False)
 while sim.start() == False:
     sim.state.reset_for_restart()
+# exit(0)
 # for x in range(len(sim.state.blocks)):
 #     for z in range(len(sim.state.blocks[0][0])):
 #         y = sim.state.static_ground_hm[x][z]
@@ -71,7 +72,7 @@ while sim.start() == False:
 
 print("road_segs is ")
 print(sim.state.road_segs)
-sim.step(400, is_rendering=True)
+sim.step(400, is_rendering=False)
 for built in sim.state.built:
     # src.states.set_state_block(sim.state, built.center[0], sim.state.rel_ground_hm[built.center[0]][built.center[1]]+11, built.center[1], 'minecraft:red_wool')
     pass

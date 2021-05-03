@@ -681,9 +681,9 @@ class State:
         if (x,z) not in self.nodes_dict.keys():
             # get center from pos
             node = self.Node(self, center=(x, z), types=[src.my_utils.TYPE.BROWN.name], size=self.node_size)
+            # this order is important to retain
             node.adjacent_centers = node.gen_adjacent_centers(self)
             node.neighbors_centers = node.gen_neighbors_centers(self)
-            # node = node.gen_local()
             node.local_centers = node.gen_local_centers(self)
             node.range_centers = node.gen_range_centers(self)
             self.nodes_dict[(x,z)] = node
@@ -729,11 +729,13 @@ class State:
             # self.type = set()  # to cache type()
 
         def adjacent(self):
-            if not self.gend_adjacent:
+            if self.gend_adjacent:  # placed first for efficiency
+                return self.adjacent_cached
+            else:
                 for pos in self.adjacent_centers:
                     self.adjacent_cached.add(self.state.nodes(*pos))
                 self.gend_adjacent = True
-            return self.adjacent_cached
+                return self.adjacent_cached
 
         def range(self):
             if not self.gend_range:
@@ -853,7 +855,7 @@ class State:
             neighbors = self.adjacent_centers.copy()
             i = 0
             for r in range(2,state.Node.neighborhood_radius+1):
-                for ox in range(-r, r+1, 2*r):
+                for ox in range(-r, r+1, 2*r):  # rings only
                     for oz in range(-r, r+1):
                         if ox == 0 and oz == 0: continue
                         x = (self.center[0])+ox*self.size
@@ -862,7 +864,7 @@ class State:
                             continue
                         # node = state.nodes(*state.node_pointers[(x, z)])
                         neighbors.add((x,z))
-                for ox in range(-r, r + 1):
+                for ox in range(-r+1, r):
                     for oz in range(-r, r + 1, 2*r):
                         if ox == 0 and oz == 0: continue
                         x = (self.center[0]) + ox * self.size
@@ -877,7 +879,6 @@ class State:
         # get local nodes
         def gen_local_centers(self, state):
             local = self.neighbors_centers.copy()
-            i = 0
             for r in range(state.Node.neighborhood_radius+1, state.Node.locality_radius + 1):
                 for ox in range(-r, r + 1, 2*r):
                     for oz in range(-r, r + 1):
@@ -887,7 +888,7 @@ class State:
                         # if src.my_utils.TYPE.WATER.name in node.get_type():
                         #     continue
                         local.add((min(max(1, x), state.last_node_pointer_x),min(max(1, z), state.last_node_pointer_z)))
-                for ox in range(-r, r + 1):
+                for ox in range(-r+1, r):
                     for oz in range(-r, r + 1, 2*r):
                         x = (self.center[0]) + ox * self.size
                         z = (self.center[1]) + oz * self.size
@@ -908,7 +909,7 @@ class State:
                         x = (self.center[0]) + ox * self.size
                         z = (self.center[1]) + oz * self.size
                         local.add((min(max(1, x), state.last_node_pointer_x),min(max(1, z), state.last_node_pointer_z)))
-                for ox in range(-r, r + 1):
+                for ox in range(-r+1, r):
                     for oz in range(-r, r + 1, 2*r):
                         # if ox == 0 and oz == 0: continue
                         x = (self.center[0]) + ox * self.size
@@ -925,16 +926,9 @@ class State:
 
 
         def get_neighbors_positions(self):
-            # arr = []
-            # for node in self.neighbors:
-            #     arr.append(node.center)
             return self.neighbors_centers
 
         def get_ranges_positions(self):
-            # arr = []
-            # for node in self.range:
-            #
-            #     arr.append(node.center)
             return self.range_centers
 
 
@@ -1219,12 +1213,7 @@ class State:
         #     self.phase = 3
 
 
-    ## do we wanna cache tree locations? I don't want them to cut down buildings lol
-
-
-    # is this state x
     def update_block_info(self, x, z):  # this might be expensive if you use this repeatedly in a group
-
         for xo in range(-1, 2):
             for zo in range(-1, 2):
                 bx = x + xo
@@ -1274,25 +1263,16 @@ class State:
 
 
     def out_of_bounds_3D(self, x, y, z):
-        return True if \
-            x >= self.len_x \
-            or y >=self.len_y \
-            or z >=self.len_z \
-            or x < 0 \
-            or y < 0 \
-            or z < 0 \
-            else False
+        return x >= self.len_x or y >= self.len_y or z >= self.len_z or x < 0 or y < 0 or z < 0
 
 
     def out_of_bounds_2D(self, x, z):
-        return True if x < 0 or z < 0 or x >= self.len_x or z >= self.len_z \
-            else False
+        return x < 0 or z < 0 or x >= self.len_x or z >= self.len_z
+
 
     def out_of_bounds_Node(self, x, z):
         # if x < 0 or z < 0 or x > self.last_node_pointer_x or z > self.last_node_pointer_z: # the problem is that some assets don't point to a tile.
-        if x < 0 or z < 0 or x > self.last_node_pointer_x or z > self.last_node_pointer_z: # the problem is that some assets don't point to a tile.
-            return True
-        return False
+        return x < 0 or z < 0 or x > self.last_node_pointer_x or z > self.last_node_pointer_z # the problem is that some assets don't point to a tile.
 
 
     ### USED BY DEBUG ONLY
@@ -1387,64 +1367,45 @@ class State:
         (x1, y1) = choice(self.water)
         n_pos = self.node_pointers[(x1, y1)]
         water_checks = 100
-        i = 0
-        while n_pos == None:
-            if i > water_checks:
-                print("Error: could not find suitable water source!")
-                return False
-            (x1, y1) = choice(self.water)
-            n_pos = self.node_pointers[(x1, y1)]
-            i+=1
+        n_pos = self.init_find_water(n_pos, water_checks)
+        if n_pos == False:
+            print("Error: could not find suitable water source!")
+            return False
         n = self.nodes(*n_pos)
+
         ran = n.range()
         loc = n.local()
         n1_options = list(set(ran) - set(loc))  # Don't put water right next to water, depending on range
         if len(n1_options) < 1:
-            print("Error: no n1_options")
+            print("Error: could not find any n1_options")
             return False
-        n1 = np.random.choice(n1_options, replace=False)  # Pick random point of the above
-        def is_valid(node):
-            return src.my_utils.TYPE.WATER.name not in node.type and src.my_utils.TYPE.LAVA.name not in node.type and src.my_utils.TYPE.FOREIGN_BUILT.name not in node.type
-        def is_valid_block(block):
-            return block not in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.WATER.value] and block not in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.LAVA.value] and block not in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.FOREIGN_BUILT.value]
 
-        i = 0
-        while not is_valid(n1):  # generate and test until n1 isn't water
-            n1 = np.random.choice(n1_options, replace=False)
-            if i >= water_checks:
-                # self.init_main_st()
-                print("Error: could not find valid n1_option")
-                return False
-            i+=1
+        n1 = np.random.choice(n1_options, replace=False)  # Pick random point of the above
+
+        n1 = self.init_find_valid_n1(n1, n1_options, water_checks)
+        if n1 == False:
+            print("Error: could not find valid n1_option")
+            return False
+
         n2_options = list(set(n1.range()) - set(n1.local()))  # the length of the main road is the difference between the local and the range
         if len(n2_options) < 1:
             print("Error: no n2_options")
             return False
+
         n2 = np.random.choice(n2_options, replace=False)  # n2 is based off of n1's range, - local to make it farther
         points = src.linedrawing.get_line((n1.center[0], n1.center[1]), (n2.center[0], n2.center[1]))
-        find_new_n2 = True
-        limit = 100
-        i = 0
-        while find_new_n2:
-            if i > limit:
-                print("Error: could not find new n2")
-                return False
-            find_new_n2 = False
-            for p in points:
-                x = self.node_pointers[p][0]
-                z = self.node_pointers[p][1]
-                y = self.rel_ground_hm[x][z] - 1
-                b = self.blocks(x,y,z)
-                if not is_valid_block(b):
-                    n2 = np.random.choice(n2_options, replace=False)
-                    points = src.linedrawing.get_line((n1.center[0], n1.center[1]), (n2.center[0], n2.center[1]))
-                    find_new_n2 = True
-                    i+=1
-                    break
+        limit = 200
+
+        points = self.init_find_path_with_n2(n1, n2, n2_options, points, limit)
+        if points == False:
+            print("Error: could not finish path any new n2's")
+            return False
+
         points = self.points_to_nodes(points)  # points is the path of nodes from the chosen
         if points == False:
             print("Error: road points didn't stay in bounds!")
             return False
+
         (x1, y1) = points[0]
         (x2, y2) = points[len(points) - 1]
         self.set_type_road(points, src.my_utils.TYPE.MAJOR_ROAD.name) # TODO check if the fact that this leads to repeats causes issue
@@ -1453,22 +1414,17 @@ class State:
             middle_nodes = points[1:len(points) - 1]
         self.road_segs.add(
             RoadSegment(self.nodes(x1,y1), self.nodes(x2,y2), middle_nodes, src.my_utils.TYPE.MAJOR_ROAD.name, self.road_segs, self))
-        for (x, y) in points:
-            if self.out_of_bounds_Node(x,y):
-                print("Error: tried to build road outside of bounds!")
-                return False
-            # adjacent = self.nodes[(x,y)].adjacent
-            # adjacent = self.nodes[(x,y)].local  # this is where we increase building range
-            adjacent = self.nodes(x,y).range()  # this is where we increase building range
-            adjacent = [s for n in adjacent for s in n.adjacent()]  # every node in the road builds buildings around them
-            for pt in adjacent:
-                if pt not in points:
-                    self.set_type_building([self.nodes(pt.center[0], pt.center[1])])
+
+        status = self.init_construction(points)
+        if status == False:
+            print("Error: tried to build road outside of bounds!")
+            return False
+
         p1 = (x1, y1)
         p2 = (x2, y2)
         self.init_lots(*p1, *p2)  # main street is a lot
         if self.create_road(node_pos1=p1, node_pos2=p2, road_type=src.my_utils.TYPE.MAJOR_ROAD.name, only_place_if_walkable=True) == False:
-            print("Error: failed to build road")
+            print("Error: failed to build main st")
             return False
 
         # debug
@@ -1485,6 +1441,76 @@ class State:
                                         name=names.get_first_name(), head=head)
             self.add_agent(new_agent)
         return True
+
+
+    def init_construction(self, points):
+        for (x, y) in points:
+            if self.out_of_bounds_Node(x,y):
+                return False
+            adjacent = self.nodes(x,y).range()  # this is where we increase building range
+            adjacent = [s for n in adjacent for s in n.adjacent()]  # every node in the road builds buildings around them
+            for pt in adjacent:
+                if pt not in points:
+                    self.set_type_building([self.nodes(pt.center[0], pt.center[1])])
+        return True
+
+
+    def init_find_path_with_n2(self, node1, node2, n2_options, points, limit):
+        find_new_n2 = True
+        i = 0
+        n1 = node1
+        n2 = node2
+        while find_new_n2:
+            if i > limit:
+                return False
+            find_new_n2 = False
+            for p in points:
+                x = self.node_pointers[p][0]
+                z = self.node_pointers[p][1]
+                y = self.rel_ground_hm[x][z] - 1
+                b = self.blocks(x,y,z)
+                if not self.is_valid_path_block(b):
+                    # get new path
+                    if len(n2_options) < 1:
+                        return False
+                    n2 = n2_options.pop()
+                    points = src.linedrawing.get_line((n1.center[0], n1.center[1]), (n2.center[0], n2.center[1]))
+                    find_new_n2 = True
+                    i+=1
+                    break
+        return points
+
+
+    def init_find_water(self, n_pos, water_checks):
+        i = 0
+        pos = n_pos
+        while pos == None:
+            if i > water_checks:
+                return False
+            (x1, y1) = choice(self.water)
+            pos = self.node_pointers[(x1, y1)]
+            i+=1
+        return n_pos
+
+
+    def is_valid_n(self, node):
+        return src.my_utils.TYPE.WATER.name not in node.type and src.my_utils.TYPE.LAVA.name not in node.type and src.my_utils.TYPE.FOREIGN_BUILT.name not in node.type
+
+
+    def init_find_valid_n1(self, n1, n1_options, water_checks):
+        i = 0
+        result = n1
+        while not self.is_valid_n(result):  # generate and test until n1 isn't water
+            # n1 = np.random.choice(n1_options, replace=False)  # too slow?
+            result = n1_options.pop()
+            if i >= water_checks or len(n1_options) > 0:
+                return False
+            i+=1
+        return result
+
+
+    def is_valid_path_block(self, block):
+        return block not in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.WATER.value] and block not in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.LAVA.value] and block not in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.FOREIGN_BUILT.value]
 
 
     def add_agent(self, agent, use_auto_motive=True):
@@ -1638,6 +1664,7 @@ class State:
             else:
                 found_road = True
             if not found_road:
+                print("create_road error: no valid road found.")
                 return False
         # elif only_place_if_walkable:
         #     if not is_walkable(self, block_path):
