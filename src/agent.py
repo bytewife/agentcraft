@@ -99,10 +99,10 @@ class Agent:
         self.rest_dec_rate = -0.15
         self.rest_inc_rate = 2
         self.rest_thresh = 30
-        self.rest_max = 100
+        self.rest_max = 200#100
         self.unshared_resources = {
             "water": self.water_max * 0.8,
-            "rest": self.rest_max * 0.8
+            "rest": self.rest_max * 0.35
         }
         # self.build_params = set()
         self.build_params = None

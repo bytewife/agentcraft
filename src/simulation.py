@@ -51,6 +51,17 @@ class Simulation:
                 str((XZXZ[3] + XZXZ[1]) / 2))
             http_framework.interfaceUtils.runCommand(clean_agents)
 
+    def run_with_render(self, steps):
+        while self.start() == False:
+            self.state.reset_for_restart()
+        self.step(steps, is_rendering=True)
+
+    def run_without_render(self, steps):
+        while self.start() == False:
+            self.state.reset_for_restart()
+        self.step(steps, is_rendering=False)
+        self.state.step(is_rendering=True, use_total_changed_blocks=True)
+
     # this needs to be run manually so that we can rerun the sim if needed
     def start(self):
         result = False  # returns agent positions or False
@@ -75,12 +86,12 @@ class Simulation:
         construction_site = random.choice(list(self.state.construction))
         c_center = construction_site.center
         positions = self.state.get_nearest_tree(*c_center, 30)
+        use_generated_tree = False
         if len(positions) < 1:
-            print("Error: could not find trees!")
-            return False
+            use_generated_tree = True
         nearest_tree_pos = positions[0]
 
-        wood_type = self.state.blocks(nearest_tree_pos[0], self.state.rel_ground_hm[nearest_tree_pos[0]][nearest_tree_pos[1]], nearest_tree_pos[1])
+        wood_type = self.state.blocks(nearest_tree_pos[0], self.state.rel_ground_hm[nearest_tree_pos[0]][nearest_tree_pos[1]], nearest_tree_pos[1]) if not use_generated_tree else 'oak'
         wood = src.my_utils.get_wood_type(wood_type)
         i = 0
         # rx = random.randint(0,self.state.last_node_pointer_x)
@@ -101,14 +112,11 @@ class Simulation:
 
 
     def step(self, times=1, is_rendering=True):
-        ##########
         for i in range(times):
             self.handle_nodes()
             self.state.update_agents(is_rendering)
             self.state.step(is_rendering)
             time.sleep(self.rendering_step_duration * is_rendering)
-        if not self.is_rendering_each_step:  # render just the end
-            self.state.step(is_rendering=True, use_total_changed_blocks=True)
 
 
 
@@ -128,7 +136,6 @@ class Simulation:
             if not (src.my_utils.TYPE.GREEN.name in node.get_type() or src.my_utils.TYPE.TREE.name in node.type or src.my_utils.TYPE.CONSTRUCTION.name in node.type):
                 # print("returnung")
                 return
-
 
             node.local_prosperity = sum([n.prosperity() for n in node.local()])
             # print("going because local prosp is "+str(node.local_prosperity))

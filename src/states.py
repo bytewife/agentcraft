@@ -187,7 +187,7 @@ class State:
         for x in range(len(a)):
             for z in range(len(a[0])):
                 y = a[x][z] - 1
-                while y > 0 and src.manipulation.is_log(self,x,y,z):
+                while y > 0 and (src.manipulation.is_log(self,x,y,z) or self.blocks(x,y,z) in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.PASSTHROUGH.value]):
                     y-=1
                 hm[x][z] = y+1
         return hm
@@ -1368,7 +1368,7 @@ class State:
         n_pos = self.node_pointers[(x1, y1)]
         water_checks = 100
         n_pos = self.init_find_water(n_pos, water_checks)
-        if n_pos == False:
+        if n_pos == False or n_pos == None:
             print("Error: could not find suitable water source!")
             return False
         n = self.nodes(*n_pos)
