@@ -17,25 +17,26 @@ def grow_tree_at(state, x, y, z, times=1):
     y = state.rel_ground_hm[x][z]
     print("starting tree y is "+str(y))  # prolly bc cut_tree insn't updating it. does it have to do with passthrough?
     # get sapling type, or if that fails get nearest log type because sometimes there's no sapling here.
-    type = ''
-    if is_sapling(state, x, y, z):
-        type = state.blocks(x,y,z)[:-8] + "_log"  # I hope it's not "minecraft:..."
-    elif is_log(state, x, y, z):  # get log underneath instead
-        type = state.blocks(x,y,z)
-    elif state.get_nearest_tree(x, z):  # get nearest log instead
-        i = 0
-        max = 20
-        tx, tz = choice(state.get_nearest_tree(x, z))
-        type = state.blocks(tx,y,tz)
-        while state.blocks(tx,y,tz )not in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.TREE.value]:
-            if i > max:
-                type = "oak_log"
-                break
-            tx, tz = choice(state.get_nearest_tree(x, z))
-            i+=1
-            type = state.blocks(tx,y,tz)
-    else:
-        type = "oak_log"
+    type = grow_type+'_log'
+
+    # if is_sapling(state, x, y, z):
+    #     type = state.blocks(x,y,z)[:-8] + "_log"  # I hope it's not "minecraft:..."
+    # elif is_log(state, x, y, z):  # get log underneath instead
+    #     type = state.blocks(x,y,z)
+    # elif state.get_nearest_tree(x, z):  # get nearest log instead
+    #     i = 0
+    #     max = 20
+    #     tx, tz = choice(state.get_nearest_tree(x, z))
+    #     type = state.blocks(tx,y,tz)
+    #     while state.blocks(tx,y,tz )not in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.TREE.value]:
+    #         if i > max:
+    #             type = "oak_log"
+    #             break
+    #         tx, tz = choice(state.get_nearest_tree(x, z))
+    #         i+=1
+    #         type = state.blocks(tx,y,tz)
+    # else:
+    #     type = "oak_log"
     for i in range(growth_rate):
         # print("placing "+type+" at "+state.blocks(x,y+i,z))
         src.states.set_state_block(state, x, y, z, type)
@@ -70,10 +71,7 @@ def is_sapling(state, x, y, z):
     if state.out_of_bounds_3D(x, y, z):
         return False
     block = state.blocks(x,y,z)
-    if not block is None and block[-7:] == 'sapling':
-        return True
-    return False
-
+    return 'sapling' in block[:min(len(block), 27)]  # and block[:2] != "st":  # let's ignore stripped
 
 
 def is_water(state, x, y, z):
@@ -88,9 +86,8 @@ def is_log(state, x, y, z):
         return False
     block = state.blocks(x,y,z)
     # print("it's a "+str(block))
-    if block is not None and block[-3:] == 'log' and block[:2] != "st":  # let's ignore stripped
-        return True
-    return False
+    # block is not None and
+    return 'log' in block[:min(len(block),23)]# and block[:2] != "st":  # let's ignore stripped
 
 
 def collect_water_at(state, x, y, z, times=1):
@@ -101,7 +98,16 @@ def collect_water_at(state, x, y, z, times=1):
 
 def cut_tree_at(state, x, y, z, times=1):
     for i in range(times):
-        log_type = get_log_type(state.blocks(x,y,z))
+        # get log type
+        block = state.blocks(x, y, z)
+        start = 0
+        if 'mine' in block[:4]:
+            start = block.index(':')+1
+        end = block.index('_')
+        block = block[start:end]  # change replenish type
+        log_type = block
+        print("log type being "+log_type)
+
         replacement = "minecraft:air"
         src.states.set_state_block(state, x, y, z, replacement)
         if is_leaf(state.get_adjacent_block(x, y, z, 0, 1, 0)) \

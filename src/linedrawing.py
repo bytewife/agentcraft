@@ -44,6 +44,4 @@ def get_line(start, end):
     # Reverse the list if the coordinates were swapped
     if swapped:
         points.reverse()
-    print("LINE IS")
-    print(str(points))
     return points

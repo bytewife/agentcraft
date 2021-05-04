@@ -366,7 +366,24 @@ class Agent:
     def do_replenish_tree_task(self):
         def is_in_state_saplings(state, x, y, z):
             result = (x,z) in state.saplings
-            if result: src.manipulation.grow_type = self.state.blocks(x,y,z)[10:]  # change replenish type
+            if result:
+                if src.manipulation.is_log(state, x,y,z):
+                    print("slicing1 "+self.state.blocks(x,y,z))
+                    start = 0
+                    if 'mine' in self.state.blocks(x,y,z)[:4]:
+                        start = self.state.blocks(x,y,z).index(':')+1
+                    end = self.state.blocks(x,y,z).index('_')
+                    src.manipulation.grow_type = self.state.blocks(x,y,z)[start:end]  # change replenish type
+                elif src.manipulation.is_sapling(state, x,y+1,z):
+                    print("slicing "+self.state.blocks(x,y+1,z))
+                    start = 0
+                    if 'mine' in self.state.blocks(x,y+1,z)[:4]:
+                        start = self.state.blocks(x,y+1,z).index(':')+1
+                    end = self.state.blocks(x,y+1,z).index('_')
+                    src.manipulation.grow_type = self.state.blocks(x,y+1,z)[start:end]  # change replenish type
+                else:
+                    src.manipulation.grow_type = 'oak'
+                print("grow type is "+src.manipulation.grow_type)
             return result
         if self.tree_grow_iteration < self.tree_grow_iterations_max+self.tree_leaves_height - 1:
             status, bx, bz = self.collect_from_adjacent_spot(self.state, check_func=is_in_state_saplings, manip_func=src.manipulation.grow_tree_at, prosperity_inc=src.my_utils.ACTION_PROSPERITY.REPLENISH_TREE)
@@ -386,10 +403,12 @@ class Agent:
                 if (x,z) in saps:
                     self.state.saplings.remove((x,z))
                     # get log type
-                    leaf = 'minecraft:oak_leaves'
-                    if src.manipulation.is_log(self.state, x,self.state.rel_ground_hm[x][z], z):
-                        log = self.state.blocks(x,self.state.rel_ground_hm[x][z],z)
-                        leaf = log[:-3] + "leaves[distance=7]"
+                    leaf = 'minecraft:'+src.manipulation.grow_type+"_leaves[distance=7]"
+                    ## old appended
+                    # if src.manipulation.is_log(self.state, x,self.state.rel_ground_hm[x][z], z):
+                    #     log = self.state.blocks(x,self.state.rel_ground_hm[x][z],z)
+                    #     leaf = log[:-3] + "leaves[distance=7]"
+
                     # grow leaves there
                     # src.manipulation.grow_leaves(self.state, x, self.state.rel_ground_hm[x][z], z, 'minecraft:oak_leaves[distance=7]', leaves_height=self.tree_leaves_height)
                     src.manipulation.grow_leaves(self.state, x, self.state.rel_ground_hm[x][z], z, leaf, leaves_height=self.tree_leaves_height)

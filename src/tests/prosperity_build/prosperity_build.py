@@ -54,7 +54,7 @@ clean_agents = "kill @e[type=minecraft:armor_stand,x={},y=64,z={},distance=..100
 http_framework.interfaceUtils.runCommand(clean_agents)
 
 # sim = src.simulation.Simulation(area, rendering_step_duration=0.0)
-sim = src.simulation.Simulation(area, rendering_step_duration=0.4, is_rendering_each_step=False)
+sim = src.simulation.Simulation(area, rendering_step_duration=0.1, is_rendering_each_step=False)
 # while sim.start() == False:
 #     sim.state.reset_for_restart()
 # exit(0)
@@ -69,7 +69,7 @@ sim = src.simulation.Simulation(area, rendering_step_duration=0.4, is_rendering_
 print("road_segs is ")
 print(sim.state.road_segs)
 # sim.step(400, is_rendering=False)
-sim.run_with_render(1000)
+sim.run_with_render(100)
 for built in sim.state.built:
     # src.states.set_state_block(sim.state, built.center[0], sim.state.rel_ground_hm[built.center[0]][built.center[1]]+11, built.center[1], 'minecraft:red_wool')
     pass
@@ -103,9 +103,12 @@ for x in range(sim.state.len_x):
 #HEIGHTMAP
 for x in range(len(sim.state.blocks_arr)):
     for z in range(len(sim.state.blocks_arr[0][0])):
-        y = sim.state.static_ground_hm[x][z]
-        sim.state.set_block(sim.state, x, y, z, "minecraft:oak_sign")
+        # y = sim.state.static_ground_hm[x][z]
+        # sim.state.set_block(x, y, z, "minecraft:oak_sign")
+        y = sim.state.rel_ground_hm[x][z]
+        sim.state.set_block(x, y, z, "minecraft:oak_sign")
 
+sim.state.step(1)
 
 # pprint(sim.state.rel_ground_hm)
 # print(sim.state.static_ground_hm)
