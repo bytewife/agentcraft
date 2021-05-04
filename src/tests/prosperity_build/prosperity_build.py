@@ -13,20 +13,6 @@ import numpy as np
 from src.linedrawing import get_line
 from enum import Enum
 
-# x1 = 77
-# z1 = 46
-# x2 = 152
-# z2 = 144
-# x1 = 15
-# z1 = -42
-# x2 = 62
-# z2 = -99
-
-# x1 = 0
-# z1 = 0
-# x2 = 62
-# z2 = 65
-
 # jungle
 # x1 = 4000
 # z1 = 4000
@@ -44,11 +30,13 @@ file_name = ""
 clean_agents = "kill @e[type=minecraft:armor_stand,x={},y=64,z={},distance=..100]".format(str((x2+x1)/2), str((z2+z1)/2))
 http_framework.interfaceUtils.runCommand(clean_agents)
 
-sim = src.simulation.Simulation(area, rendering_step_duration=0.00, is_rendering_each_step=False)
+frame_duration = 0.0
+sim = src.simulation.Simulation(area, rendering_step_duration=frame_duration, is_rendering_each_step=False)
 
 print("road_segs is ")
 print(sim.state.road_segs)
-sim.run_with_render(100)
+timesteps = 300
+sim.run_with_render(300)
 
 ## ROADS
 # for r in sim.state.roads:
