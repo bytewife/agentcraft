@@ -41,7 +41,7 @@ class Agent:
         "acacia_log": 0,
         "jungle_log": 0,
     }
-    max_turns_staying_still = 10
+    max_turns_staying_still = 15
 
     pose = {
         0: {  # normal walk 1
@@ -102,7 +102,7 @@ class Agent:
         self.rest_max = 200#100
         self.unshared_resources = {
             "water": self.water_max * 0.8,
-            "rest": self.rest_max * 0.35
+            "rest": self.rest_max * 0.5
         }
         # self.build_params = set()
         self.build_params = None
@@ -238,6 +238,11 @@ class Agent:
         self.update_node_occupancy(self.x, self.z, new_x, new_z)
         self.dx = (new_x - self.x) #& -1
         self.dz = (new_z - self.z) #& -1
+        if abs(self.dx) > 1 or abs(self.dz) > 1:
+            print("moved too far!")
+            print("where new x is "+str(new_x)+" - "+str(self.x))
+            print("where new z is "+str(new_z)+" - "+str(self.z))
+            exit(1)
         self.x = new_x
         self.z = new_z
         self.y = walkable_heightmap[new_x][new_z]
@@ -256,6 +261,7 @@ class Agent:
         self.path = path
 
     def follow_path(self, state, walkable_heightmap):
+        print(self.name+"'s doing "+self.motive+" with path "+str(self.path))
         nx = nz = 0
         status = False
         if len(self.path) > 0:
@@ -305,6 +311,7 @@ class Agent:
                     self.socialize_partner.auto_motive()
             elif self.motive == self.Motive.IDLE.name:
                 status = self.do_idle_task()
+        # the bad part about this is that jungle trees can take multiple bouts to cut
         if self.turns_staying_still > Agent.max_turns_staying_still and status is False:  # _move in random direction if still for too long
             print("stayed still too long and now moving!")
             nx = nz = 1
@@ -313,11 +320,13 @@ class Agent:
                 nx = self.x + dir[0]
                 nz = self.z + dir[1]
                 ny = self.state.rel_ground_hm[nx][nz]
-                if ny < self.state.rel_ground_hm[self.x][self.z]:
+                if ny < self.state.rel_ground_hm[self.x][self.z]:  # only move down if possible
                     found_open = True
                     break
             if not found_open:
                 nx, nz = choice(src.movement.directions)
+                nx += self.x
+                nz += self.z
             self.move_self(nx, nz, state=state, walkable_heightmap=walkable_heightmap)
             self.turns_staying_still = 0
         if nx == 0 and nz == 0:
@@ -356,7 +365,9 @@ class Agent:
 
     def do_replenish_tree_task(self):
         def is_in_state_saplings(state, x, y, z):
-            return (x,z) in state.saplings
+            result = (x,z) in state.saplings
+            if result: src.manipulation.grow_type = self.state.blocks(x,y,z)[10:]  # change replenish type
+            return result
         if self.tree_grow_iteration < self.tree_grow_iterations_max+self.tree_leaves_height - 1:
             status, bx, bz = self.collect_from_adjacent_spot(self.state, check_func=is_in_state_saplings, manip_func=src.manipulation.grow_tree_at, prosperity_inc=src.my_utils.ACTION_PROSPERITY.REPLENISH_TREE)
             self.dx = bx - self.x

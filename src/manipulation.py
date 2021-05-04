@@ -11,6 +11,7 @@ class TASK_OUTCOME(Enum):
     REDO = 3
 
 
+grow_type = 'oak_log'
 def grow_tree_at(state, x, y, z, times=1):
     growth_rate = 1
     y = state.rel_ground_hm[x][z]
@@ -36,7 +37,7 @@ def grow_tree_at(state, x, y, z, times=1):
     else:
         type = "oak_log"
     for i in range(growth_rate):
-        print("placing "+type+" at "+state.blocks(x,y+i,z))
+        # print("placing "+type+" at "+state.blocks(x,y+i,z))
         src.states.set_state_block(state, x, y, z, type)
 
 
@@ -79,9 +80,7 @@ def is_water(state, x, y, z):
     if state.out_of_bounds_3D(x, y, z):
         return False
     block = state.blocks(x,y,z)
-    if not block is None and block[-5:] == 'water':
-        return True
-    return False
+    return block[10:15] == 'water'
 
 
 def is_log(state, x, y, z):
@@ -117,23 +116,26 @@ def cut_tree_at(state, x, y, z, times=1):
             new_y = y
             new_z = z
             found_new_spot = False
-            for dir in src.movement.directions:
-                tx = x + dir[0]
-                tz = z + dir[1]
-                if state.out_of_bounds_2D(tx,tz):
-                    continue
-                ttype = state.types[tx][tz]
-                node_ptr = state.node_pointers[(tx,tz)]
-                if node_ptr == None: continue
-                node = state.nodes(*node_ptr)
-                if ttype == src.my_utils.TYPE.GREEN.name \
-                    and node not in state.built \
-                    and node not in state.roads: # check if right
-                    new_x = tx
-                    new_y = state.rel_ground_hm[tx][tz]
-                    new_z = tz
-                    found_new_spot = True
-                    break
+            if log_type[0] == 'j':  # because of how minecraft's heightmap doesn't consider leaves as air, put jungle saplings in same spot
+                found_new_spot = True
+            else:
+                for dir in src.movement.directions:
+                    tx = x + dir[0]
+                    tz = z + dir[1]
+                    if state.out_of_bounds_2D(tx,tz):
+                        continue
+                    ttype = state.types[tx][tz]
+                    node_ptr = state.node_pointers[(tx,tz)]
+                    if node_ptr == None: continue
+                    node = state.nodes(*node_ptr)
+                    if ttype == src.my_utils.TYPE.GREEN.name \
+                        and node not in state.built \
+                        and node not in state.roads: # check if right
+                        new_x = tx
+                        new_y = state.rel_ground_hm[tx][tz]
+                        new_z = tz
+                        found_new_spot = True
+                        break
             new_replacement = "minecraft:" + log_type + "_sapling"
             # new_replacement = "minecraft:air"
             yoff = -1

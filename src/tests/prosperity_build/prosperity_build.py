@@ -54,14 +54,10 @@ clean_agents = "kill @e[type=minecraft:armor_stand,x={},y=64,z={},distance=..100
 http_framework.interfaceUtils.runCommand(clean_agents)
 
 # sim = src.simulation.Simulation(area, rendering_step_duration=0.0)
-sim = src.simulation.Simulation(area, rendering_step_duration=0.05, is_rendering_each_step=False)
+sim = src.simulation.Simulation(area, rendering_step_duration=0.4, is_rendering_each_step=False)
 # while sim.start() == False:
 #     sim.state.reset_for_restart()
 # exit(0)
-# for x in range(len(sim.state.blocks)):
-#     for z in range(len(sim.state.blocks[0][0])):
-#         y = sim.state.static_ground_hm[x][z]
-#         src.states.set_state_block(sim.state, x, y, z, "minecraft:oak_sign")
     # sim = src.simulation.Simulation(area, precomp_world_slice=sim.world_slice)#, precomp_legal_actions=sim.state.legal_actions, precomp_types=sim.state.types, precomp_sectors=sim.state.sectors, precamp_pathfinder=sim.state.pathfinder, rendering_step_duration=0.0, is_rendering_each_step=False)#, precomp_nodes=sim.state.nodes, precomp_node_pointers=sim.state.node_pointers)
     # sim = src.simulation.Simulation(area, rendering_step_duration=0.0, is_rendering_each_step=False)
     # sim = src.simulation.Simulation(area, rendering_step_duration=0.0,
@@ -73,7 +69,7 @@ sim = src.simulation.Simulation(area, rendering_step_duration=0.05, is_rendering
 print("road_segs is ")
 print(sim.state.road_segs)
 # sim.step(400, is_rendering=False)
-sim.run_with_render(400)
+sim.run_with_render(1000)
 for built in sim.state.built:
     # src.states.set_state_block(sim.state, built.center[0], sim.state.rel_ground_hm[built.center[0]][built.center[1]]+11, built.center[1], 'minecraft:red_wool')
     pass
@@ -86,23 +82,29 @@ for x in range(sim.state.len_x):
         # src.states.set_state_block(sim.state,x,sim.state.rel_ground_hm[x][z],z, 'minecraft:pumpkin')
 
 ## ROADS
-for r in sim.state.roads:
-    if r in sim.state.construction:
-        # sim.state.construction.discard(r)
-        pass
-    x = r.center[0]
-    z = r.center[1]
-    y = sim.state.rel_ground_hm[x][z] + 1
-    sim.state.set_block(x,y,z,"minecraft:redstone_block")
+# for r in sim.state.roads:
+#     if r in sim.state.construction:
+#         # sim.state.construction.discard(r)
+#         pass
+#     x = r.center[0]
+#     z = r.center[1]
+#     y = sim.state.rel_ground_hm[x][z] + 1
+#     sim.state.set_block(x,y,z,"minecraft:redstone_block")
 
 ## CONSTRUCTION
-for b in sim.state.construction:
-    x = b.center[0]
-    z = b.center[1]
-    y = sim.state.rel_ground_hm[x][z] + 1
-    sim.state.set_block(x,y,z,"minecraft:gold_block")
+# for b in sim.state.construction:
+#     x = b.center[0]
+#     z = b.center[1]
+#     y = sim.state.rel_ground_hm[x][z] + 1
+#     sim.state.set_block(x,y,z,"minecraft:gold_block")
     # if src.my_utils.TYPE.WATER.name in b.get_type():
     #     pass
+
+#HEIGHTMAP
+for x in range(len(sim.state.blocks_arr)):
+    for z in range(len(sim.state.blocks_arr[0][0])):
+        y = sim.state.static_ground_hm[x][z]
+        sim.state.set_block(sim.state, x, y, z, "minecraft:oak_sign")
 
 
 # pprint(sim.state.rel_ground_hm)
