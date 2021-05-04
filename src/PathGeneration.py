@@ -235,7 +235,8 @@ class PathGenerator:
                     self.path[xi, zi] = 1
             node = node.parent
         if self.v:
-            print(self.path)
+            pass
+            # print(self.path)
 
     def goalCheck(self, node):
         x = node.x

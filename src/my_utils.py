@@ -107,7 +107,9 @@ class TYPE_TILES:
 	tile_sets = {
 		TYPE.WATER.value: {  #WATER
 			"minecraft:water",
-			"minecraft:flowing_water",
+			"minecraft:water[level = 0]",
+			"water",
+			"water[level = 0]",
 		},
 		TYPE.TREE.value: {  # FOREST
 			"minecraft:dark_oak_log",
@@ -149,6 +151,9 @@ class TYPE_TILES:
 		},
 		TYPE.AIR.value: {
 			"minecraft:air",
+			"air",
+			"minecraft:air[]",
+			"air[]",
 			"minecraft:cave_air"
 		},
 		TYPE.PASSTHROUGH.value: {

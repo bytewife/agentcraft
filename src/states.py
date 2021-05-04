@@ -467,9 +467,13 @@ class State:
         self.place_platform(found_road, ctrn_node, found_nodes, ctrn_dir, bld, rot, min_nodes_in_x, min_nodes_in_z, built_arr, wood_type, mean_y)
 
         built_list = list(building_heightmap.keys())
+        print("built_list is ")
+        print(built_list)
         ext_list = list(exterior_heightmap.keys())
+        print("ext_list is ")
+        print(ext_list)
         for tile in built_list+ext_list:  # let's see if this stops tiles from being placed in buildings, where there used to be ground
-            self.update_heightmaps_for_block(*tile, built_list, ext_list)
+            self.update_heightmaps_for_block(tile[0], tile[1])
 
         self.built_heightmap.update(building_heightmap)
         self.exterior_heightmap.update(exterior_heightmap)
@@ -522,116 +526,6 @@ class State:
                     self.saplings.remove(tile)
                     node.type = node.get_type()  # update Types to remove saplings
         return True, mean_y
-
-
-    # def place_building_at(self, ctrn_node, bld, bld_lenx, bld_lenz, wood_type):
-    #     # check if theres adequate space by getting nodes, and move the building to center it if theres extra space
-    #     # if not ctrn_node in self.construction: return
-    #     # for every orientation of this node+neighbors whose lenx and lenz are the min space required to place building at
-    #     min_nodes_in_x = math.ceil(bld_lenx/ctrn_node.size)
-    #     min_nodes_in_z = math.ceil(bld_lenz/ctrn_node.size)
-    #     min_tiles = min_nodes_in_x*min_nodes_in_z
-    #     found_ctrn_dir = None
-    #     found_nodes = set()
-    #
-    #     # get rotation based on neighboring road
-    #     found_road = None
-    #     face_dir = None
-    #     for dir in src.movement.cardinals:  # maybe make this cardinal only
-    #         nx = ctrn_node.center[0] + dir[0]*ctrn_node.size
-    #         nz = ctrn_node.center[1] + dir[1]*ctrn_node.size
-    #         if self.out_of_bounds_Node(nx, nz): continue
-    #         np = (nx, nz)
-    #         neighbor = self.nodes[self.node_pointers[np]]
-    #         if neighbor in self.roads:
-    #             found_road = neighbor
-    #             face_dir = dir
-    #             break
-    #     if found_road == None:
-    #         return False
-    #     rot = 0
-    #     if face_dir[0] == 1: rot = 2
-    #     if face_dir[0] == -1: rot = 0
-    #     if face_dir[1] == -1: rot = 1
-    #     if face_dir[1] == 1: rot = 3
-    #     # print('face_dir is '+str(face_dir))
-    #     # self.set_block(ctrn_node.center[0], 17, ctrn_node.center[1],"minecraft:emerald_block")
-    #     if rot in [1,3]:
-    #         temp = min_nodes_in_x
-    #         min_nodes_in_x = min_nodes_in_z
-    #         min_nodes_in_z = temp
-    #     ## find site where x and z are reversed. this rotates
-    #     for dir in src.movement.diagonals:
-    #         if found_ctrn_dir != None:
-    #             break
-    #         tiles = 0
-    #         for x in range(0, min_nodes_in_x):
-    #             for z in range(0, min_nodes_in_z):
-    #                 # x1 = ctrn_node.center[0]+x*ctrn_node.size*dir[0]
-    #                 # z1 = ctrn_node.center[1]+z*ctrn_node.size*dir[1]
-    #                 nx = ctrn_node.center[0]+x*ctrn_node.size*dir[0]
-    #                 nz = ctrn_node.center[1]+z*ctrn_node.size*dir[1]
-    #                 if self.out_of_bounds_Node(nx, nz): break
-    #                 node = self.nodes[(nx,nz)]
-    #                 if not node in self.construction: break
-    #                 if node in self.roads: break  # don't go over roads
-    #                 tiles += 1
-    #                 found_nodes.add(node)
-    #         if tiles == min_tiles:  # found a spot!
-    #             found_ctrn_dir = dir
-    #             break
-    #         else:
-    #             found_nodes.clear()
-    #     if found_ctrn_dir == None:  # if there's not enough space, return
-    #         return False
-    #
-    #     ctrn_dir = found_ctrn_dir
-    #     x1 = ctrn_node.center[0] - ctrn_dir[0]  # to uncenter
-    #     z1 = ctrn_node.center[1] - ctrn_dir[1]
-    #     x2 = ctrn_node.center[0] + ctrn_dir[0] + ctrn_dir[0] * ctrn_node.size * (min_nodes_in_x - 1)
-    #     z2 = ctrn_node.center[1] + ctrn_dir[1] + ctrn_dir[1] * ctrn_node.size * (min_nodes_in_z - 1)
-    #     xf = min(x1, x2)  # since the building is placed is ascending
-    #     zf = min(z1, z2)
-    #     y = self.rel_ground_hm[xf][zf] # temp
-    #     status, building_heightmap, exterior_heightmap = src.scheme_utils.place_schematic_in_state(self, bld, xf, y, zf, rot=rot, built_arr=self.built, wood_type=wood_type)
-    #     if status == False:
-    #         return False
-    #     self.built_heightmap.update(building_heightmap)
-    #     self.exterior_heightmap.update(exterior_heightmap)
-    #     # build road from the road to the building
-    #     self.create_road(found_road.center, ctrn_node.center, road_type="None", points=None, leave_lot=False, add_as_road_type=False)
-    #     xmid = int((x2 + x1)/2)
-    #     zmid = int((z2 + z1)/2)
-    #     distmax = math.dist((ctrn_node.center[0]-ctrn_dir[0], ctrn_node.center[1]-ctrn_dir[1]), (xmid, zmid))
-    #     # build construction site ground
-    #     for n in found_nodes:
-    #         # for each of the nodes' tiles, generate random, based on dist. Also, add it to built.
-    #         for dir in src.movement.idirections:
-    #             x = n.center[0] + dir[0]
-    #             z = n.center[1] + dir[1]
-    #             # add to built
-    #             y = int(self.rel_ground_hm[x][z]) - 1
-    #             inv_chance = math.dist((x, z), (xmid, zmid))/distmax  # clamp to 0-1
-    #             if inv_chance == 1.0: # stylistic choice: don't let corners be placed
-    #                 continue
-    #             attenuate = 0.8
-    #             if random() > inv_chance*attenuate:
-    #                 block = choice(src.my_utils.ROAD_SETS['default'])
-    #                 self.set_block(x, y, z, block)
-    #     y = self.rel_ground_hm[xf][zf] + 5
-    #     # self.set_block(xf, y, zf, "minecraft:diamond_block")
-    #     # debug
-    #     for n in found_nodes:
-    #         x = n.center[0]
-    #         z = n.center[1]
-    #         y = self.rel_ground_hm[x][z] + 9
-    #         # self.set_block(x, y, z, "minecraft:iron_block")
-    #     ## remove nodes from construction
-    #     for node in list(found_nodes):
-    #         self.construction.remove(node)
-    #         self.built.add(node)
-    #     self.generated_building = True
-    #     return True
 
 
     def get_nearest_tree(self,x,z, iterations=5):
@@ -1061,7 +955,7 @@ class State:
         self.heightmap_tiles_to_update.clear()
         return
 
-    def update_heightmaps_for_block(self, x, z, built_hm, ext_hm):
+    def update_heightmaps_for_block(self, x, z):
         if (x,z) in self.built_heightmap: # ignore buildings
             y = self.built_heightmap[(x,z)] - 1
             self.abs_ground_hm[x][z] = y + self.world_y

@@ -176,7 +176,7 @@ class Agent:
 
     def auto_motive(self):
         new_motive = self.calc_motive()
-        print(self.name+"'s new motive is "+new_motive.name)
+        # print(self.name+"'s new motive is "+new_motive.name)
         self.set_motive(new_motive)
 
 
@@ -238,11 +238,11 @@ class Agent:
         self.update_node_occupancy(self.x, self.z, new_x, new_z)
         self.dx = (new_x - self.x) #& -1
         self.dz = (new_z - self.z) #& -1
-        if abs(self.dx) > 1 or abs(self.dz) > 1:
-            print("moved too far!")
-            print("where new x is "+str(new_x)+" - "+str(self.x))
-            print("where new z is "+str(new_z)+" - "+str(self.z))
-            exit(1)
+        # if abs(self.dx) > 1 or abs(self.dz) > 1:
+        #     print("moved too far!")
+        #     print("where new x is "+str(new_x)+" - "+str(self.x))
+        #     print("where new z is "+str(new_z)+" - "+str(self.z))
+        #     exit(1)
         self.x = new_x
         self.z = new_z
         self.y = walkable_heightmap[new_x][new_z]
@@ -261,7 +261,7 @@ class Agent:
         self.path = path
 
     def follow_path(self, state, walkable_heightmap):
-        print(self.name+"'s doing "+self.motive+" with path "+str(self.path))
+        # print(self.name+"'s doing "+self.motive+" with path "+str(self.path))
         nx = nz = 0
         status = False
         if len(self.path) > 0:
@@ -314,7 +314,7 @@ class Agent:
         # the bad part about this is that jungle trees can take multiple bouts to cut
         if self.turns_staying_still > Agent.max_turns_staying_still and status is False:  # _move in random direction if still for too long
             print("stayed still too long and now moving!")
-            nx = nz = 1
+            nx = nz = 0
             found_open = False
             for dir in src.movement.directions:
                 nx = self.x + dir[0]

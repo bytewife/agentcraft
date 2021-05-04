@@ -87,6 +87,33 @@ def get_legal_actions_from_block(state, blocks, x, z, vertical_ability, heightma
     return result
 
 
+# def check_if_legal_move(state, x, y, z, x_offset, z_offset, jump_ability, heightmap, actor_height, unwalkable_blocks):
+#     y_max = len(state.blocks_arr[0]) - 1
+#     target_x = x + x_offset
+#     target_z = z + z_offset
+#     if (target_x < 0 or target_z < 0 or target_x >= state.len_x or target_z >= state.len_z):
+#         return False
+#     target_y = heightmap[target_x][target_z]# make sure that the heightmap starts from the ground
+#     target_block = state.blocks(target_x,target_y - 1,target_z)
+#     if target_block in unwalkable_blocks: return False
+#     y_diff = abs(y - target_y)
+#     if y_diff > jump_ability: return False
+#     is_legal = True
+#     for i in range(0, actor_height):
+#         open_space = target_y + i
+#         if open_space > y_max: return False  # out of bounds
+#         target = state.blocks(target_x,target_y + i,target_z)
+#         # find [] and remove it
+#         if '[' in target:
+#             idx = target.index('[')
+#             target = target[:idx]
+#         if not (target in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.PASSTHROUGH.value]):
+#             is_legal = False
+#             break
+#     if is_legal:
+#         return True
+#     return False
+
 
 def check_if_legal_move(state, x, y, z, x_offset, z_offset, jump_ability, heightmap, actor_height, unwalkable_blocks):
     target_x = x + x_offset
@@ -105,9 +132,7 @@ def check_if_legal_move(state, x, y, z, x_offset, z_offset, jump_ability, height
     if target[-1] == ']':
         target = target[:target.index('[')]
     return target in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.PASSTHROUGH.value]
-    # if not target in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.PASSTHROUGH.value]:
-    #     return False
-    # return True
+
 
 def adjacents(state, x, z):
     adjacents = []

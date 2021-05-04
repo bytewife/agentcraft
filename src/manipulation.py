@@ -77,8 +77,7 @@ def is_sapling(state, x, y, z):
 def is_water(state, x, y, z):
     if state.out_of_bounds_3D(x, y, z):
         return False
-    block = state.blocks(x,y,z)
-    return block[10:15] == 'water'
+    return state.blocks(x,y,z) in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.WATER.value]
 
 
 def is_log(state, x, y, z):
@@ -106,7 +105,7 @@ def cut_tree_at(state, x, y, z, times=1):
         end = block.index('_')
         block = block[start:end]  # change replenish type
         log_type = block
-        print("log type being "+log_type)
+        # print("log type being "+log_type)
 
         replacement = "minecraft:air"
         src.states.set_state_block(state, x, y, z, replacement)

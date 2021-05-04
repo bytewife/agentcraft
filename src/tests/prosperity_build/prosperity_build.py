@@ -27,59 +27,28 @@ from enum import Enum
 # x2 = 62
 # z2 = 65
 
-# x1 = 2000
-# z1 = 2000
-# x2 = 2250
-# z2 = 2250
+# jungle
+# x1 = 4000
+# z1 = 4000
+# x2 = 3900
+# z2 = 4100
 
-x1 = 4000
-z1 = 4000
-x2 = 3900
-z2 = 4100
-
-# x1 = 500
-# z1 = 500
-# x2 = 1500
-# z2 = 1500
-# z2 = 10250
+x1 = 5200
+z1 = 5200
+x2 = 5100
+z2 = 5100
 
 area = [x1,z1,x2,z2]
 area = src.my_utils.correct_area(area)
 file_name = ""
-# a = np.full((8, 8), 1.0)
-# a *= 0.8
-# print(np.where(a > 0.45))
-# print(a)
 clean_agents = "kill @e[type=minecraft:armor_stand,x={},y=64,z={},distance=..100]".format(str((x2+x1)/2), str((z2+z1)/2))
 http_framework.interfaceUtils.runCommand(clean_agents)
 
-# sim = src.simulation.Simulation(area, rendering_step_duration=0.0)
 sim = src.simulation.Simulation(area, rendering_step_duration=0.1, is_rendering_each_step=False)
-# while sim.start() == False:
-#     sim.state.reset_for_restart()
-# exit(0)
-    # sim = src.simulation.Simulation(area, precomp_world_slice=sim.world_slice)#, precomp_legal_actions=sim.state.legal_actions, precomp_types=sim.state.types, precomp_sectors=sim.state.sectors, precamp_pathfinder=sim.state.pathfinder, rendering_step_duration=0.0, is_rendering_each_step=False)#, precomp_nodes=sim.state.nodes, precomp_node_pointers=sim.state.node_pointers)
-    # sim = src.simulation.Simulation(area, rendering_step_duration=0.0, is_rendering_each_step=False)
-    # sim = src.simulation.Simulation(area, rendering_step_duration=0.0,
-    #                             is_rendering_each_step=False)
-# sim.step(1)
-
-        # print("water found!")
 
 print("road_segs is ")
 print(sim.state.road_segs)
-# sim.step(400, is_rendering=False)
-sim.run_with_render(100)
-for built in sim.state.built:
-    # src.states.set_state_block(sim.state, built.center[0], sim.state.rel_ground_hm[built.center[0]][built.center[1]]+11, built.center[1], 'minecraft:red_wool')
-    pass
-for xz,y in sim.state.built_heightmap.items():
-    x, z = xz
-    # src.states.set_state_block(sim.state,x,y+1,z, 'minecraft:diorite')
-for x in range(sim.state.len_x):
-    for z in range(sim.state.len_z):
-        pass
-        # src.states.set_state_block(sim.state,x,sim.state.rel_ground_hm[x][z],z, 'minecraft:pumpkin')
+sim.run_with_render(500)
 
 ## ROADS
 # for r in sim.state.roads:

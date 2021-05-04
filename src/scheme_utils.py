@@ -248,7 +248,7 @@ def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, bui
     total = length_x * length_y * length_z
 
     height_traversal = { coord:deque('' for n in range(agent_height)) for coord in xz_coords}  # if open space found, reomve from this
-    print(xz_coords)
+    # print(xz_coords)
     building_heightmap = {}  # where the values will be stored when found
     exterior_heightmap = {}  # this is the outside of a building. I won't be able to get it 100% accurate, but I can get it good enough.
 
