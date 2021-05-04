@@ -44,11 +44,11 @@ file_name = ""
 clean_agents = "kill @e[type=minecraft:armor_stand,x={},y=64,z={},distance=..100]".format(str((x2+x1)/2), str((z2+z1)/2))
 http_framework.interfaceUtils.runCommand(clean_agents)
 
-sim = src.simulation.Simulation(area, rendering_step_duration=0.1, is_rendering_each_step=False)
+sim = src.simulation.Simulation(area, rendering_step_duration=0.00, is_rendering_each_step=False)
 
 print("road_segs is ")
 print(sim.state.road_segs)
-sim.run_with_render(500)
+sim.run_with_render(100)
 
 ## ROADS
 # for r in sim.state.roads:
@@ -70,12 +70,12 @@ sim.run_with_render(500)
     #     pass
 
 #HEIGHTMAP
-for x in range(len(sim.state.blocks_arr)):
-    for z in range(len(sim.state.blocks_arr[0][0])):
-        # y = sim.state.static_ground_hm[x][z]
-        # sim.state.set_block(x, y, z, "minecraft:oak_sign")
-        y = sim.state.rel_ground_hm[x][z]
-        sim.state.set_block(x, y, z, "minecraft:oak_sign")
+# for x in range(len(sim.state.blocks_arr)):
+#     for z in range(len(sim.state.blocks_arr[0][0])):
+#         # y = sim.state.static_ground_hm[x][z]
+#         # sim.state.set_block(x, y, z, "minecraft:oak_sign")
+#         y = sim.state.rel_ground_hm[x][z]
+#         sim.state.set_block(x, y, z, "minecraft:oak_sign")
 
 sim.state.step(1)
 
@@ -83,8 +83,6 @@ sim.state.step(1)
 # print(sim.state.static_ground_hm)
 # print(sim.state.sectors)
 print(src.agent.Agent.shared_resources)
-print("semibends is "+str(sim.state.semibends))
-print("bends is "+str(sim.state.bends))
-print("bendcoint is "+str(sim.state.bendcount))
+print("done")
 # sim.is_rendering_each_step = True
 # sim.step(is_rendering=True)

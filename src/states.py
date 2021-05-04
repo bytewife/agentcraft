@@ -129,6 +129,7 @@ class State:
             # self.traverse_update_flags = np.zeros(len(self.rel_ground_hm), len(self.rel_ground_hm[0])))
             self.traverse_update_flags = np.full((len(self.rel_ground_hm), len(self.rel_ground_hm[0])), False, dtype=bool)
             self.heightmap_tiles_to_update = set()
+            self.dont_update_again = set()
 
             # print(self.types)
             # print(self.nodes[self.node_pointers[(5,5)]].get_type())
@@ -467,10 +468,8 @@ class State:
         self.place_platform(found_road, ctrn_node, found_nodes, ctrn_dir, bld, rot, min_nodes_in_x, min_nodes_in_z, built_arr, wood_type, mean_y)
 
         built_list = list(building_heightmap.keys())
-        print("built_list is ")
         print(built_list)
         ext_list = list(exterior_heightmap.keys())
-        print("ext_list is ")
         print(ext_list)
         for tile in built_list+ext_list:  # let's see if this stops tiles from being placed in buildings, where there used to be ground
             self.update_heightmaps_for_block(tile[0], tile[1])
@@ -931,11 +930,11 @@ class State:
     def update_heightmaps(self):
         for pos in list(self.heightmap_tiles_to_update):
             x, z = pos
-            if (x,z) in self.built_heightmap.keys(): # ignore buildings
+            if (x,z) in self.built_heightmap: # ignore buildings
                 y = self.built_heightmap[(x,z)] - 1
                 self.abs_ground_hm[x][z] = y + self.world_y
                 self.rel_ground_hm[x][z] = y + 1
-            elif (x,z) in self.exterior_heightmap.keys():
+            elif (x,z) in self.exterior_heightmap:
                 y = self.exterior_heightmap[(x,z)] - 1
                 self.abs_ground_hm[x][z] = y + self.world_y
                 self.rel_ground_hm[x][z] = y + 1
@@ -949,11 +948,12 @@ class State:
                     y = self.rel_ground_hm[x][z]
                     self.abs_ground_hm[x][z] = y + self.world_y - 1
                     self.rel_ground_hm[x][z] = y
+                self.heightmap_tiles_to_update.remove((x,z))
             curr_height = self.rel_ground_hm[x][z]
             if self.static_ground_hm[x][z] > curr_height:  # don't reduce heightmap ever. this is to avoid bugs rn
                 self.static_ground_hm[x][z] = curr_height
-        self.heightmap_tiles_to_update.clear()
-        return
+            # self.heightmap_tiles_to_update.remove((x,z))
+        # self.heightmap_tiles_to_update.clear()  # for some reason when put here, the buildings' dont stick. are they being overidden?
 
     def update_heightmaps_for_block(self, x, z):
         if (x,z) in self.built_heightmap: # ignore buildings
