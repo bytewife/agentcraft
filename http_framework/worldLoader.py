@@ -125,7 +125,6 @@ class WorldSlice:
                     self.sections[x][z][y] = CachedSection(
                         palette, blockStatesBitArray)
 
-        self.rect = x1, z1, x2, z2 # this is the old version but I need it - aith
         print("done")
 
     def getBlockCompoundAt(self, x, y, z):
@@ -153,12 +152,3 @@ class WorldSlice:
             return "minecraft:air"
         else:
             return blockCompound["Name"].value
-
-    def get_heightmap(self, heightmap_type="MOTION_BLOCKING_NO_LEAVES", y_offset=0):
-        heightmap = self.heightmaps[heightmap_type]
-        if y_offset != 0:
-            for x in range(len(heightmap)):
-                for z in range(len(heightmap[x])):
-                    heightmap[x][z] += y_offset
-        return np.array(heightmap, dtype=np.uint8)
-

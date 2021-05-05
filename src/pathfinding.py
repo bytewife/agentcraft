@@ -1,3 +1,12 @@
+#! /usr/bin/python3
+"""### Legal movement action computations for agents
+Pre-computations for where agents can and can't go. This portion is built on, and modified from, Troy, Ryan, & Trent's 2020 GDMC entry.
+"""
+__all__ = []
+__author__ = "aith"
+__version__ = "1.0"
+
+
 from heapq import heappop, heappush, heappushpop
 from math import sqrt
 from numpy import full_like

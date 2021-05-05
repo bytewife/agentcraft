@@ -7,9 +7,7 @@ import http_framework.interfaceUtils
 import src.my_utils
 import src.agent
 import src.states
-from pprint import pprint
 import numpy as np
-
 from src.linedrawing import get_line
 from enum import Enum
 
@@ -19,10 +17,10 @@ from enum import Enum
 # x2 = 3900
 # z2 = 4100
 
-x1 = 5200
-z1 = 5200
-x2 = 5100
-z2 = 5100
+x1 = 5100
+z1 = 5100
+x2 = 5000
+z2 = 5200
 
 area = [x1,z1,x2,z2]
 area = src.my_utils.correct_area(area)

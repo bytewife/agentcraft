@@ -1,3 +1,11 @@
+#! /usr/bin/python3
+"""### Legal movement action computations for agents
+Pre-computations for where agents can and can't go.
+"""
+__all__ = []
+__author__ = "aith"
+__version__ = "1.0"
+
 # from states import *
 import bitarray
 import bitarray.util
@@ -6,27 +14,6 @@ import src.my_utils
 from enum import Enum
 from scipy.spatial import KDTree
 from math import dist
-
-
-# class Directions(Enum):
-#     N  = 0
-#     E  = 1
-#     S  = 2
-#     W  = 3
-#     NE = 4
-#     ES = 5
-#     SW = 6
-#     WN = 7
-
-# class Directions(Enum):
-#     N  = 0
-#     E  = 1
-#     S  = 2
-#     W  = 3
-#     NE = 4
-#     ES = 5
-#     SW = 6
-#     WN = 7
 
 Directions = {
     0: (1,0),
@@ -86,35 +73,6 @@ def get_legal_actions_from_block(state, blocks, x, z, vertical_ability, heightma
             result[n + 4] = check_if_legal_move(state, x, y, z, diagonals[n][0], diagonals[n][1], vertical_ability, heightmap, actor_height, unwalkable_blocks)
     return result
 
-
-# def check_if_legal_move(state, x, y, z, x_offset, z_offset, jump_ability, heightmap, actor_height, unwalkable_blocks):
-#     y_max = len(state.blocks_arr[0]) - 1
-#     target_x = x + x_offset
-#     target_z = z + z_offset
-#     if (target_x < 0 or target_z < 0 or target_x >= state.len_x or target_z >= state.len_z):
-#         return False
-#     target_y = heightmap[target_x][target_z]# make sure that the heightmap starts from the ground
-#     target_block = state.blocks(target_x,target_y - 1,target_z)
-#     if target_block in unwalkable_blocks: return False
-#     y_diff = abs(y - target_y)
-#     if y_diff > jump_ability: return False
-#     is_legal = True
-#     for i in range(0, actor_height):
-#         open_space = target_y + i
-#         if open_space > y_max: return False  # out of bounds
-#         target = state.blocks(target_x,target_y + i,target_z)
-#         # find [] and remove it
-#         if '[' in target:
-#             idx = target.index('[')
-#             target = target[:idx]
-#         if not (target in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.PASSTHROUGH.value]):
-#             is_legal = False
-#             break
-#     if is_legal:
-#         return True
-#     return False
-
-
 def check_if_legal_move(state, x, y, z, x_offset, z_offset, jump_ability, heightmap, actor_height, unwalkable_blocks):
     target_x = x + x_offset
     target_z = z + z_offset
@@ -164,34 +122,34 @@ def find_nearest(state, x, z, spot_coords, starting_search_radius, max_iteration
     return []
 
 
-def sort_by_distance(x, z, block_coords):
-    dists = np.full_like(np.arange(len(block_coords), dtype=float), 0)
-    dict = {}
-    # put dists as keys in dict, value as index
-    for n in range(len(block_coords)):
-        _dist = dist((x, z), block_coords[n])
-        dists[n] = _dist
-        if not _dist in dict:
-            dict[_dist] = [n]
-        else:
-            dict[_dist].append(n)
-    dists.sort()
-    # put indices in array in ascending
-    indices = []
-    for _dist in dists:
-        for i in range(len(dict[_dist])):
-            next = dict[_dist][i]
-            indices.append(next)
-    # get block coords
-    result = [0] * len(block_coords)
-    for n in indices:
-        print(n)
-        result[i] = ((block_coords[n]))
-        i+=1
-    return result
-
-
-
-
-
-
+# def sort_by_distance(x, z, block_coords):
+#     dists = np.full_like(np.arange(len(block_coords), dtype=float), 0)
+#     dict = {}
+#     # put dists as keys in dict, value as index
+#     for n in range(len(block_coords)):
+#         _dist = dist((x, z), block_coords[n])
+#         dists[n] = _dist
+#         if not _dist in dict:
+#             dict[_dist] = [n]
+#         else:
+#             dict[_dist].append(n)
+#     dists.sort()
+#     # put indices in array in ascending
+#     indices = []
+#     for _dist in dists:
+#         for i in range(len(dict[_dist])):
+#             next = dict[_dist][i]
+#             indices.append(next)
+#     # get block coords
+#     result = [0] * len(block_coords)
+#     for n in indices:
+#         print(n)
+#         result[i] = ((block_coords[n]))
+#         i+=1
+#     return result
+#
+#
+#
+#
+#
+#

@@ -1,3 +1,11 @@
+#! /usr/bin/python3
+"""### Agent data
+Contains agent creation, rendering, behaviours.
+"""
+__all__ = []
+__author__ = "aith"
+__version__ = "1.0"
+
 import math
 
 from scipy.spatial import KDTree
@@ -214,7 +222,7 @@ class Agent:
                 return False
 
     def get_appropriate_build(self, phase):
-        rp = '../../../schemes/'
+        rp = './schemes/'
         build = ''
         cost = 0 # TODO
         if phase == 1:

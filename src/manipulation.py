@@ -1,3 +1,12 @@
+#! /usr/bin/python3
+"""### Block Manipulation
+Some misc functions on modifying individual blocks in the State.
+"""
+__all__ = []
+__author__ = "aith"
+__version__ = "1.0"
+
+
 import src.my_utils
 import src.states
 from enum import Enum

@@ -1,3 +1,12 @@
+#! /usr/bin/python3
+"""###
+
+"""
+__all__ = []
+__author__ = "aith"
+__version__ = "1.0"
+
+
 import src.scheme_utils
 # import src.my_utils
 import http_framework.worldLoader
@@ -265,15 +274,6 @@ areaFlex = [0, 0, 10, 10] # default build area
 # y2 = 60
 # z2 = 189
 
-
 file_name = "../schemes/tiny_house_1"
 src.scheme_utils.download_schematic(x1, y1, z1, x2, y2, z2, file_name)
 src.scheme_utils.download_schematic(x1, y1, z1, x2, y2, z2, file_name+"_flex", flexible_tiles=True, leave_dark_oak=False)
-# src.scheme_utils.download_schematic(x1, y1, z1, x2, y2, z2, file_name+"_flex_keep_dark", flexible_tiles=True, leave_dark_oak=True)
-
-# src.scheme_utils.place_schematic_in_world(file_name, x2, y2 + y2 - y2 + 5, z2, dir_z=-1)
-
-# src.scheme_utils.download_schematic(x1, 62, z1, -7, x2, z2, file_name + ".in")
-# src.scheme_utils.download_heightmap(worldSlice, file_name +"hm")
-
-# place_schematic_in_world("market_tent_1", 293, 62, 855)

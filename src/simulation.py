@@ -1,3 +1,12 @@
+#! /usr/bin/python3
+"""### Simulation
+Simulations contain and modify data regarding the execution of the State and the generator.
+"""
+__all__ = []
+__author__ = "aith"
+__version__ = "1.0"
+
+
 import src.agent
 import src.states
 import src.my_utils
@@ -16,7 +25,7 @@ class Simulation:
             self.world_slice = http_framework.worldLoader.WorldSlice(*XZXZ)
         else:
             self.world_slice = precomp_world_slice
-        self.state = src.states.State(self.world_slice, precomp_pathfinder=precamp_pathfinder, precomp_legal_actions=precomp_legal_actions, precomp_types=precomp_types, precomp_sectors=precomp_sectors, precomp_nodes=precomp_nodes, precomp_node_pointers=precomp_node_pointers)
+        self.state = src.states.State(XZXZ, self.world_slice, precomp_pathfinder=precamp_pathfinder, precomp_legal_actions=precomp_legal_actions, precomp_types=precomp_types, precomp_sectors=precomp_sectors, precomp_nodes=precomp_nodes, precomp_node_pointers=precomp_node_pointers)
         # exit(0)
         # if precomp_legal_actions:
         #     self.state.legal_actions = precomp_legal_actions
@@ -39,7 +48,7 @@ class Simulation:
         self.prosperity = 0
 
         # parse heads
-        f = open("../../../assets/agent_heads.out.txt")
+        f = open("./assets/agent_heads.out.txt")
         agent_heads = f.readlines()
         agent_heads = [h.rstrip('\n') for h in agent_heads]
         src.states.State.agent_heads = agent_heads
@@ -75,10 +84,8 @@ class Simulation:
             result = self.state.init_main_st()
             i+=1
 
-
-
         # build a house
-        building = "../../../schemes/"+random.choice(src.my_utils.STRUCTURES['small'])[0]
+        building = "./schemes/"+random.choice(src.my_utils.STRUCTURES['small'])[0]
         f = open(building, "r")
         size = f.readline()
         x_size, y_size, z_size = [int(n) for n in size.split(' ')]

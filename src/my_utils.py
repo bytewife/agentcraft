@@ -1,7 +1,14 @@
-### returns a tuple of coordinates, with the lower x and z values first
+#! /usr/bin/python3
+"""### Misc tools
+Contains an assortment of tools and data needed for the generator.
+"""
+__all__ = []
+__author__ = "aith"
+__version__ = "1.0"
 from enum import Enum
 import http_framework.interfaceUtils
 import src.agent
+import numpy as np
 
 # https://stackoverflow.com/questions/34470597/is-there-a-dedicated-way-to-get-the-number-of-items-in-a-python-enum
 
@@ -343,4 +350,15 @@ def get_wood_type(block):
         type = 'dark_oak'
     return type
 
+def setBlockWithData(abs_x, abs_y, abs_z, data):
+    command = "setblock {} {} {} {}".format(abs_x, abs_y, abs_z, data)
+    return http_framework.interfaceUtils.runCommand(command)
 
+
+def get_heightmap(world_slice, heightmap_type="MOTION_BLOCKING_NO_LEAVES", y_offset=0):
+    heightmap = world_slice.heightmaps[heightmap_type]
+    if y_offset != 0:
+        for x in range(len(heightmap)):
+            for z in range(len(heightmap[x])):
+                heightmap[x][z] += y_offset
+    return np.array(heightmap, dtype=np.uint8)

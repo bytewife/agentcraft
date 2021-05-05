@@ -1,3 +1,12 @@
+#! /usr/bin/python3
+"""### A* pathfinding
+Implementation of A*, build on top of, and heavily modified from, Troy, Ryan, & Trent's 2020 GDMC entry.
+"""
+__all__ = []
+__author__ = "aith"
+__version__ = "1.0"
+
+
 from math import sqrt
 import numpy as np
 from random import randint

@@ -66,16 +66,16 @@ class Interface():
         """**Clean up before destruction**."""
         self.sendBlocks()
 
-    def getBlock(self, x, y, z, w_x, w_y, w_z):
+    def getBlock(self, x, y, z):
         """**Return the name of a block in the world**."""
-        # gx, gy, gz = self.local2global(x, y, z)
+        x, y, z = self.local2global(x, y, z)
 
         url = 'http://localhost:9000/blocks?x={}&y={}&z={}'.format(x, y, z)
         if self.caching and (x, y, z) in self.cache:
             return self.cache[(x, y, z)]
 
         if self.caching and globalWorldSlice is not None:
-            if not globalDecay[x-w_x][y-w_y][z-w_z]:
+            if not globalDecay[x][y][z]:
                 block = globalWorldSlice.getBlockAt(x, y, z)
                 self.cache[(x, y, z)] = block
                 return block
@@ -153,7 +153,7 @@ class Interface():
 
     def placeBlockBatched(self, x, y, z, blockStr, limit=50):
         """**Place a block in the buffer and send once limit is exceeded**."""
-        # x, y, z = self.local2global(x, y, z)  ## changed - aith
+        x, y, z = self.local2global(x, y, z)
 
         self.buffer.append((x, y, z, blockStr))
         if len(self.buffer) >= limit:
@@ -295,7 +295,3 @@ def toggleBuffer():
 def sendBlocks(x=0, y=0, z=0, retries=5):
     """**Global sendBlocks**."""
     return globalinterface.sendBlocks(x, y, z, retries)
-
-def setBlockWithData(abs_x, abs_y, abs_z, data):
-    command = "setblock {} {} {} {}".format(abs_x, abs_y, abs_z, data)
-    return runCommand(command)

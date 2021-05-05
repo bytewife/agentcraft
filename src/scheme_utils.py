@@ -1,3 +1,12 @@
+#! /usr/bin/python3
+"""### Schematic utilities
+Functions for saving and loading sets of blocks to and from a running Minecraft world.
+"""
+__all__ = []
+__author__ = "aith"
+__version__ = "1.0"
+
+
 import http_framework.interfaceUtils
 import src.manipulation
 from enum import Enum
@@ -5,6 +14,7 @@ from collections import deque
 
 ### Returns a string containing the block names.
 import src.states
+import src.my_utils
 
 
 def download_area(origin_x, origin_y, origin_z, end_x, end_y, end_z, flexible_tiles=False, leave_dark_oak=True):
@@ -309,7 +319,7 @@ def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, bui
                 if use_head == False:
                     src.states.set_state_block(state, bx, by, bz, block)
                 else:
-                    http_framework.interfaceUtils.setBlockWithData(bx + state.world_x, by + state.world_y,
+                    src.my_utils.setBlockWithData(bx + state.world_x, by + state.world_y,
                                                                    bz + state.world_z, block)
                 traverse_up_to_air(bx, by, bz, block, building_heightmap, height_traversal, exterior_heightmap, agent_height)
                 i+=1

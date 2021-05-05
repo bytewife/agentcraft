@@ -1,3 +1,11 @@
+#! /usr/bin/python3
+"""### State data
+Contains tools for modifying the state of the blocks in an area given by Simulation.
+"""
+__all__ = []
+__author__ = "aith"
+__version__ = "1.0"
+
 import math
 from math import floor
 
@@ -30,11 +38,10 @@ class State:
 
 
     ## Create surface grid
-    def __init__(self, world_slice, precomp_legal_actions=None, blocks_file=None, precomp_pathfinder=None, precomp_sectors=None, precomp_types=None, precomp_nodes=None, precomp_node_pointers=None,max_y_offset=tallest_building_height):
+    def __init__(self, rect, world_slice, precomp_legal_actions=None, blocks_file=None, precomp_pathfinder=None, precomp_sectors=None, precomp_types=None, precomp_nodes=None, precomp_node_pointers=None,max_y_offset=tallest_building_height):
         if world_slice:
-            self.rect = world_slice.rect
+            self.rect = rect
             self.world_slice = world_slice
-            self.rect = world_slice.rect
 
             self.world_y = 0
             self.world_x = 0
@@ -52,12 +59,12 @@ class State:
             self.road_segs = set()
             self.construction = set()  # nodes where buildings can be placed
             self.lots = set()
-            self.world_x = world_slice.rect[0]
-            self.world_z = world_slice.rect[1]
-            self.len_x = world_slice.rect[2] - world_slice.rect[0]
-            self.len_z = world_slice.rect[3] - world_slice.rect[1]
-            self.end_x = world_slice.rect[2]
-            self.end_z = world_slice.rect[3]
+            self.world_x = self.rect[0]
+            self.world_z = self.rect[1]
+            self.len_x = self.rect[2] - self.rect[0]
+            self.len_z = self.rect[3] - self.rect[1]
+            self.end_x = self.rect[2]
+            self.end_z = self.rect[3]
 
             self.interface, self.blocks_arr, self.world_y, self.len_y, self.abs_ground_hm = self.gen_blocks_array(world_slice)
 
@@ -468,9 +475,7 @@ class State:
         self.place_platform(found_road, ctrn_node, found_nodes, ctrn_dir, bld, rot, min_nodes_in_x, min_nodes_in_z, built_arr, wood_type, mean_y)
 
         built_list = list(building_heightmap.keys())
-        print(built_list)
         ext_list = list(exterior_heightmap.keys())
-        print(ext_list)
         for tile in built_list+ext_list:  # let's see if this stops tiles from being placed in buildings, where there used to be ground
             self.update_heightmaps_for_block(tile[0], tile[1])
 
@@ -863,8 +868,8 @@ class State:
 
 
     def gen_blocks_array(self, world_slice, max_y_offset=tallest_building_height):
-        x1, z1, x2, z2 = world_slice.rect
-        abs_ground_hm = world_slice.get_heightmap("MOTION_BLOCKING_NO_LEAVES", -1) # inclusive of ground
+        x1, z1, x2, z2 = self.rect
+        abs_ground_hm = src.my_utils.get_heightmap(world_slice, "MOTION_BLOCKING_NO_LEAVES", -1) # inclusive of ground
         def get_y_bounds(_heightmap):  ## Get the y range that we'll save tha state in?
             lowest = _heightmap[0][0]
             highest = _heightmap[0][0]
@@ -1084,7 +1089,8 @@ class State:
         for position, block in changed_arr.items():
             x,y,z = position
             if is_rendering == True:
-                self.interface.placeBlockBatched(self.world_x + x, self.world_y + y, self.world_z + z, block, n_blocks)
+                # self.interface.placeBlockBatched(self.world_x + x, self.world_y + y, self.world_z + z, block, n_blocks)
+                self.interface.placeBlockBatched(x, y, z, block, n_blocks)
             i += 1
         self.update_heightmaps()  # must wait until all assets are placed
         for position in changed_arr_xz:

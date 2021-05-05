@@ -1,3 +1,13 @@
+#! /usr/bin/python3
+"""### Bressenham's line algorithm
+Generate a line with discrete coordinates from a continuous line.
+Pulled from Roguebasin http://www.roguebasin.com/index.php?title=Bresenham%27s_Line_Algorithm
+"""
+__all__ = []
+__author__ = "aith"
+__version__ = "1.0"
+
+
 def get_line(start, end):
     #Bresenham's Line Algorithm
 
