@@ -13,10 +13,10 @@ import src.agent
 import src.states
 
 if __name__ == '__main__':
-    x1 = 5100
-    z1 = 5100
-    x2 = 5000
-    z2 = 5200
+    x1 = 5300
+    z1 = 5300
+    x2 = 5400
+    z2 = 5400
 
     area = [x1,z1,x2,z2]
     area = src.my_utils.correct_area(area)
@@ -24,7 +24,7 @@ if __name__ == '__main__':
     clean_agents = "kill @e[type=minecraft:armor_stand,x={},y=64,z={},distance=..100]".format(str((x2+x1)/2), str((z2+z1)/2))
     http_framework.interfaceUtils.runCommand(clean_agents)
 
-    frame_duration = 0.0
+    frame_duration = 0.2
     sim = src.simulation.Simulation(area, rendering_step_duration=frame_duration, is_rendering_each_step=False)
 
     timesteps = 300

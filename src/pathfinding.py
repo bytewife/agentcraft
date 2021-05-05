@@ -11,7 +11,6 @@ from heapq import heappop, heappush, heappushpop
 from math import sqrt
 from numpy import full_like
 import src.movement
-from math import dist
 from bitarray.util import count_xor, rindex
 
 cardinal_cost = 100

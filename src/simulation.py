@@ -15,7 +15,6 @@ import http_framework.interfaceUtils
 import time
 import random
 import numpy as np
-import names
 
 class Simulation:
 

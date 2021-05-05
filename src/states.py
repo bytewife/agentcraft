@@ -23,7 +23,6 @@ from scipy.interpolate import interp1d
 import src.linedrawing
 import src.manipulation
 import names
-import enum
 
 class State:
 
@@ -206,7 +205,7 @@ class State:
             for z in range(int(self.len_z / self.node_size)):
                 cx = x*3+1
                 cz = z*3+1
-                result[(cx,cz)] = list()
+                result[(cx,cz)] = set()
         return result
 
     def find_build_location(self, agentx, agentz, building_file, wood_type, ignore_sector=False, max_y_diff=4):
@@ -1106,11 +1105,11 @@ class State:
 
     def update_phase(self):
         p = np.sum(self.prosperity)
-        # print("prosp is "+str(p))
-        # if p > self.phase2threshold:
-        #     self.phase = 2
-        # if p > self.phase3threshold:
-        #     self.phase = 3
+        print("prosp is "+str(p))
+        if p > self.phase2threshold:
+            self.phase = 2
+        if p > self.phase3threshold:
+            self.phase = 3
 
 
     def update_block_info(self, x, z):  # this might be expensive if you use this repeatedly in a group
@@ -1333,13 +1332,22 @@ class State:
 
         if self.sectors[x1, y1] != self.sectors[x2][y2]:
             p1 = p2  # make sure agents spawn in same sector
-        # add starter agents
-        for agent_pos in [p1, p2]:
-            # print("adding agent at "+str(agent_pos))
-            head = choice(State.agent_heads)
-            new_agent = src.agent.Agent(self, *agent_pos, walkable_heightmap=self.rel_ground_hm,
-                                        name=names.get_first_name(), head=head)
-            self.add_agent(new_agent)
+
+        # add starter agent 1
+        head = choice(State.agent_heads)
+        agent_a = src.agent.Agent(self, *p1, walkable_heightmap=self.rel_ground_hm,
+                                    name=names.get_first_name(), head=head)
+        self.add_agent(agent_a)
+
+        # add starter agent 2
+        head = choice(State.agent_heads)
+        agent_b = src.agent.Agent(self, *p1, walkable_heightmap=self.rel_ground_hm,
+                                    name=names.get_first_name(), head=head)
+        self.add_agent(agent_b)
+        # Set lovers
+        agent_a.set_lover(agent_b)
+        agent_b.set_lover(agent_a)
+
         return True
 
 
@@ -1417,7 +1425,7 @@ class State:
         self.new_agents.add(agent)  # to be handled by update_agents
         ax = agent.x
         az = agent.z
-        self.agents_in_nodes[self.node_pointers[(ax, az)]].append(agent)
+        self.agents_in_nodes[self.node_pointers[(ax, az)]].add(agent)
         agent.set_motive(agent.Motive.LOGGING)
 
 
@@ -1426,7 +1434,7 @@ class State:
             agent.unshared_resources['rest'] += agent.rest_dec_rate
             agent.unshared_resources['water'] += agent.water_dec_rate
             agent.follow_path(state=self, walkable_heightmap=self.rel_ground_hm)
-            # agent.socialize()
+            agent.socialize(agent.found_and_moving_to_socialization)
             if is_rendering:
                 agent.render()
         new_agents = self.new_agents.copy()

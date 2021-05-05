@@ -8,7 +8,6 @@ __version__ = "1.0"
 
 import math
 
-from scipy.spatial import KDTree
 from random import choice, random, choices, randint
 from enum import Enum
 import src.pathfinding
@@ -18,7 +17,6 @@ import src.movement
 import src.my_utils
 import src.scheme_utils
 import http_framework.interfaceUtils
-from math import dist, ceil
 import names
 
 class Agent:
@@ -50,6 +48,7 @@ class Agent:
         "jungle_log": 0,
     }
     max_turns_staying_still = 15
+    socialize_duration = 4
 
     pose = {
         0: {  # normal walk 1
@@ -83,7 +82,7 @@ class Agent:
     }
 
 
-    def __init__(self, state, state_x, state_z, walkable_heightmap, name, head,
+    def __init__(self, state, state_x, state_z, walkable_heightmap, name, head, lover=None,
                  parent_1=None, parent_2=None, motive=Motive.LOGGING.name):
 
         self.x = self.rendered_x = state_x
@@ -125,22 +124,28 @@ class Agent:
         self.walk_stage = 0  # whether moving left or right. do XOR with 1 and this
         self.is_resting = False
         self.socialize_want = 0
-        self.socialize_threshold = 0  # TODO change this
+        self.socialize_threshold = 10  # TODO change this
         self.socialize_partner = None
+        self.found_and_moving_to_socialization = False  #_disables when either of the two found the other
+        self.social_partners_cooldowns = {}
+        self.is_mid_socializing = False
+        self.socialize_partner_pos = (0,0)
 
         ### SOCIALS
         self.mutual_friends = set()
         self.mutual_enemies = set()
-        self.lover = None
+        self.lover = lover
         self.joy = 10
         # self.construction_site = construction_site
 
-    def socialize(self):
+    def socialize(self, found_socialization):  #
         self.socialize_want += 1
-        if self.socialize_want >= self.socialize_threshold: return  # TODO unlock this somewhere
-        for agent in self.state.agents_in_nodes[self.node.center]:
-            if agent == self: continue
-            if not self.socialize_want >= self.socialize_threshold: continue
+        if self.socialize_want < self.socialize_threshold: return  # TODO unlock this somewhere
+        if found_socialization: return  # TODO unlock this somewhere
+        for agent in list(self.state.agents_in_nodes[self.node.center] - {self}):
+            # if agent == self: continue
+            if agent.socialize_want < agent.socialize_threshold: continue
+            if found_socialization: return  # TODO unlock this somewhere
             elif agent == self.lover:
                 self.set_motive(self.Motive.SOCIALIZE_LOVER)
                 agent.set_motive(self.Motive.SOCIALIZE_LOVER)
@@ -150,25 +155,44 @@ class Agent:
             elif agent in self.mutual_enemies:
                 self.set_motive(self.Motive.SOCIALIZE_ENEMY)
                 agent.set_motive(self.Motive.SOCIALIZE_ENEMY)
+            else:  # form a new relationship
+                if self.lover == None and agent.lover == None:
+                    self.set_motive(self.Motive.SOCIALIZE_FRIEND)
+                    agent.set_motive(self.Motive.SOCIALIZE_FRIEND)
+                else:
+                    self.set_motive(self.Motive.SOCIALIZE_FRIEND)
+                    agent.set_motive(self.Motive.SOCIALIZE_FRIEND)
+            print("found social")
             self.approach_agent(agent)  # go to path, and both agents interact once follow_path is done and friend nearby
             agent.await_agent(self)
             self.socialize_partner = agent
             agent.socialize_partner = self
-            self.socialize_want = 0
-            agent.socialize_want = 0
+            self.socialize_partner_pos = (agent.x, agent.z)
+            agent.socialize_partner_pos = (self.x, self.z)
+            # self.socialize_want = 0
+            # agent.socialize_want = 0
+            self.found_and_moving_to_socialization = True  # put in this function
+            agent.found_and_moving_to_socialization = True
 
     def approach_agent(self, agent):
         # dx = agent.x - self.x
-        path = self.set_path_to_nearest_spot(agent, 3, 1, 0, search_neighbors_instead=True)
-        self.set_path(path)
-        if len(self.path) > 3:
+        self.set_path_to_nearest_spot(agent, 3, 1, 0, search_neighbors_instead=True)
+        if len(self.path) > 3:  # error
+            self.path.clear()
             agent.auto_motive()
             self.auto_motive()
-            self.path.clear()
+        else:
+            self.found_and_moving_to_socialization = True
+            agent.found_and_moving_to_socialization = True
 
+    def set_lover(self, agent):
+        self.lover = agent
 
     def await_agent(self, agent):
         self.path.clear()
+        self.path.append((self.x, self.z))
+        self.path.append((self.x, self.z))
+        self.path.append((self.x, self.z))
 
     def do_socialize_task(self, agent, motive : Enum):
         # face agent
@@ -176,7 +200,13 @@ class Agent:
         dz = self.z - agent.z
         self.dx = dx
         self.dz = dz
+        self.path = [(self.x, self.z)] * Agent.socialize_duration
+        self.is_mid_socializing = True
+        self.socialize_want = -Agent.socialize_duration
 
+    def update_social_partners_cooldowns(self):
+        for past_partner in self.social_partners_cooldowns:
+            self.social_partners_cooldowns[past_partner] -= 1
 
     def do_build_task(self, found_road, ctrn_node, found_nodes, ctrn_dir, bld, rot, min_nodes_in_x, min_nodes_in_z, built_arr, wood_type):
         status, build_y = self.state.place_schematic(found_road, ctrn_node, found_nodes, ctrn_dir, bld, rot, min_nodes_in_x, min_nodes_in_z, built_arr, wood_type)
@@ -187,17 +217,15 @@ class Agent:
         # print(self.name+"'s new motive is "+new_motive.name)
         self.set_motive(new_motive)
 
-
     def calc_motive(self):
-        # TODO propagate if found lover and happy
         if self.unshared_resources['rest'] < self.rest_thresh:
             return self.Motive.REST
         elif self.unshared_resources['water'] < self.thirst_thresh:
             return self.Motive.WATER
         elif self.check_can_build(self.state.phase):
             return self.Motive.BUILD
-        elif random() > 0.90 and len(self.state.agents) > self.state.max_agents:
-            return self.Motive.PROPAGATE
+        # elif random() > 0.90 and len(self.state.agents) < self.state.max_agents:
+        #     return self.Motive.PROPAGATE
         else:
             actions = (self.Motive.LOGGING, self.Motive.REPLENISH_TREE)
             weights = (10, 1)
@@ -244,8 +272,8 @@ class Agent:
         if self.state.out_of_bounds_Node(new_x, new_z):
             return
         self.update_node_occupancy(self.x, self.z, new_x, new_z)
-        self.dx = (new_x - self.x) #& -1
-        self.dz = (new_z - self.z) #& -1
+        self.dx = (new_x - self.x) * (not self.is_mid_socializing) + (self.socialize_partner_pos[0] - self.x) * (self.is_mid_socializing)
+        self.dz = (new_z - self.z)* (not self.is_mid_socializing) + (self.socialize_partner_pos[1] - self.z) * (self.is_mid_socializing)
         # if abs(self.dx) > 1 or abs(self.dz) > 1:
         #     print("moved too far!")
         #     print("where new x is "+str(new_x)+" - "+str(self.x))
@@ -262,7 +290,7 @@ class Agent:
         n2 = self.state.nodes(*self.state.node_pointers[(x2,z2)])
         if n1 != n2:
             self.state.agents_in_nodes[n1.center].remove(self)
-            self.state.agents_in_nodes[n2.center].append(self)
+            self.state.agents_in_nodes[n2.center].add(self)
             self.node = n2
 
     def set_path(self, path):
@@ -303,20 +331,50 @@ class Agent:
             elif self.motive == self.Motive.PROPAGATE.name:
                 status = self.do_propagate_task()
             elif self.motive == self.Motive.SOCIALIZE_LOVER.name:
-                status, x, z = self.find_adjacent_agent(self.socialize_partner)
-                if status:
-                    do_socialize_task(agent, self.Motive.SOCIALIZE_LOVER)
+                if not self.is_mid_socializing:
+                    status, x, z = self.find_adjacent_agent(self.socialize_partner, 2, 2)
+                    if status:
+                        self.do_socialize_task(self.socialize_partner, self.Motive.SOCIALIZE_LOVER)
+                        self.socialize_partner.do_socialize_task(self, self.Motive.SOCIALIZE_LOVER)
+                    elif status == src.manipulation.TASK_OUTCOME.FAILURE:
+                        self.auto_motive()
+                        self.socialize_partner.auto_motive()
+                else:
+                    if len(self.path) > 0:
+                        self.path.pop()
+                    if len(self.path) < 1:
+                        self.reset_socialization()
+                        self.auto_motive()
             elif self.motive == self.Motive.SOCIALIZE_FRIEND.name:
-                status, x, z = self.find_adjacent_agent(self.socialize_partner)
-                if status:
-                    do_socialize_task(agent, self.Motive.SOCIALIZE_FRIEND)
+                if not self.is_mid_socializing:
+                    status, x, z = self.find_adjacent_agent(self.socialize_partner, 2, 2)
+                    if status:
+                        self.do_socialize_task(self.socialize_partner, self.Motive.SOCIALIZE_FRIEND)
+                        self.socialize_partner.do_socialize_task(self, self.Motive.SOCIALIZE_FRIEND)
+                    elif status == src.manipulation.TASK_OUTCOME.FAILURE:
+                        self.reset_socialization()
+                        self.auto_motive()
+                else:
+                    if len(self.path) > 0:
+                        self.path.pop()
+                    else:
+                        self.reset_socialization()
+                        self.auto_motive()
             elif self.motive == self.Motive.SOCIALIZE_ENEMY.name:
-                status, dx, dz = self.find_adjacent_agent(self.socialize_partner, 2, 2)
-                if status == src.manipulation.TASK_OUTCOME.SUCCESS:
-                    self.do_socialize_task(self.socialize_partner, self.Motive.SOCIALIZE_FRIEND)
-                elif status == src.manipulation.TASK_OUTCOME.FAILURE:
-                    self.auto_motive()
-                    self.socialize_partner.auto_motive()
+                if not self.is_mid_socializing:
+                    status, dx, dz = self.find_adjacent_agent(self.socialize_partner, 2, 2)
+                    if status == src.manipulation.TASK_OUTCOME.SUCCESS:
+                        self.do_socialize_task(self.socialize_partner, self.Motive.SOCIALIZE_ENEMY)
+                        self.socialize_partner.do_socialize_task(self, self.Motive.SOCIALIZE_ENEMY)
+                    elif status == src.manipulation.TASK_OUTCOME.FAILURE:
+                        self.auto_motive()
+                        self.socialize_partner.auto_motive()
+                else:  # they each do this
+                    if len(self.path) > 0:
+                        self.path.pop()
+                    else:
+                        self.reset_socialization()
+                        self.auto_motive()
             elif self.motive == self.Motive.IDLE.name:
                 status = self.do_idle_task()
         # the bad part about this is that jungle trees can take multiple bouts to cut
@@ -341,6 +399,12 @@ class Agent:
             self.turns_staying_still += 1
 
 
+    def reset_socialization(self):
+        self.socialize_want = 0
+        self.socialize_partner = None
+        self.is_mid_socializing = False
+        self.found_and_moving_to_socialization = False
+
     def find_adjacent_agent(self, agent, max_x, max_z):
         dx = agent.x - self.x
         dz = agent.z - self.z
@@ -352,10 +416,6 @@ class Agent:
             return src.manipulation.TASK_OUTCOME.FAILURE, dx, dz
         else:
             return src.manipulation.TASK_OUTCOME.IN_PROGRESS, dx, dz
-
-
-
-
 
 
     def do_propagate_task(self):
