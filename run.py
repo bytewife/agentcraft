@@ -24,11 +24,12 @@ if __name__ == '__main__':
     clean_agents = "kill @e[type=minecraft:armor_stand,x={},y=64,z={},distance=..100]".format(str((x2+x1)/2), str((z2+z1)/2))
     http_framework.interfaceUtils.runCommand(clean_agents)
 
-    frame_duration = 0.2
+    frame_duration = 0.8
     sim = src.simulation.Simulation(area, rendering_step_duration=frame_duration, is_rendering_each_step=False)
 
     timesteps = 300
-    sim.run_with_render(300)
+    sim.run_with_render(timesteps)
+    a = sim.state.sectors
 
     ## ROADS
     # for r in sim.state.roads:

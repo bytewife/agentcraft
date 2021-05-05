@@ -272,11 +272,10 @@ class Pathfinding:
                         coord_to_prop_into = (ox, oz)
                         sector_to_prop_into = osector
                         sector_to_remove = sector
-                    # self.merge_sectors(self.state, sectors, sector_to_remove, sector_to_prop_into)
-
-                    self.sector_sizes[sector_to_remove] = 0
-                    self.propagate_sector_depth_limited(*coord_to_prop_into, sector=sector_to_prop_into, sectors=sectors,
-                                           sector_sizes=sector_sizes, legal_actions=legal_actions, is_redoing=True)
+                    self.merge_sectors(self.state, sectors, sector_to_remove, sector_to_prop_into)
+                    # self.sector_sizes[sector_to_remove] = 0
+                    # self.propagate_sector_depth_limited(*coord_to_prop_into, sector=sector_to_prop_into, sectors=sectors,
+                    #                        sector_sizes=sector_sizes, legal_actions=legal_actions, is_redoing=True)
 
                     # self.sector_sizes[sector_to_remove] = 0
                     # TODO one thing we can do here is keep an array of the tiles in each sector, and simply append them toghether when merging, rather than propagaping

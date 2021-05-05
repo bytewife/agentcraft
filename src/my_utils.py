@@ -75,7 +75,12 @@ AGENT_ITEMS = {"REST": ["clock", "white_tulip", "white_wool", "white_bed"],
 			   "WATER": ["glass_bottle", 'bucket'],
 			   "BUILD": ["iron_shovel", "stone_shovel", "golden_shovel"],
 			   "FAVORITE": ['apple', 'bread', 'melon_slice', 'golden_apple', 'book', 'diamond', 'emerald', 'nautilus_shell', 'cornflower', 'bamboo', 'torch', 'sunflower', 'zombie_head', 'ladder', 'poppy', 'warped_fungus'],
-			   "REPLENISH": ['bone_meal']}
+			   "PROPAGATE": ['turtle_egg'],
+			   "REPLENISH_TREE": ['bone_meal'],
+			   "SOCIALIZE_LOVER": ["poppy", 'cake', 'sweet_berries'],
+			   "SOCIALIZE_FRIEND": ["honey_bottle", 'wheat'],
+			   "SOCIALIZE_ENEMY": ["stone_sword", 'golden_sword', 'iron_sword'],
+			   }
 
 
 

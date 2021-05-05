@@ -1338,12 +1338,14 @@ class State:
         agent_a = src.agent.Agent(self, *p1, walkable_heightmap=self.rel_ground_hm,
                                     name=names.get_first_name(), head=head)
         self.add_agent(agent_a)
+        agent_a.is_child_bearing = True
 
         # add starter agent 2
         head = choice(State.agent_heads)
         agent_b = src.agent.Agent(self, *p1, walkable_heightmap=self.rel_ground_hm,
                                     name=names.get_first_name(), head=head)
         self.add_agent(agent_b)
+        agent_b.is_child_bearing = False
         # Set lovers
         agent_a.set_lover(agent_b)
         agent_b.set_lover(agent_a)
@@ -1431,8 +1433,9 @@ class State:
 
     def update_agents(self, is_rendering=True):
         for agent in self.agents.keys():
-            agent.unshared_resources['rest'] += agent.rest_dec_rate
-            agent.unshared_resources['water'] += agent.water_dec_rate
+            agent.unshared_resources['rest'] += agent.rest_decay
+            agent.unshared_resources['water'] += agent.water_decay
+            agent.unshared_resources['happiness'] += agent.happiness_decay
             agent.follow_path(state=self, walkable_heightmap=self.rel_ground_hm)
             agent.socialize(agent.found_and_moving_to_socialization)
             if is_rendering:
