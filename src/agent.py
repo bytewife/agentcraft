@@ -142,10 +142,10 @@ class Agent:
         self.favorite_item = choice(src.my_utils.AGENT_ITEMS['FAVORITE'])
         self.head = head
         self.water_max = 100
-        self.water_decay = -0.2 # lose this per turn
+        self.water_decay = -0.5 # lose this per turn
         self.water_inc_rate = 10
         self.thirst_thresh = 50
-        self.rest_decay = -0.15
+        self.rest_decay = -0.5
         self.rest_inc_rate = 2
         self.rest_thresh = 30
         self.rest_max = 200#100

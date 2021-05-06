@@ -15,7 +15,18 @@ from bitarray.util import count_xor, rindex
 
 cardinal_cost = 100
 diagonal_cost = 141
-cost_diff = abs(diagonal_cost - cardinal_cost)
+path_cost_diff = abs(diagonal_cost - cardinal_cost)
+path_cost_lookup = {
+    (0, 1): cardinal_cost,
+    (-1, 0): cardinal_cost,
+    (0, -1): cardinal_cost,
+    (1, 0): cardinal_cost,
+    (-1, 1): diagonal_cost,
+    (-1, -1): diagonal_cost,
+    (1, -1): diagonal_cost,
+    (1, 1): diagonal_cost,
+    (0, 0): 0,  # for starter only
+}
 a = 0
 
 
@@ -38,7 +49,7 @@ class Pathfinding:
             self.action_to_here = action_to_here
             nptr = state.node_pointers[pos]
             # todo this might be expensive because it inits all nodes?
-            self.action_cost = 10000 if nptr is not None and state.nodes(*nptr).action_cost not in state.roads else 0
+            self.action_cost = action_cost
             # if state.node_pointers[pos] is None:
             #     self.action_cost = 100
             # else:
@@ -51,13 +62,16 @@ class Pathfinding:
             return self.f < other.f
 
 
-    def calc_g(self, parent, g_lookup, p_to_c_cost_action_cost):
-        return g_lookup[parent] + p_to_c_cost_action_cost
+    def calc_g(self, parent_pos, g_lookup, p_to_c_cost_action_cost, dir_cost):
+        return g_lookup[parent_pos] + p_to_c_cost_action_cost + dir_cost
 
 
     i = 0
     ## this method is a bottleneck so its uglified sorta
-    def expand(self, parent : PathNode, goal, max_x, max_z, all_legal_actions, g_lookup):  # TODO integtrate legal actions here
+    def expand(self, parent : PathNode, parent_g, goal, max_x, max_z, all_legal_actions, g_lookup):  # TODO integtrate legal actions here
+        """
+        Creates child PathNodes from adjacent tiles to parent
+        """
         children = []
         x, z = parent.pos
         curr_legal_actions = all_legal_actions[x][z]
@@ -70,12 +84,14 @@ class Pathfinding:
             if tx < 0 or tz < 0 or tx > max_x or tz > max_z:
                 continue
             nptr = self.state.node_pointers[(tx, tz)]
-            action_cost = 10000 if nptr is not None and self.state.nodes(*nptr).action_cost not in self.state.roads else 0
+            action_cost = 1 if nptr is not None and self.state.nodes(*nptr) in self.state.roads else 10000
             #     self.action_cost = 100
             # else:
             #     self.action_cost = state.nodes[state.node_pointers[pos]].action_cost
-            # g= self.calc_g(parent, g_lookup, action_cost)
-            g = parent.g + cardinal_cost + (n >= 4) * cost_diff  # optimize for 1000x1000 xD
+            # g= parent_g + action_cost +
+            g = parent_g + action_cost + path_cost_lookup[(dx, dz)]
+            # print(str(g))
+            # g = parent.g + cardinal_cost + (n >= 4) * cost_diff  # optimize for 1000x1000 xD
             # g = parent.g
             # if n < 4:
             #     g += cardinal_cost
@@ -84,7 +100,7 @@ class Pathfinding:
             h = self.heuristic(tx, tz, goal[0], goal[1])
             children.append(self.PathNode(
                 self.state, (tx, tz), g, h, parent,
-                action_to_here=(-dx, -dz), action_cost=cardinal_cost, legal_actions=all_legal_actions[tx][tz]
+                action_to_here=(-dx, -dz), action_cost=action_cost, legal_actions=all_legal_actions[tx][tz]
             ))
         return children
 
@@ -99,11 +115,11 @@ class Pathfinding:
             if node.pos[0] == end[0] and node.pos[1] == end[1]:  # to account for both tuples and lists
                 return self.backwards_traverse(node, start)
             closed.add(node.pos)
-            for child in self.expand(node, end, max_x, max_z, legal_actions, g_lookup):
+            for child in self.expand(node, node.g, end, max_x, max_z, legal_actions, g_lookup):
                 p_to_c_cost = child.action_cost
                 if child.pos in closed: continue
                 # TODO fix the below to be "if child.pos in open" and the last if.
-                if child.pos in g_lookup.keys() and g_lookup[child.pos] <= self.calc_g(node.pos, g_lookup, p_to_c_cost): continue # g is the action cost to get here, parent's g + parent to child g
+                if child.pos in g_lookup.keys() and g_lookup[child.pos] <= child.g: continue
                 g_lookup[child.pos] = child.g
                 heappush(open, child)
         return []
@@ -345,11 +361,11 @@ class Pathfinding:
             if node.pos[0] == end[0] and node.pos[1] == end[1]:  # to account for both tuples and lists
                 return self.backwards_traverse(node, start)
             closed.add(node.pos)
-            for child in self.expand(node, end, max_x, max_z, legal_actions, g_lookup):
+            for child in self.expand(node, node.g, end, max_x, max_z, legal_actions, g_lookup):
                 p_to_c_cost = child.action_cost
                 if child.pos in closed: continue
                 # TODO fix the below to be "if child.pos in open" and the last if.
-                if child.pos in g_lookup.keys() and g_lookup[child.pos] <= self.calc_g(node.pos, g_lookup, p_to_c_cost): continue # g is the action cost to get here, parent's g + parent to child g
+                if child.pos in g_lookup.keys() and g_lookup[child.pos] <= child.g: continue
                 g_lookup[child.pos] = child.g
                 heappush(open, child)
         return []
