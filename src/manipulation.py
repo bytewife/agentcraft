@@ -24,30 +24,9 @@ grow_type = 'oak_log'
 def grow_tree_at(state, x, y, z, times=1):
     growth_rate = 1
     y = state.rel_ground_hm[x][z]
-    print("starting tree y is "+str(y))  # prolly bc cut_tree insn't updating it. does it have to do with passthrough?
     # get sapling type, or if that fails get nearest log type because sometimes there's no sapling here.
     type = grow_type+'_log'
-
-    # if is_sapling(state, x, y, z):
-    #     type = state.blocks(x,y,z)[:-8] + "_log"  # I hope it's not "minecraft:..."
-    # elif is_log(state, x, y, z):  # get log underneath instead
-    #     type = state.blocks(x,y,z)
-    # elif state.get_nearest_tree(x, z):  # get nearest log instead
-    #     i = 0
-    #     max = 20
-    #     tx, tz = choice(state.get_nearest_tree(x, z))
-    #     type = state.blocks(tx,y,tz)
-    #     while state.blocks(tx,y,tz )not in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.TREE.value]:
-    #         if i > max:
-    #             type = "oak_log"
-    #             break
-    #         tx, tz = choice(state.get_nearest_tree(x, z))
-    #         i+=1
-    #         type = state.blocks(tx,y,tz)
-    # else:
-    #     type = "oak_log"
     for i in range(growth_rate):
-        # print("placing "+type+" at "+state.blocks(x,y+i,z))
         src.states.set_state_block(state, x, y, z, type)
 
 
@@ -198,9 +177,7 @@ def flood_kill_logs(state, log_x, log_y, log_z, itr=12):
 
 
 def is_leaf(block_name):
-    if not block_name is None and block_name[-6:] == 'leaves':
-        return True
-    return False
+    return block_name in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.LEAVES.value]
 
 
 def get_log_type(block_name):

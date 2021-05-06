@@ -1,9 +1,9 @@
 3 2 3
 air[]                                                                                                air[]                                                                                                air[]                                                                                                
-#0_button[face=wall,facing=west,powered=false]                                                      #0_log[axis=x]                                                                                      #0_log[axis=x]                                                                                      
+#0_button[face=wall,facing=west,powered=false]                                                      #9stripped__log[axis=x]                                                                                      #9stripped__log[axis=x]
 air[]                                                                                                air[]                                                                                                campfire[facing=east,lit=false,signal_fire=false,waterlogged=false]                                  
 
 air[]                                                                                                campfire[facing=south,lit=false,signal_fire=false,waterlogged=false]                                 air[]                                                                                                
-#0_log[axis=x]                                                                                      #0_log[axis=x]                                                                                      #0_log[axis=x]                                                                                      
-#0_button[face=wall,facing=west,powered=false]                                                      #0_log[axis=x]                                                                                      #0_log[axis=x]                                                                                      
+#9stripped__log[axis=x]                                                                                      #9stripped__log[axis=x]                                                                                      #9stripped__log[axis=x]
+#0_button[face=wall,facing=west,powered=false]                                                      #9stripped__log[axis=x]                                                                                      #9stripped__log[axis=x]
 

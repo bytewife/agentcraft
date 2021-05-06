@@ -126,9 +126,10 @@ class State:
             self.agents_in_nodes = self.init_agents_in_nodes()
             self.new_agents = set()  # agents that were just created
             self.max_agents = 20
-            self.build_minimum_phase_1 = 2
-            self.build_minimum_phase_2 = 30
-            self.build_minimum_phase_3 = 50
+            self.build_minimum_phase_1 = max(*[building_pair[1] for building_pair in src.my_utils.STRUCTURES['small']])
+            self.build_minimum_phase_2 = max(*[building_pair[1] for building_pair in src.my_utils.STRUCTURES['med']])
+            self.build_minimum_phase_3 = max(*[building_pair[1] for building_pair in src.my_utils.STRUCTURES['large']])
+            # TODO parametrize these
             self.phase2threshold = 200
             self.phase3threshold = 500
             self.traverse_from = np.copy(self.rel_ground_hm)
@@ -1105,11 +1106,11 @@ class State:
 
     def update_phase(self):
         p = np.sum(self.prosperity)
-        print("prosp is "+str(p))
-        if p > self.phase2threshold:
-            self.phase = 2
+        # print("prosp is "+str(p))
         if p > self.phase3threshold:
             self.phase = 3
+        elif p > self.phase2threshold:
+            self.phase = 2
 
 
     def update_block_info(self, x, z):  # this might be expensive if you use this repeatedly in a group
@@ -1346,6 +1347,17 @@ class State:
                                     name=names.get_first_name(), head=head)
         self.add_agent(agent_b)
         agent_b.is_child_bearing = False
+
+        # add child
+        head = choice(State.agent_heads)
+        child = src.agent.Agent(self, *p2, walkable_heightmap=self.rel_ground_hm,
+                                  name=names.get_first_name(), parent_1=agent_a, parent_2=agent_b, head=head)
+        self.add_agent(child)
+        agent_a.mutual_friends.add(child)
+        agent_b.mutual_friends.add(child)
+        child.mutual_friends.add(agent_a)
+        child.mutual_friends.add(agent_b)
+
         # Set lovers
         agent_a.set_lover(agent_b)
         agent_b.set_lover(agent_a)

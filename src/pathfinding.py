@@ -36,7 +36,9 @@ class Pathfinding:
             self.f = g + h
             self.parent = parent
             self.action_to_here = action_to_here
-            self.action_cost = 100
+            nptr = state.node_pointers[pos]
+            # todo this might be expensive because it inits all nodes?
+            self.action_cost = 10000 if nptr is not None and state.nodes(*nptr).action_cost not in state.roads else 0
             # if state.node_pointers[pos] is None:
             #     self.action_cost = 100
             # else:
@@ -49,14 +51,13 @@ class Pathfinding:
             return self.f < other.f
 
 
-    def calc_g(self, parent, g_lookup, p_to_c_cost):
-        a = g_lookup[parent] + p_to_c_cost
-        return g_lookup[parent] + p_to_c_cost
+    def calc_g(self, parent, g_lookup, p_to_c_cost_action_cost):
+        return g_lookup[parent] + p_to_c_cost_action_cost
 
 
     i = 0
     ## this method is a bottleneck so its uglified sorta
-    def expand(self, parent : PathNode, goal, max_x, max_z, all_legal_actions):  # TODO integtrate legal actions here
+    def expand(self, parent : PathNode, goal, max_x, max_z, all_legal_actions, g_lookup):  # TODO integtrate legal actions here
         children = []
         x, z = parent.pos
         curr_legal_actions = all_legal_actions[x][z]
@@ -68,6 +69,12 @@ class Pathfinding:
             tz = parent.pos[1] + dz
             if tx < 0 or tz < 0 or tx > max_x or tz > max_z:
                 continue
+            nptr = self.state.node_pointers[(tx, tz)]
+            action_cost = 10000 if nptr is not None and self.state.nodes(*nptr).action_cost not in self.state.roads else 0
+            #     self.action_cost = 100
+            # else:
+            #     self.action_cost = state.nodes[state.node_pointers[pos]].action_cost
+            # g= self.calc_g(parent, g_lookup, action_cost)
             g = parent.g + cardinal_cost + (n >= 4) * cost_diff  # optimize for 1000x1000 xD
             # g = parent.g
             # if n < 4:
@@ -92,7 +99,7 @@ class Pathfinding:
             if node.pos[0] == end[0] and node.pos[1] == end[1]:  # to account for both tuples and lists
                 return self.backwards_traverse(node, start)
             closed.add(node.pos)
-            for child in self.expand(node, end, max_x, max_z, legal_actions):
+            for child in self.expand(node, end, max_x, max_z, legal_actions, g_lookup):
                 p_to_c_cost = child.action_cost
                 if child.pos in closed: continue
                 # TODO fix the below to be "if child.pos in open" and the last if.
@@ -338,7 +345,7 @@ class Pathfinding:
             if node.pos[0] == end[0] and node.pos[1] == end[1]:  # to account for both tuples and lists
                 return self.backwards_traverse(node, start)
             closed.add(node.pos)
-            for child in self.expand(node, end, max_x, max_z, legal_actions):
+            for child in self.expand(node, end, max_x, max_z, legal_actions, g_lookup):
                 p_to_c_cost = child.action_cost
                 if child.pos in closed: continue
                 # TODO fix the below to be "if child.pos in open" and the last if.

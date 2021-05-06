@@ -19,7 +19,7 @@ import numpy as np
 class Simulation:
 
     # with names? Let's look after ensembles and other's data scructure for max flexibility
-    def __init__(self, XZXZ, precomp_world_slice=None, precomp_legal_actions = None, precamp_pathfinder=None, precomp_types = None, run_start=True, precomp_sectors = None, precomp_nodes=None, precomp_node_pointers=None, phase=0, maNum=5, miNum=400, byNum= 2000, brNum=1000, buNum=10, pDecay=0.98, tDecay=0.25, corNum=5, times=1, is_rendering_each_step=True, rendering_step_duration=0.8):
+    def __init__(self, XZXZ, precomp_world_slice=None, precomp_legal_actions = None, precamp_pathfinder=None, precomp_types = None, run_start=True, precomp_sectors = None, precomp_nodes=None, precomp_node_pointers=None, phase=0, maNum=5, miNum=400, byNum= 2000, brNum=1000, buNum=10, pDecay=0.98, tDecay=0.25, corNum=5, times=1, is_rendering_each_step=True, rendering_step_duration=0.8, building_max_y_diff=1):
         if precomp_world_slice == None:
             self.world_slice = http_framework.worldLoader.WorldSlice(*XZXZ)
         else:
@@ -45,6 +45,8 @@ class Simulation:
         self.rendering_step_duration = rendering_step_duration
         self.phase = phase
         self.prosperity = 0
+        self.building_max_y_diff = 1
+        self.building_max_y_diff_tries = 0
 
         # parse heads
         f = open("./assets/agent_heads.out.txt")
@@ -62,11 +64,13 @@ class Simulation:
     def run_with_render(self, steps):
         while self.start() == False:
             self.state.reset_for_restart()
+            self.update_building_max_y_diff()
         self.step(steps, is_rendering=True)
 
     def run_without_render(self, steps):
         while self.start() == False:
             self.state.reset_for_restart()
+            self.update_building_max_y_diff()
         self.step(steps, is_rendering=False)
         self.state.step(is_rendering=True, use_total_changed_blocks=True)
 
@@ -102,7 +106,7 @@ class Simulation:
         i = 0
         # rx = random.randint(0,self.state.last_node_pointer_x)
         # rz = random.randint(0,self.state.last_node_pointer_z)
-        schematic_args = self.state.find_build_location(0,0,building,wood,ignore_sector=True, max_y_diff=6)
+        schematic_args = self.state.find_build_location(0,0,building,wood,ignore_sector=True, max_y_diff=self.building_max_y_diff)
         if schematic_args is False:  # flip the x and z
             print("Error: could not find build location!")
             return False
@@ -115,6 +119,10 @@ class Simulation:
         print("Successfully initialized main street! Go to position "+str(fixed_pos))
         return True
 
+
+    def update_building_max_y_diff(self):
+        y = self.building_max_y_diff_tries + 1
+        self.building_max_y_diff = min(y, 6)
 
 
     def step(self, times=1, is_rendering=True):
