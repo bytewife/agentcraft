@@ -155,10 +155,10 @@ class TYPE_TILES:
 			""
 		},
 		TYPE.MAJOR_ROAD.value: {  # MAJOR ROAD
-
 		},
 		TYPE.MINOR_ROAD.value: {  # MINOR ROAD
-
+			"minecraft:bricks", "minecraft:granite", "minecraft:polished_granite", "minecraft:brick_slab",
+			"minecraft:granite_slab"
 		},
 		TYPE.BRIDGE.value: {  # BRIDGE
 

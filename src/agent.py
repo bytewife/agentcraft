@@ -155,7 +155,7 @@ class Agent:
         self.water_decay = -0.3 # lose this per turn
         self.water_inc_rate = 10
         self.thirst_thresh = 50
-        self.rest_decay = -0.5
+        self.rest_decay = -0.4  # sprawl factor
         self.rest_inc_rate = 2
         self.rest_thresh = 30
         self.rest_max = 200#100
@@ -649,7 +649,7 @@ class Agent:
                 # there are no build spots. so let's do something else
                 self.set_motive(self.Motive.LOGGING)
         elif new_motive.name == self.Motive.LOGGING.name:
-            self.set_path_to_nearest_spot(self.state.trees, 5, 10, 10, search_neighbors_instead=True)
+            self.set_path_to_nearest_spot(self.state.trees, 5, 10, 8, search_neighbors_instead=True)  # this affects spawl
             if len(self.path) < 1:  # if no trees were found
                 self.set_motive(self.Motive.REPLENISH_TREE)
         elif new_motive.name == self.Motive.REPLENISH_TREE.name:

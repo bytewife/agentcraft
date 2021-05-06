@@ -73,6 +73,16 @@ class State:
             self.built = set()
             self.foreign_built = set()
 
+            if precomp_nodes is None or precomp_node_pointers is None:
+                self.nodes_dict, self.node_pointers = self.gen_nodes(self.len_x, self.len_z, self.node_size)
+            else:
+                self.nodes_dict = precomp_nodes
+                self.node_pointers = precomp_node_pointers
+                nodes_in_x = int(self.len_x / self.node_size)
+                nodes_in_z = int(self.len_z / self.node_size)
+                self.last_node_pointer_x = nodes_in_x * self.node_size - 1  # TODO verify the -1
+                self.last_node_pointer_z = nodes_in_z * self.node_size - 1
+
             if precomp_types == None:
                 self.types = self.gen_types(self.rel_ground_hm)  # 2D array. Exclude leaves because it would be hard to determine tree positions
             else:
@@ -98,15 +108,6 @@ class State:
             else:
                 self.sectors = precomp_sectors
 
-            if precomp_nodes is None or precomp_node_pointers is None:
-                self.nodes_dict, self.node_pointers = self.gen_nodes(self.len_x, self.len_z, self.node_size)
-            else:
-                self.nodes_dict = precomp_nodes
-                self.node_pointers = precomp_node_pointers
-                nodes_in_x = int(self.len_x / self.node_size)
-                nodes_in_z = int(self.len_z / self.node_size)
-                self.last_node_pointer_x = nodes_in_x * self.node_size - 1  # TODO verify the -1
-                self.last_node_pointer_z = nodes_in_z * self.node_size - 1
 
             self.prosperity = np.zeros((self.len_x, self.len_z))
             self.traffic = np.zeros((self.len_x, self.len_z))
@@ -1020,6 +1021,12 @@ class State:
                 type_name = self.determine_type(x, z, heightmap).name
                 if type_name == "TREE":
                     self.trees.append((x, z))
+                elif type_name == "ROAD":
+                    nptr = self.node_pointers[(x,z)]
+                    if nptr!= None:
+                        node = self.nodes(*nptr)
+                        self.roads.append(node)
+                        self.road_nodes.add(node)
                 elif type_name == "WATER":
                     self.water.append((x,z))
                 elif type_name == "LAVA":

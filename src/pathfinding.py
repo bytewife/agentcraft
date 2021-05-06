@@ -84,7 +84,7 @@ class Pathfinding:
             if tx < 0 or tz < 0 or tx > max_x or tz > max_z:
                 continue
             nptr = self.state.node_pointers[(tx, tz)]
-            action_cost = 100 if nptr is not None and self.state.nodes(*nptr) in self.state.roads else 200
+            action_cost = 0 if nptr is not None and self.state.nodes(*nptr) in self.state.roads else 200
             #     self.action_cost = 100
             # else:
             #     self.action_cost = state.nodes[state.node_pointers[pos]].action_cost
