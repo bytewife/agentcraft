@@ -191,6 +191,7 @@ class Agent:
         self.is_child_bearing = False
         self.courtship_requirement = 1  # number of times needed to interact with lover to propagate
         self.courtship_current = 0
+        self.is_busy = False
 
         ### SOCIALS
         self.mutual_friends = set()
@@ -201,6 +202,7 @@ class Agent:
     def socialize(self, found_socialization):  #
         self.socialize_want += 1
         if self.socialize_want < self.socialize_threshold: return  # TODO unlock this somewhere
+        if self.is_busy: return
         if found_socialization: return  # TODO unlock this somewhere
         for agent in list(self.state.agents_in_nodes[self.node.center] - {self}):
             # if agent == self: continue
@@ -389,6 +391,7 @@ class Agent:
             if self.motive == self.Motive.REST.name:
                 status = self.do_rest_task()
             if self.motive == self.Motive.WATER.name:
+                self.is_busy = True
                 status = self.do_water_task()
             if self.motive == self.Motive.BUILD.name:
                 if self.build_params is None:
@@ -400,10 +403,13 @@ class Agent:
                     self.do_build_task(*self.build_params)
                 status = self.do_idle_task()
             elif self.motive == self.Motive.LOGGING.name:
+                self.is_busy = True
                 status = self.do_log_task()
             elif self.motive == self.Motive.REPLENISH_TREE.name:
+                self.is_busy = True
                 status = self.do_replenish_tree_task()
             elif self.motive == self.Motive.PROPAGATE.name:
+                self.is_busy = True
                 status = self.do_propagate_task()
             elif self.motive == self.Motive.SOCIALIZE_LOVER.name or self.motive == self.Motive.SOCIALIZE_FRIEND.name or self.motive == self.Motive.SOCIALIZE_ENEMY.name:
                 if not self.is_mid_socializing:
@@ -587,6 +593,7 @@ class Agent:
 
     def do_log_task(self):
 
+        self.is_busy = True
         status, sx, sz = self.collect_from_adjacent_spot(self.state, check_func=src.manipulation.is_log, manip_func=src.manipulation.cut_tree_at, prosperity_inc=src.my_utils.ACTION_PROSPERITY.LOGGING)
         # get log type
         y = self.state.rel_ground_hm[sx][sz]
@@ -620,6 +627,7 @@ class Agent:
     # prepares for motive
     def set_motive(self, new_motive : Enum):
         self.is_resting = False
+        self.is_busy = False
         self.motive = new_motive.name
         if self.motive in src.my_utils.AGENT_ITEMS:
             self.current_action_item = choice(src.my_utils.AGENT_ITEMS[self.motive])
@@ -633,12 +641,14 @@ class Agent:
             result = self.state.find_build_location(self.x, self.z, building, self.building_material[:-4], self.building_max_y_diff)
             # now move to teh road
             if result:
+                print("buildingg "+building)
                 self.build_params = result
                 tx, tz = result[0].center
                 path = self.state.pathfinder.get_path((self.x, self.z), (tx, tz), self.state.len_x, self.state.len_z,
                                                                   self.state.legal_actions)
                 self.build_cost = cost
                 self.shared_resources[self.building_material] -= cost  # preemptively apply cost to avoid races
+                self.is_busy = True
                 self.set_path(path)
             else:
                 # if it's been too hard to find a spot due to max_y_diff, increase it
@@ -649,7 +659,7 @@ class Agent:
                 # there are no build spots. so let's do something else
                 self.set_motive(self.Motive.LOGGING)
         elif new_motive.name == self.Motive.LOGGING.name:
-            self.set_path_to_nearest_spot(self.state.trees, 5, 10, 8, search_neighbors_instead=True)  # this affects spawl
+            self.set_path_to_nearest_spot(self.state.trees, 5, 10, 5, search_neighbors_instead=True)  # this affects spawl
             if len(self.path) < 1:  # if no trees were found
                 self.set_motive(self.Motive.REPLENISH_TREE)
         elif new_motive.name == self.Motive.REPLENISH_TREE.name:

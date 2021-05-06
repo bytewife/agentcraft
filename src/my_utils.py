@@ -50,7 +50,7 @@ STRUCTURES = {
 		( "small_house_2_flex", 50 ),
 		( "small_house_3_flex", 50 ),
 		( "small_house_4_flex", 50 ),
-		("med_house_1_flex", 50),
+		("med_house_1_flex_keep_dark", 50),
 		("med_house_2_flex", 50),
 		("med_house_3_flex", 50),
 		("med_house_4_flex", 50),

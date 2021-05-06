@@ -1259,8 +1259,8 @@ class State:
                     well_nodes.add(self.nodes(*self.node_pointers[(x,z)]))
         return well_nodes, highest_y
 
-    def init_main_st(self):
-        if len(self.water) <= 10:
+    def init_main_st(self, create_well):
+        if len(self.water) <= 10 or create_well:
             sx = randint(0, self.last_node_pointer_x)
             sz = randint(0, self.last_node_pointer_z)
             result, y = self.create_well(sx, sz, 4, 4)

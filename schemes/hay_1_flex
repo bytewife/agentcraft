@@ -8,6 +8,6 @@ air[]                                                                           
 air[]                                                                                                air[]                                                                                                air[]                                                                                                
 
 hay_block[axis=y]                                                                                    hay_block[axis=y]                                                                                    hay_block[axis=y]                                                                                    
-air[]                                                                                                hay_block[axis=z]                                                                                    hay_block[axis=z]                                                                                    
-air[]                                                                                              air[]                                                                                                hay_block[axis=y]
+*air[]                                                                                                hay_block[axis=z]                                                                                    hay_block[axis=z]
+*air[]                                                                                              *air[]                                                                                                hay_block[axis=y]
 

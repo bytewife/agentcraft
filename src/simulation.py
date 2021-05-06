@@ -79,12 +79,14 @@ class Simulation:
         result = False  # returns agent positions or False
         i=0
         max_tries = 50
+        create_well = False
         while result is False:
             self.state.reset_for_restart(use_heavy=True)
             # self.state.construction.clear()
             # self.state.roads.clear()
             if i > max_tries: return False
-            result = self.state.init_main_st()
+            create_well = i > 25
+            result = self.state.init_main_st(create_well)
             i+=1
 
         # build a house

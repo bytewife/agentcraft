@@ -287,13 +287,15 @@ def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, bui
                     return False, [], []
                 block = blocks[index]
                 use_head = False
+                ignore_block = False
                 # check for flex tile
                 if block[0] == '#':
                     insert_pos = int(block[1])
                     block = block[2:2+insert_pos]+wood_type+block[2+insert_pos:]
+                if block[0] == '*':
+                    ignore_block = True
                 elif block[:11] == "player_head":
                     use_head = True
-                block = "minecraft:" + block
                 block = adjust_property_by_rotation(block, property="facing=", longest_len=5, rot=rot, shortest_len=4, rot_factor=1)
                 by = y
                 bx = None
@@ -316,7 +318,9 @@ def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, bui
                     src.manipulation.flood_kill_leaves(state, bx, by, bz, 0)
                 if src.manipulation.is_log_flood(pblock):
                     src.manipulation.flood_kill_logs(state, bx, by, bz, 0)
-                if use_head == False:
+                if ignore_block:
+                    pass
+                elif use_head == False:
                     src.states.set_state_block(state, bx, by, bz, block)
                 else:
                     src.my_utils.setBlockWithData(bx + state.world_x, by + state.world_y,

@@ -13,15 +13,16 @@ import src.agent
 import src.states
 
 if __name__ == '__main__':
-    x1 = 6300
-    z1 = 6300
-    x2 = 6500
-    z2 = 6500
+    x1 = 6900
+    z1 = 6900
+    x2 = 7100
+    z2 = 7100
 
     area = [x1,z1,x2,z2]
     area = src.my_utils.correct_area(area)
     file_name = ""
-    clean_agents = "kill @e[type=minecraft:armor_stand,x={},y=64,z={},distance=..100]".format(str((x2+x1)/2), str((z2+z1)/2))
+    clean_rad = int(max(abs(x2-x1), abs(z2-z1)))
+    clean_agents = "kill @e[type=minecraft:armor_stand,x={},y=64,z={},distance=..{}]".format(str((x2+x1)/2), str((z2+z1)/2), clean_rad)
     http_framework.interfaceUtils.runCommand(clean_agents)
 
     frame_duration = 0.05
