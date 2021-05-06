@@ -13,8 +13,8 @@ import src.agent
 import src.states
 
 if __name__ == '__main__':
-    x1 = 5900
-    z1 = 5900
+    x1 = 6300
+    z1 = 6300
     x2 = 6100
     z2 = 6100
 
@@ -24,7 +24,7 @@ if __name__ == '__main__':
     clean_agents = "kill @e[type=minecraft:armor_stand,x={},y=64,z={},distance=..100]".format(str((x2+x1)/2), str((z2+z1)/2))
     http_framework.interfaceUtils.runCommand(clean_agents)
 
-    frame_duration = 0.5
+    frame_duration = 0.05
     sim = src.simulation.Simulation(area, rendering_step_duration=frame_duration, is_rendering_each_step=False)
 
     timesteps = 2000

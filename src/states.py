@@ -1757,12 +1757,19 @@ class State:
 
         ## borders
         for aux_path in aux_paths:
-            last_aux_y = self.static_ground_hm[aux_path[0][0]][aux_path[0][1]] - 1
+            # last_aux_y = self.static_ground_hm[aux_path[0][0]][aux_path[0][1]] - 1
             length = len(aux_path)
+            static_temp = self.rel_ground_hm.copy()
+            for x in range(len(static_temp)):
+                for z in range(len(static_temp[0])):
+                    static_y = self.static_ground_hm[x][z]
+                    if static_temp[x][z] > static_y:
+                        static_temp[x][z] = static_y
             for i in range(length):
                 x = aux_path[i][0]
                 z = aux_path[i][1]
-                y = int(self.static_ground_hm[x][z]) - 1
+                # y = int(self.static_ground_hm[x][z]) - 1
+                y = int(static_temp[x][z]) - 1
                 block = self.blocks(x,y,z)
                 if self.blocks(x,y,z )== "minecraft:water" or src.manipulation.is_log(self, x, y, z):
                     continue
@@ -2025,11 +2032,11 @@ class State:
                 if node2.lot is not None:
                     (cx2, cy2) = node2.lot.center
                     print('center is '+str((cx2, cy2)))
-                    print('with xz '+str((x,z)))
+                    # print('with xz '+str((x,z)))
                     # (x, z) = (x + x - cx2, z + z - cy2)  ### CHANGED
-                    print('going to is '+str((x, z)))
+                    # print('going to is '+str((x, z)))
                     # clamp road endpoints
-                    print("BUILDING ROAD. IS IT LONG?")
+                    # print("BUILDING ROAD. IS IT LONG?")
                     if x >= self.last_node_pointer_x:
                         print("YES")
                         x = self.last_node_pointer_x

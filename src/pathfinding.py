@@ -84,7 +84,7 @@ class Pathfinding:
             if tx < 0 or tz < 0 or tx > max_x or tz > max_z:
                 continue
             nptr = self.state.node_pointers[(tx, tz)]
-            action_cost = 1 if nptr is not None and self.state.nodes(*nptr) in self.state.roads else 10000
+            action_cost = 100 if nptr is not None and self.state.nodes(*nptr) in self.state.roads else 200
             #     self.action_cost = 100
             # else:
             #     self.action_cost = state.nodes[state.node_pointers[pos]].action_cost
@@ -147,7 +147,7 @@ class Pathfinding:
         self.sectors_nodes[new].update(self.sectors_nodes[to_remove])
         self.sectors_nodes.pop(to_remove)
         self.sector_sizes[new] += self.sector_sizes[to_remove]
-        self.sector_sizes.pop(to_remove)
+        self.sector_sizes[to_remove] = 0
 
 
     def create_sectors(self, heightmap, legal_actions):
@@ -321,7 +321,7 @@ class Pathfinding:
                             new_sector = self.sectors[nx][nz]
                             self.sectors[x][z] = new_sector
                             self.sector_sizes[old_sector] -= 1
-                            self.sector_sizes[new_sector] += 1
+                            # self.sector_sizes[new_sector] += 1  # TODO figure out where teh entry for sector_sizes isn't being created
                         else:
                             sector = self.sectors[x][z]
                             self.sector_sizes[sector] -= 1
@@ -546,7 +546,7 @@ class Pathfinding:
                         coord_to_prop_into = (ox, oz)
                         sector_to_prop_into = osector
                         sector_to_remove = sector
-                    self.merge_sectors(self.state, sectors, sector_to_remove, sector_to_prop_into)
+                    self.merge_sectors(self.state, self.sectors, sector_to_remove, sector_to_prop_into)
                     # self.sector_sizes[sector_to_remove] = 0
                     # self.propagate_sector_depth_limited(*coord_to_prop_into, sector=sector_to_prop_into, sectors=sectors,
                     #                        sector_sizes=sector_sizes, legal_actions=legal_actions, is_redoing=True)
@@ -575,7 +575,7 @@ class Pathfinding:
                             self.sector_sizes[self.n_sectors] = 1
                             self.sectors[x][z] = self.n_sectors
                             # if this is ever called, dont call it again
-                            self.propagate_sector_depth_limited(x, z, sector=self.n_sectors, sectors=sectors, sector_sizes=sector_sizes, legal_actions=legal_actions, is_redoing=True)
+                            self.propagate_sector_depth_limited(x, z, sector=self.n_sectors, sectors=self.sectors, sector_sizes=sector_sizes, legal_actions=legal_actions, is_redoing=True)
                         new_sector_created = True
                     # src.pathfinding.a+=1
                     # print(src.pathfinding.a)

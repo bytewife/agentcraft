@@ -310,6 +310,8 @@ class TYPE_TILES:
 			"minecraft:poppy",
 			"minecraft:dandelion",
 			"minecraft:large_fern",
+			"minecraft:cornflower",
+			"minecraft:tall_grass",
 			"minecraft:lily_pad",
 			"minecraft:allium",
 			"minecraft:red_tulip",

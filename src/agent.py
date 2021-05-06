@@ -18,6 +18,7 @@ import src.my_utils
 import src.scheme_utils
 import http_framework.interfaceUtils
 import names
+from random import shuffle
 
 class Agent:
 
@@ -38,6 +39,15 @@ class Agent:
         Motive.SOCIALIZE_FRIEND: 10,
         Motive.SOCIALIZE_ENEMY: 10,
     }
+
+    shared_resource_list = [
+        "oak_log",
+        "dark_oak_log",
+        "spruce_log",
+        "birch_log",
+        "acacia_log",
+        "jungle_log",
+    ]
 
     shared_resources = {
         "oak_log": 0,
@@ -142,7 +152,7 @@ class Agent:
         self.favorite_item = choice(src.my_utils.AGENT_ITEMS['FAVORITE'])
         self.head = head
         self.water_max = 100
-        self.water_decay = -0.5 # lose this per turn
+        self.water_decay = -0.3 # lose this per turn
         self.water_inc_rate = 10
         self.thirst_thresh = 50
         self.rest_decay = -0.5
@@ -161,7 +171,7 @@ class Agent:
         self.build_params = None
         self.building_material = ''
         self.build_cost = 0
-        self.building_max_y_diff = 2
+        self.building_max_y_diff = 3
         self.inc_building_max_y_diff = 0
         self.tree_grow_iteration = 0
         self.tree_grow_iterations_max = randint(3,5)
@@ -236,11 +246,13 @@ class Agent:
     def approach_agent(self, agent):
         # dx = agent.x - self.x
         self.set_path_to_nearest_spot(agent, 3, 1, 0, search_neighbors_instead=True)
-        if len(self.path) > 3:  # error
+        l = len(self.path)
+        if l > 3:  # error
             self.path.clear()
             agent.choose_motive()
             self.choose_motive()
         else:
+            if l > 0: self.path.pop(0)
             self.found_and_moving_to_socialization = True
             agent.found_and_moving_to_socialization = True
 
@@ -293,18 +305,21 @@ class Agent:
             return choice[0]
 
     def check_can_build(self, phase):
-        for res, amt in self.shared_resources.items():
-            if phase == 1:
+        shuffle(Agent.shared_resource_list)
+        for key in Agent.shared_resource_list:
+            amt = Agent.shared_resources[key]
+            if amt <= self.state.build_minimum_phase_1: continue
+            elif phase == 1:
                 if amt > self.state.build_minimum_phase_1:
-                    self.building_material = res
+                    self.building_material = key
                     return True
             elif phase == 2:
                 if amt > self.state.build_minimum_phase_2:
-                    self.building_material = res
+                    self.building_material = key
                     return True
             elif phase == 3:
                 if amt > self.state.build_minimum_phase_3:
-                    self.building_material = res
+                    self.building_material = key
                     return True
             else:
                 return False
@@ -416,6 +431,7 @@ class Agent:
                         self.complete_socialization()
                         self.choose_motive()
             elif self.motive == self.Motive.IDLE.name:
+                self.is_mid_socializing = False
                 status = self.do_idle_task()
         # the bad part about this is that jungle trees can take multiple bouts to cut
         if self.turns_staying_still > Agent.max_turns_staying_still and status is False:  # _move in random direction if still for too long
@@ -587,7 +603,7 @@ class Agent:
             self.set_motive(self.Motive.IDLE)
             return True
         elif status == src.manipulation.TASK_OUTCOME.FAILURE.name:  # if they got sniped
-            print("tree sniped")
+            # print("tree sniped")
             # udate this tree
             for dir in src.movement.idirections:
                 point = (dir[0] + self.x, dir[1] + self.z)
