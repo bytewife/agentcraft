@@ -219,7 +219,7 @@ class Pathfinding:
                     if cx < 0 or cx >= len(legal_actions) or cz < 0 or cz >= len(legal_actions[0]):
                         continue
                     childs_sector = sectors[cx][cz]
-                    if childs_sector != sector or childs_sector == -1:  # if the tile doesn't have a sector, add to list to expand
+                    if childs_sector == -1:  # if the tile doesn't have a sector, add to list to expand
                         child_pos = (cx, cz)
                         if not child_pos in closed:
                             open.append(child_pos)
@@ -266,75 +266,75 @@ class Pathfinding:
                     #     closed.add(child_pos)
 
 
-    def update_sector_for_block(self,x,z, sectors, sector_sizes, legal_actions, old_legal_actions):
-        found_legal_action = False
-        # i think u should do this only if a change is legal actions was found
-
-        if count_xor(legal_actions[x][z], old_legal_actions[x][z]) > 0:
-            changed = legal_actions[x][z] ^ old_legal_actions[x][z]
-            rmost = -1
-            try:
-                rmost = rindex(legal_actions[x][z], True)
-            except ValueError:
-                rmost = -1
-            # print(str(old_legal_actions[x][z]) +" and "+str(legal_actions[x][z])+" give rise to "+str(changed))
-            i = 0
-            new_sector_created = False
-            for bit in changed:
-            # check the sectors height in new dir, compare heights
-            # if can jump between diff in heights, get sector with smaller size. this'll be the sector to propagate from the other
-                dir = src.movement.Directions[i]
-                ox = x+dir[0]
-                oz = x+dir[1]
-                if self.state.out_of_bounds_2D(ox, oz): continue
-                if abs(self.state.rel_ground_hm[x][z] - self.state.rel_ground_hm[ox][oz]) <= self.state.agent_jump_ability: # can now go here after not being able to
-                    # get larger sector
-                    sector = self.sectors[x][z]
-                    osector = self.sectors[ox][oz]
-                    if sector == osector: continue
-                    coord_to_prop_into = (x,z) # smaller
-                    sector_to_prop_into = sector
-                    size = self.sector_sizes[sector]
-                    osize = self.sector_sizes[osector]
-                    sector_to_remove = osector
-                    if osize < size:
-                        coord_to_prop_into = (ox, oz)
-                        sector_to_prop_into = osector
-                        sector_to_remove = sector
-                    self.merge_sectors(self.state, sectors, sector_to_remove, sector_to_prop_into)
-                    # self.sector_sizes[sector_to_remove] = 0
-                    # self.propagate_sector_depth_limited(*coord_to_prop_into, sector=sector_to_prop_into, sectors=sectors,
-                    #                        sector_sizes=sector_sizes, legal_actions=legal_actions, is_redoing=True)
-
-                    # self.sector_sizes[sector_to_remove] = 0
-                    # TODO one thing we can do here is keep an array of the tiles in each sector, and simply append them toghether when merging, rather than propagaping
-                    # self.propagate_sector1(*coord_to_prop_into, sector=sector_to_prop_into, sectors=sectors, sector_sizes=sector_sizes, legal_actions=legal_actions, is_redoing=True)
-                else:  # tiles are no longer connected, propagate into this tile's sector, append new sector
-                    if not new_sector_created:
-                        if self.sectors[x][z] != self.sectors[ox][oz]:  # already done
-                            continue
-                        # #_if a this tile is now connected to another sector, append to that instead. might break it?
-                        if rmost != -1:
-                            dir = src.movement.Directions[rmost]
-                            nx = x+dir[0]
-                            nz = z+dir[1]
-                            old_sector = self.sectors[x][z]
-                            new_sector = self.sectors[nx][nz]
-                            self.sectors[x][z] = new_sector
-                            self.sector_sizes[old_sector] -= 1
-                            # self.sector_sizes[new_sector] += 1  # TODO figure out where teh entry for sector_sizes isn't being created
-                        else:
-                            sector = self.sectors[x][z]
-                            self.sector_sizes[sector] -= 1
-                            self.n_sectors += 1
-                            self.sector_sizes[self.n_sectors] = 1
-                            self.sectors[x][z] = self.n_sectors
-                            # if this is ever called, dont call it again
-                            self.propagate_sector_depth_limited(x, z, sector=self.n_sectors, sectors=sectors, sector_sizes=sector_sizes, legal_actions=legal_actions, is_redoing=True)
-                        new_sector_created = True
-                    # src.pathfinding.a+=1
-                    # print(src.pathfinding.a)
-            i+=1
+    # def update_sector_for_block(self,x,z, sectors, sector_sizes, legal_actions, old_legal_actions):
+    #     found_legal_action = False
+    #     # i think u should do this only if a change is legal actions was found
+    #
+    #     if count_xor(legal_actions[x][z], old_legal_actions[x][z]) > 0:
+    #         changed = legal_actions[x][z] ^ old_legal_actions[x][z]
+    #         rmost = -1
+    #         try:
+    #             rmost = rindex(legal_actions[x][z], True)
+    #         except ValueError:
+    #             rmost = -1
+    #         # print(str(old_legal_actions[x][z]) +" and "+str(legal_actions[x][z])+" give rise to "+str(changed))
+    #         i = 0
+    #         new_sector_created = False
+    #         for bit in changed:
+    #         # check the sectors height in new dir, compare heights
+    #         # if can jump between diff in heights, get sector with smaller size. this'll be the sector to propagate from the other
+    #             dir = src.movement.Directions[i]
+    #             ox = x+dir[0]
+    #             oz = x+dir[1]
+    #             if self.state.out_of_bounds_2D(ox, oz): continue
+    #             if abs(self.state.rel_ground_hm[x][z] - self.state.rel_ground_hm[ox][oz]) <= self.state.agent_jump_ability: # can now go here after not being able to
+    #                 # get larger sector
+    #                 sector = self.sectors[x][z]
+    #                 osector = self.sectors[ox][oz]
+    #                 if sector == osector: continue
+    #                 coord_to_prop_into = (x,z) # smaller
+    #                 sector_to_prop_into = sector
+    #                 size = self.sector_sizes[sector]
+    #                 osize = self.sector_sizes[osector]
+    #                 sector_to_remove = osector
+    #                 if osize < size:
+    #                     coord_to_prop_into = (ox, oz)
+    #                     sector_to_prop_into = osector
+    #                     sector_to_remove = sector
+    #                 self.merge_sectors(self.state, sectors, sector_to_remove, sector_to_prop_into)
+    #                 # self.sector_sizes[sector_to_remove] = 0
+    #                 # self.propagate_sector_depth_limited(*coord_to_prop_into, sector=sector_to_prop_into, sectors=sectors,
+    #                 #                        sector_sizes=sector_sizes, legal_actions=legal_actions, is_redoing=True)
+    #
+    #                 # self.sector_sizes[sector_to_remove] = 0
+    #                 # TODO one thing we can do here is keep an array of the tiles in each sector, and simply append them toghether when merging, rather than propagaping
+    #                 # self.propagate_sector1(*coord_to_prop_into, sector=sector_to_prop_into, sectors=sectors, sector_sizes=sector_sizes, legal_actions=legal_actions, is_redoing=True)
+    #             else:  # tiles are no longer connected, propagate into this tile's sector, append new sector
+    #                 if not new_sector_created:
+    #                     if self.sectors[x][z] != self.sectors[ox][oz]:  # already done
+    #                         continue
+    #                     # #_if a this tile is now connected to another sector, append to that instead. might break it?
+    #                     if rmost != -1:
+    #                         dir = src.movement.Directions[rmost]
+    #                         nx = x+dir[0]
+    #                         nz = z+dir[1]
+    #                         old_sector = self.sectors[x][z]
+    #                         new_sector = self.sectors[nx][nz]
+    #                         self.sectors[x][z] = new_sector
+    #                         self.sector_sizes[old_sector] -= 1
+    #                         # self.sector_sizes[new_sector] += 1  # TODO figure out where teh entry for sector_sizes isn't being created
+    #                     else:
+    #                         sector = self.sectors[x][z]
+    #                         self.sector_sizes[sector] -= 1
+    #                         self.n_sectors += 1
+    #                         self.sector_sizes[self.n_sectors] = 1
+    #                         self.sectors[x][z] = self.n_sectors
+    #                         # if this is ever called, dont call it again
+    #                         self.propagate_sector_depth_limited(x, z, sector=self.n_sectors, sectors=sectors, sector_sizes=sector_sizes, legal_actions=legal_actions, is_redoing=True)
+    #                     new_sector_created = True
+    #                 # src.pathfinding.a+=1
+    #                 # print(src.pathfinding.a)
+    #         i+=1
 
 
     # if legal_actions[x][z] != old_legal_actions[x][z]:
@@ -526,28 +526,35 @@ class Pathfinding:
             # print(str(old_legal_actions[x][z]) +" and "+str(legal_actions[x][z])+" give rise to "+str(changed))
             i = 0
             new_sector_created = False
+            did_merge = False
             for bit in changed:
             # check the sectors height in new dir, compare heights
             # if can jump between diff in heights, get sector with smaller size. this'll be the sector to propagate from the other
+                if bit == False: continue
                 dir = src.movement.Directions[i]
+                i += 1
                 ox = x+dir[0]
-                oz = x+dir[1]
+                oz = z+dir[1]
                 if self.state.out_of_bounds_2D(ox, oz): continue
                 if abs(self.state.rel_ground_hm[x][z] - self.state.rel_ground_hm[ox][oz]) <= self.state.agent_jump_ability: # can now go here after not being able to
                     # get larger sector
-                    sector = self.sectors[x][z]
-                    osector = self.sectors[ox][oz]
-                    if sector == osector: continue
-                    coord_to_prop_into = (x,z) # smaller
-                    sector_to_prop_into = sector
-                    size = self.sector_sizes[sector]
-                    osize = self.sector_sizes[osector]
-                    sector_to_remove = osector
-                    if osize < size:
-                        coord_to_prop_into = (ox, oz)
-                        sector_to_prop_into = osector
-                        sector_to_remove = sector
-                    self.merge_sectors(self.state, self.sectors, sector_to_remove, sector_to_prop_into)
+                    if not did_merge:
+                        sector = self.sectors[x][z]
+                        osector = self.sectors[ox][oz]
+                        if sector == osector: continue
+                        coord_to_prop_into = (x,z) # smaller
+                        sector_to_prop_into = sector
+                        size = self.sector_sizes[sector]
+                        osize = self.sector_sizes[osector]
+                        sector_to_remove = osector
+                        # if osize < size:
+                        #     coord_to_prop_into = (ox, oz)
+                        #     sector_to_prop_into = osector
+                        #     sector_to_remove = sector
+                        sector_to_prop_into = sector
+                        sector_to_remove = osector
+                        self.merge_sectors(self.state, self.sectors, sector_to_remove, sector_to_prop_into)
+                        did_merge = True
                     # self.sector_sizes[sector_to_remove] = 0
                     # self.propagate_sector_depth_limited(*coord_to_prop_into, sector=sector_to_prop_into, sectors=sectors,
                     #                        sector_sizes=sector_sizes, legal_actions=legal_actions, is_redoing=True)
@@ -560,27 +567,30 @@ class Pathfinding:
                         if self.sectors[x][z] != self.sectors[ox][oz]:  # already done
                             continue
                         # #_if a this tile is now connected to another sector, append to that instead. might break it?
-                        if rmost != -1:
-                            dir = src.movement.Directions[rmost]
-                            nx = x+dir[0]
-                            nz = z+dir[1]
-                            old_sector = self.sectors[x][z]
-                            new_sector = self.sectors[nx][nz]
-                            self.sectors[x][z] = new_sector
-                            self.sector_sizes[old_sector] -= 1
-                            self.sector_sizes[new_sector] += 1
-                        else:
-                            sector = self.sectors[x][z]
-                            self.sector_sizes[sector] -= 1
-                            self.n_sectors += 1
-                            self.sector_sizes[self.n_sectors] = 1
-                            self.sectors[x][z] = self.n_sectors
-                            # if this is ever called, dont call it again
-                            self.propagate_sector_depth_limited(x, z, sector=self.n_sectors, sectors=self.sectors, sector_sizes=sector_sizes, legal_actions=legal_actions, is_redoing=True)
+                        # if rmost != -1:  # this doesn't actually make sense since the final changaed bit can be in the first if statement
+                        #     dir = src.movement.Directions[rmost]
+                        #     nx = x+dir[0]
+                        #     nz = z+dir[1]
+                        #     old_sector = self.sectors[x][z]
+                        #     new_sector = self.sectors[nx][nz]
+                        #     self.sectors[x][z] = new_sector
+                        #     self.sector_sizes[old_sector] -= 1
+                        #     self.sector_sizes[new_sector] += 1
+                        # else:
+                        sector = self.sectors[x][z]
+                        self.sector_sizes[sector] -= 1
+                        self.sectors_nodes[sector].remove((x,z))
+                        self.n_sectors += 1
+                        self.sector_sizes[self.n_sectors] = 1
+                        self.sectors_nodes[self.n_sectors] = {(x,z)}
+                        self.sectors[x][z] = self.n_sectors
+                        # if this is ever called, dont call it again
                         new_sector_created = True
+            if new_sector_created:
+                self.propagate_sector_depth_limited(x, z, sector=self.n_sectors, sectors=self.sectors, sector_sizes=sector_sizes, legal_actions=legal_actions, is_redoing=True)
+
                     # src.pathfinding.a+=1
                     # print(src.pathfinding.a)
-            i+=1
 
 
     # if legal_actions[x][z] != old_legal_actions[x][z]:

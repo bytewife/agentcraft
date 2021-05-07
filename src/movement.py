@@ -87,8 +87,11 @@ def check_if_legal_move(state, x, y, z, x_offset, z_offset, jump_ability, height
     i = 1
     if target_y + i > state.len_y-1: return False  # out of bounds
     target = state.blocks(target_x,target_y + i,target_z)
+    if not ':' in target:
+        target = "minecraft:"+target
     if target[-1] == ']':
         target = target[:target.index('[')]
+    print("target is "+target)
     return target in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.PASSTHROUGH.value]
 
 

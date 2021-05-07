@@ -164,7 +164,7 @@ class Agent:
         self.happiness_decay = -0.05  # the inevitable creep of loneliness
         self.unshared_resources = {
             "water": self.water_max * 0.8,
-            "rest": self.rest_max * 0.6,
+            "rest": self.rest_max * 0.1,
             "happiness": self.happiness_max * 0.8
         }
         # self.build_params = set()

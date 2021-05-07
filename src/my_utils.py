@@ -179,6 +179,7 @@ class TYPE_TILES:
 			"minecraft:cave_air"
 		},
 		TYPE.PASSTHROUGH.value: {
+			"air",
 			"minecraft:air",
 			"minecraft:cave_air",
 			"minecraft:vines",
