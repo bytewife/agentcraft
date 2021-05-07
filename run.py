@@ -60,10 +60,10 @@ if __name__ == '__main__':
     #         sim.state.set_block(x, y, z, "minecraft:oak_sign")
 
     #Water
-    for r in sim.state.built:
-        x,z = r.center
-        y = sim.state.rel_ground_hm[x][z] + 1
-        sim.state.set_block(x,y,z,"minecraft:gold_block")
+    # for r in sim.state.built:
+    #     x,z = r.center
+    #     y = sim.state.rel_ground_hm[x][z] + 1
+    #     sim.state.set_block(x,y,z,"minecraft:gold_block")
 
     sim.state.step(1)
 

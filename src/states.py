@@ -1642,111 +1642,115 @@ class State:
             road_block_slabs = src.my_utils.ROAD_SETS['default_slabs']
         ## render
         prev_road_y = self.static_ground_hm[block_path[0][0]][block_path[0][1]] - 1
-        length = len(block_path)
-        static_temp = self.rel_ground_hm.copy()
-        for x in range(len(static_temp)):
-            for z in range(len(static_temp[0])):
-                static_y = self.static_ground_hm[x][z]
-                if static_temp[x][z] > static_y:
-                    static_temp[x][z] = static_y
-        for i in range(length):
-            x = block_path[i][0]
-            z = block_path[i][1]
-            y = int(static_temp[x][z]) - 1
-            if self.blocks(x,y,z )== "minecraft:water":
-                continue
-            if src.manipulation.is_log(self, x, y + 1, z):
-                src.manipulation.flood_kill_logs(self, x, y + 1, z)
-                if (x, z) in self.trees:  # when sniped
-                    self.trees.remove((x,z))
-            if random() < inner_block_rate:
-                # kill tree
-                check_next_road = True
-                check_next_next_road = True
-                if i >= length-2:
-                    check_next_road = False
-                    check_next_next_road = False
-                elif i >= length-1:
-                    check_next_road = False
-                next_road_y = 0
-                next_next_road_y = 0
-                if check_next_road:
-                    next_road_y = static_temp[block_path[i+1][0]][block_path[i+1][1]] - 1
-                if check_next_next_road:
-                    nnx = block_path[i + 2][0]
-                    nnz = block_path[i + 2][1]
-                    next_next_road_y =static_temp[nnx][nnz] - 1
-                ndy = next_road_y - y
-                nndy = next_next_road_y - next_road_y
-                px = x # placement x
-                py = y
-                pz = z
-                block = choice(src.my_utils.ROAD_SETS['default'])
-                if check_next_next_road:
-                    if ndy == 0:
-                        pass
-                    elif ndy > 0 and nndy == 0: # slab above
-                        py+=1
-                        block += "_slab"
-                    elif ndy < 0 and nndy == 0:  # slab below (in place)
-                        block += "_slab"
-                    elif ndy > 0 and nndy > 0: # slope 1
-                        py+=1
-                        dx = block_path[i+1][0] - block_path[i][0]
-                        dz = block_path[i+1][1] - block_path[i][1]
-                        facing = None
-                        if dx > 0 and dz == 0: facing = None
-                        elif dx < 0 and dz == 0: facing = "west"
-                        elif dz > 0 and dx == 0: facing = "south"
-                        elif dz < 0 and dx == 0: facing = "north"
-                        else: pass
-                        if facing is not None:
-                            block += """_stairs[facing={facing}]""".format(facing=facing)
-                        else:
-                            block += '_slab'
-                    elif ndy < 0 and nndy > 0 : # flatten next block to get slope 0
-                        set_state_block(self,px, py, pz, block)
-                        px = block_path[i+1][0]
-                        pz = block_path[i+1][1]
-                        static_temp[px][pz]+=1
-                        set_state_block(self,px, py+1, pz, block)
-                    elif ndy < 0 and nndy < 0: # slope -1
-                        dx = block_path[i + 1][0] - block_path[i][0]
-                        dz = block_path[i + 1][1] - block_path[i][1]
-                        facing = None
-                        if dx > 0 and dz == 0: facing = "west"
-                        elif dx < 0 and dz == 0: facing = "east"
-                        elif dz > 0 and dx == 0: facing = "north"
-                        elif dz < 0 and dx == 0: facing = "south"
-                        else: pass
-                        if facing is not None:
-                            block += """_stairs[facing={facing}]""".format(facing=facing)
-                        else:
-                            block += '_slab'
-                    elif ndy > 0 and nndy < 0: # flatten (lower) next block to get slope 0
-                        set_state_block(self,px, py, pz, block)  # for curr
-                        px = block_path[i+1][0]
-                        pz = block_path[i+1][1]
-                        set_state_block(self,px, py, pz, block)  # for ahead
-                        py = static_temp[px][pz] + 1
-                        set_state_block(self,px, py, pz, "minecraft:air")  # for ahead
-                        static_temp[px][pz] = py
-                elif check_next_road:
-                    if ndy > 0:
-                        px = block_path[i+1][0]
-                        pz = block_path[i+1][1]
-                        py += 1
-                        block += "_slab"
-                    elif ndy < 0:
-                        block += "_slab"
-                static_temp[px][pz] = py+1
-                set_state_block(self, px, py, pz, block)
-                if not self.out_of_bounds_3D(px, py+1, pz):
-                    if 'snow' in self.blocks(px, py+1, pz):
-                        set_state_block(self, px, py+1, pz, 'minecraft:air')
-                set_state_block(self, px, py, pz, block)
-                if src.manipulation.is_leaf(self.blocks(x,y+2,z)):
-                    src.manipulation.flood_kill_leaves(self,x, y+2, z, 10)
+
+        def set_blocks_for_path(self, path, rate):
+            static_temp = self.rel_ground_hm.copy()
+            for x in range(len(static_temp)):
+                for z in range(len(static_temp[0])):
+                    static_y = self.static_ground_hm[x][z]
+                    if static_temp[x][z] > static_y:
+                        static_temp[x][z] = static_y
+            length = len(path)
+            for i in range(length):
+                x = path[i][0]
+                z = path[i][1]
+                y = int(static_temp[x][z]) - 1
+                if self.blocks(x,y,z )== "minecraft:water":
+                    continue
+                if src.manipulation.is_log(self, x, y + 1, z):
+                    src.manipulation.flood_kill_logs(self, x, y + 1, z)
+                    if (x, z) in self.trees:  # when sniped
+                        self.trees.remove((x,z))
+                if random() < rate:
+                    # kill tree
+                    check_next_road = True
+                    check_next_next_road = True
+                    if i >= length-2:
+                        check_next_road = False
+                        check_next_next_road = False
+                    elif i >= length-1:
+                        check_next_road = False
+                    next_road_y = 0
+                    next_next_road_y = 0
+                    if check_next_road:
+                        next_road_y = static_temp[path[i+1][0]][path[i+1][1]] - 1
+                    if check_next_next_road:
+                        nnx = path[i + 2][0]
+                        nnz = path[i + 2][1]
+                        next_next_road_y =static_temp[nnx][nnz] - 1
+                    ndy = next_road_y - y
+                    nndy = next_next_road_y - next_road_y
+                    px = x # placement x
+                    py = y
+                    pz = z
+                    block = choice(src.my_utils.ROAD_SETS['default'])
+                    if check_next_next_road:
+                        if ndy == 0:
+                            pass
+                        elif ndy > 0 and nndy == 0: # slab above
+                            py+=1
+                            block += "_slab"
+                        elif ndy < 0 and nndy == 0:  # slab below (in place)
+                            block += "_slab"
+                        elif ndy > 0 and nndy > 0: # slope 1
+                            py+=1
+                            dx = path[i+1][0] - path[i][0]
+                            dz = path[i+1][1] - path[i][1]
+                            facing = None
+                            if dx > 0 and dz == 0: facing = None
+                            elif dx < 0 and dz == 0: facing = "west"
+                            elif dz > 0 and dx == 0: facing = "south"
+                            elif dz < 0 and dx == 0: facing = "north"
+                            else: pass
+                            if facing is not None:
+                                block += """_stairs[facing={facing}]""".format(facing=facing)
+                            else:
+                                block += '_slab'
+                        elif ndy < 0 and nndy > 0 : # flatten next block to get slope 0
+                            set_state_block(self,px, py, pz, block)
+                            px = path[i+1][0]
+                            pz = path[i+1][1]
+                            static_temp[px][pz]+=1
+                            set_state_block(self,px, py+1, pz, block)
+                        elif ndy < 0 and nndy < 0: # slope -1
+                            dx = path[i + 1][0] - path[i][0]
+                            dz = path[i + 1][1] - path[i][1]
+                            facing = None
+                            if dx > 0 and dz == 0: facing = "west"
+                            elif dx < 0 and dz == 0: facing = "east"
+                            elif dz > 0 and dx == 0: facing = "north"
+                            elif dz < 0 and dx == 0: facing = "south"
+                            else: pass
+                            if facing is not None:
+                                block += """_stairs[facing={facing}]""".format(facing=facing)
+                            else:
+                                block += '_slab'
+                        elif ndy > 0 and nndy < 0: # flatten (lower) next block to get slope 0
+                            set_state_block(self,px, py, pz, block)  # for curr
+                            px = path[i+1][0]
+                            pz = path[i+1][1]
+                            set_state_block(self,px, py, pz, block)  # for ahead
+                            py = static_temp[px][pz] + 1
+                            set_state_block(self,px, py, pz, "minecraft:air")  # for ahead
+                            static_temp[px][pz] = py
+                    elif check_next_road:
+                        if ndy > 0:
+                            px = path[i+1][0]
+                            pz = path[i+1][1]
+                            py += 1
+                            block += "_slab"
+                        elif ndy < 0:
+                            block += "_slab"
+                    static_temp[px][pz] = py+1
+                    set_state_block(self, px, py, pz, block)
+                    if not self.out_of_bounds_3D(px, py+1, pz):
+                        if 'snow' in self.blocks(px, py+1, pz):
+                            set_state_block(self, px, py+1, pz, 'minecraft:air')
+                    set_state_block(self, px, py, pz, block)
+                    if src.manipulation.is_leaf(self.blocks(x,y+2,z)):
+                        src.manipulation.flood_kill_leaves(self,x, y+2, z, 10)
+
+        set_blocks_for_path(self,block_path,inner_block_rate)
 
         aux_paths = []
         for card in src.movement.cardinals:
@@ -1968,10 +1972,12 @@ class State:
         closest_point = None
         # print("given point is ")
         # print("path point is "+str(path_points))
-        if road_type == src.my_utils.TYPE.MINOR_ROAD.name:
-            closest_point = self.get_point_to_close_gap_minor(*point, path_points)  # connects 2nd end of minor roads to the nearest major or minor road. I think it's a single point
-        elif road_type == src.my_utils.TYPE.MAJOR_ROAD.name:  # extend major
-            closest_point = self.get_point_to_close_gap_major(node, *point, path_points)  # "extends a major road to the edge of a lot"
+
+        # if road_type == src.my_utils.TYPE.MINOR_ROAD.name:
+        #     closest_point = self.get_point_to_close_gap_minor(*point, path_points)  # connects 2nd end of minor roads to the nearest major or minor road. I think it's a single point
+        # elif road_type == src.my_utils.TYPE.MAJOR_ROAD.name:  # extend major
+        #     closest_point = self.get_point_to_close_gap_major(node, *point, path_points)  # "extends a major road to the edge of a lot"
+        closest_point = self.get_point_to_close_gap_minor(*point, path_points)  # connects 2nd end of minor roads to the nearest major or minor road. I think it's a single point
 
         # print("closest point is "+str(closest_point))
         if closest_point is not None:

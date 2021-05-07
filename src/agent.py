@@ -635,7 +635,8 @@ class Agent:
             self.current_action_item = choice(src.my_utils.AGENT_ITEMS[self.motive])
 
         if new_motive.name == self.Motive.REST.name:
-            self.set_path_to_nearest_spot(list(self.state.built_heightmap.keys()), 30, 10, 20, search_neighbors_instead=False)
+            places = list(self.state.built_heightmap.keys())
+            self.set_path_to_nearest_spot(places, 30, 10, 20, search_neighbors_instead=False)
         elif new_motive.name == self.Motive.WATER.name:
             self.set_path_to_nearest_spot(self.state.water, 10, 10, 30, search_neighbors_instead=True)
         elif new_motive.name == self.Motive.BUILD.name:
@@ -699,9 +700,11 @@ class Agent:
                                                       self.state.legal_actions)
                 self.set_path(path)
                 self.is_placing_sapling = True
+            self.is_busy = True  # dont get interrupted because operations were expensive
         elif new_motive.name == self.Motive.PROPAGATE.name:
             # TODO go to own house instead?
-            self.set_path_to_nearest_spot(list(self.state.built_heightmap.keys()), 30, 10, 20, search_neighbors_instead=False)
+            places = list(self.state.built_heightmap.keys())
+            self.set_path_to_nearest_spot(places, 30, 10, 20, search_neighbors_instead=False)
         elif new_motive.name == self.Motive.SOCIALIZE_LOVER.name:
             pass
         elif new_motive.name == self.Motive.SOCIALIZE_ENEMY.name:
@@ -715,7 +718,7 @@ class Agent:
         closed = set()
         for i in range(max_iterations):
             spots = src.movement.find_nearest(self.state, self.x, self.z, search_array, starting_search_radius+radius_inc*i, 1, radius_inc)
-            if spots is [] or spots is None: continue
+            if spots == [] or spots is None: continue
             while len(spots) > 0:
                 chosen_spot = choice(spots)
                 spots.remove(chosen_spot)

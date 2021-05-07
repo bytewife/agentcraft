@@ -116,10 +116,11 @@ class Pathfinding:
                 return self.backwards_traverse(node, start)
             closed.add(node.pos)
             for child in self.expand(node, node.g, end, max_x, max_z, legal_actions, g_lookup):
-                p_to_c_cost = child.action_cost
+                # p_to_c_cost = child.action_cost
                 if child.pos in closed: continue
                 # TODO fix the below to be "if child.pos in open" and the last if.
-                if child.pos in g_lookup.keys() and g_lookup[child.pos] <= child.g: continue
+                # if child.pos in g_lookup.keys() and g_lookup[child.pos] <= child.g: continue
+                if child.pos in g_lookup and g_lookup[child.pos] <= child.g: continue
                 g_lookup[child.pos] = child.g
                 heappush(open, child)
         return []
@@ -362,10 +363,10 @@ class Pathfinding:
                 return self.backwards_traverse(node, start)
             closed.add(node.pos)
             for child in self.expand(node, node.g, end, max_x, max_z, legal_actions, g_lookup):
-                p_to_c_cost = child.action_cost
+                # p_to_c_cost = child.action_cost
                 if child.pos in closed: continue
                 # TODO fix the below to be "if child.pos in open" and the last if.
-                if child.pos in g_lookup.keys() and g_lookup[child.pos] <= child.g: continue
+                if child.pos in g_lookup and g_lookup[child.pos] <= child.g: continue
                 g_lookup[child.pos] = child.g
                 heappush(open, child)
         return []
