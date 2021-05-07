@@ -458,6 +458,7 @@ class Agent:
             self.move_self(nx, nz, state=state, walkable_heightmap=walkable_heightmap)
             self.turns_staying_still = 0
         if nx == 0 and nz == 0:
+            self.is_busy = True  # to stop inf loop
             self.turns_staying_still += 1
 
     def socialize_with_lover(self):
@@ -559,6 +560,7 @@ class Agent:
 
     def do_idle_task(self):
         self.choose_motive()
+        # self.set_motive(self.Motive.IDLE)
         return False
 
     def do_rest_task(self):
@@ -667,8 +669,8 @@ class Agent:
             # try for a totally new spot
             status = False
             if new_spot_chance > 0.5:
-                nx = min(max(self.x + randint(-30, 30), 0), self.state.last_node_pointer_x)
-                nz = min(max(self.z + randint(-30, 30), 0), self.state.last_node_pointer_z)
+                nx = min(max(self.x + randint(-15, 15), 0), self.state.last_node_pointer_x)
+                nz = min(max(self.z + randint(-15, 15), 0), self.state.last_node_pointer_z)
                 if self.state.nodes(*self.state.node_pointers[(nx,nz)]) not in self.state.road_nodes:
                     status = self.set_path_to_nearest_spot({(nx, nz)}, 10, 10, 10, search_neighbors_instead=True)
 

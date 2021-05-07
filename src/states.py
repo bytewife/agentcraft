@@ -1490,7 +1490,7 @@ class State:
 
     # might have to get point2 within the func, rather than pass it in
     def create_road(self, node_pos1, node_pos2, road_type, points=None, leave_lot=False, correction=5, road_blocks=None,road_block_slabs=None, inner_block_rate=1.0, outer_block_rate=0.75, fringe_rate=0.05, add_as_road_type = True, bend_if_needed=False, only_place_if_walkable=False):
-        self.road_nodes.append(self.nodes(*self.node_pointers[node_pos1]))
+        self.road_nodes.append(self.nodes(*self.node_pointers[node_pos1]))  # should these even go here first?
         self.road_nodes.append(self.nodes(*self.node_pointers[node_pos2]))
         water_set = set(self.water)
         built_set = set(self.built)
@@ -1500,7 +1500,7 @@ class State:
             nonlocal water_set
             nonlocal tile_coords
             nonlocal built_set
-            return pos not in tile_coords and pos not in water_set and pos not in state.foreign_built and pos not in built_set
+            return pos not in tile_coords and pos not in water_set and pos not in state.foreign_built# and pos not in built_set
 
         def is_walkable(state, path):
             last_y = state.rel_ground_hm[path[0][0]][path[0][1]]
@@ -1519,7 +1519,7 @@ class State:
         if bend_if_needed:
             found_road = False
             tile_coords = {tilepos for node in self.built for tilepos in node.get_tiles()}
-            if any(not is_valid(self, tile) in tile_coords for tile in block_path) or not is_walkable(self, block_path):
+            if any(not is_valid(self, tile) for tile in block_path) or not is_walkable(self, block_path):
                 # get nearest built
                 built_node_coords = [node.center for node in self.built]  # returns building node coords
 
@@ -1741,6 +1741,10 @@ class State:
                         block += "_slab"
                 static_temp[px][pz] = py+1
                 set_state_block(self, px, py, pz, block)
+                if not self.out_of_bounds_3D(px, py+1, pz):
+                    if 'snow' in self.blocks(px, py+1, pz):
+                        set_state_block(self, px, py+1, pz, 'minecraft:air')
+                set_state_block(self, px, py, pz, block)
                 if src.manipulation.is_leaf(self.blocks(x,y+2,z)):
                     src.manipulation.flood_kill_leaves(self,x, y+2, z, 10)
 
@@ -1865,6 +1869,9 @@ class State:
                             block = block+"_slab"
                     static_temp[px][pz] = py + 1
                     set_state_block(self, px, py, pz, block)
+                    if not self.out_of_bounds_3D(px, py + 1, pz):
+                        if 'snow' in self.blocks(px, py + 1, pz):
+                            set_state_block(self, px, py + 1, pz, 'minecraft:air')
                     if src.manipulation.is_leaf(self.blocks(x,y + 2,z)):
                         src.manipulation.flood_kill_leaves(self, x, y + 2, z, 10)
                     ### OG ALG
@@ -2024,18 +2031,19 @@ class State:
     def get_closest_point(self, node, lots, possible_targets, road_type, state, leave_lot, correction=5):
         x, z = node.center
         nodes = possible_targets
-        nodes = [n for n in nodes if src.my_utils.TYPE.BRIDGE.name not in n.get_type()]  # expensive
-        if len(nodes) == 0:
-            print("leave_lot = {} no road segments".format(leave_lot))
-            return None, None
+        # nodes = [n for n in nodes if src.my_utils.TYPE.BRIDGE.name not in n.get_type()]  # expensive
+        # if len(nodes) == 0:
+        #     print("leave_lot = {} no road segments".format(leave_lot))
+        #     return None, None
         dists = [math.hypot(n.center[0] - x, n.center[1] - z) for n in nodes]
         node2 = nodes[dists.index(min(dists))]
         (x2, z2) = (node2.center[0], node2.center[1])
         xthr = 2   # TODO tweak these
         zthr = 2
         if node.lot is None:
-            if road_type is not src.my_utils.TYPE.MINOR_ROAD.name and abs(x2 - x) > xthr and abs(
-                    z2 - z) > zthr:
+            # if abs(x2 - x) > xthr and abs( z2 - z) > zthr:
+            if True:
+            # if road_type is not src.my_utils.TYPE.MINOR_ROAD.name and abs(x2 - x) > xthr and abs(
                 if node2.lot is not None:
                     (cx2, cy2) = node2.lot.center
                     print('center is '+str((cx2, cy2)))
@@ -2060,9 +2068,9 @@ class State:
                     if not state.add_lot([(x2, z2), (x, z)]):
                         print("leave_lot = {} add lot failed".format(leave_lot))
                         return None, None
-            else:
-                print("Failed!")
-                return None, None
+            # else:
+            #     print("Failed!")
+            #     return None, None
         points = src.linedrawing.get_line((x, z), (node2.center[0], node2.center[1]))
         if len(points) <= 2:
             return None, None

@@ -13,10 +13,10 @@ import src.agent
 import src.states
 
 if __name__ == '__main__':
-    x1 = 6900
-    z1 = 6900
-    x2 = 7100
-    z2 = 7100
+    x1 = 20000
+    z1 = 20000
+    x2 = 20100
+    z2 = 20100
 
     area = [x1,z1,x2,z2]
     area = src.my_utils.correct_area(area)
@@ -25,22 +25,22 @@ if __name__ == '__main__':
     clean_agents = "kill @e[type=minecraft:armor_stand,x={},y=64,z={},distance=..{}]".format(str((x2+x1)/2), str((z2+z1)/2), clean_rad)
     http_framework.interfaceUtils.runCommand(clean_agents)
 
-    frame_duration = 0.05
+    frame_duration = 0.00
     sim = src.simulation.Simulation(area, rendering_step_duration=frame_duration, is_rendering_each_step=False)
 
-    timesteps = 2000
+    timesteps = 1000
     sim.run_with_render(timesteps)
     a = sim.state.sectors
 
     ## ROADS
-    # for r in sim.state.roads:
-    #     if r in sim.state.construction:
-    #         # sim.state.construction.discard(r)
-    #         pass
-    #     x = r.center[0]
-    #     z = r.center[1]
-    #     y = sim.state.rel_ground_hm[x][z] + 1
-    #     sim.state.set_block(x,y,z,"minecraft:redstone_block")
+    for r in sim.state.roads:
+        if r in sim.state.construction:
+            # sim.state.construction.discard(r)
+            pass
+        x = r.center[0]
+        z = r.center[1]
+        y = sim.state.rel_ground_hm[x][z] + 1
+        sim.state.set_block(x,y,z,"minecraft:redstone_block")
 
     ## CONSTRUCTION
     # for b in sim.state.construction:
@@ -58,6 +58,12 @@ if __name__ == '__main__':
     #         # sim.state.set_block(x, y, z, "minecraft:oak_sign")
     #         y = sim.state.rel_ground_hm[x][z]
     #         sim.state.set_block(x, y, z, "minecraft:oak_sign")
+
+    #Water
+    for r in sim.state.built:
+        x,z = r.center
+        y = sim.state.rel_ground_hm[x][z] + 1
+        sim.state.set_block(x,y,z,"minecraft:gold_block")
 
     sim.state.step(1)
 

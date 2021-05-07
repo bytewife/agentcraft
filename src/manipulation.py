@@ -74,7 +74,8 @@ def is_log(state, x, y, z):
     block = state.blocks(x,y,z)
     # print("it's a "+str(block))
     # block is not None and
-    return 'log' in block[:min(len(block),23)]# and block[:2] != "st":  # let's ignore stripped
+    block = block[:min(len(block), 23)]
+    return 'log' in block and "st" not in block  # let's ignore stripped
 
 
 def collect_water_at(state, x, y, z, times=1):
