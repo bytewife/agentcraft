@@ -1224,7 +1224,7 @@ class State:
     def create_well(self, sx, sz, len_x, len_z):
         if len_x < 3 or len_z < 3:
             print("Error: well needs to be at least 3x3")
-            return False
+            return False, -1, []
         height = 2
         well_nodes = set()
         if self.out_of_bounds_Node(sx-6, sz-6) or self.out_of_bounds_Node(sx + len_x, sz + len_z) :
@@ -1251,6 +1251,7 @@ class State:
                         # src.states.set_state_block(self,x,lowest_y, z, 'minecraft:stripped_oak_log')
                         src.states.set_state_block(self,x,highest_y, z, 'minecraft:barrel[facing=up]')
                     else:
+                        well_tiles.append((x, z))
                         src.states.set_state_block(self,x,highest_y, z, 'minecraft:water')
                     src.manipulation.flood_kill_logs(self,x,highest_y+2, z)
                     src.states.set_state_block(self,x,highest_y - 1, z, 'minecraft:barrel[facing=up]')
@@ -1258,7 +1259,6 @@ class State:
                     src.states.set_state_block(self,x,highest_y+2, z, 'minecraft:air')
                     self.built.add(self.nodes(*self.node_pointers[(x,z)]))
                     well_nodes.add(self.nodes(*self.node_pointers[(x,z)]))
-                    well_tiles.append((x,z))
         return well_nodes, highest_y, well_tiles
 
     def init_main_st(self, create_well):
@@ -1271,17 +1271,22 @@ class State:
                 sx = randint(0, self.last_node_pointer_x)
                 sz = randint(0, self.last_node_pointer_z)
                 result, y, well_tiles = self.create_well(sx, sz, 4, 4)
+            if result == False:
+                print("could not build well")
+                return False, []
             well_y = y-1
             if well_y >= 0:
                 self.place_platform(found_nodes_iter=result, build_y=well_y)
-        water = self.water+well_tiles
-        (x1, y1) = choice(water)
+        old_water = self.water.copy()
+        self.water = self.water+well_tiles
+        (x1, y1) = choice(self.water)
         n_pos = self.node_pointers[(x1, y1)]
         water_checks = 100
-        n_pos = self.init_find_water(water, n_pos, water_checks)
+        n_pos = self.init_find_water(self.water, n_pos, water_checks)
         if n_pos == False or n_pos == None:
             print("Error: could not find suitable water source!")
-            return False
+            self.water = old_water
+            return False, []
         n = self.nodes(*n_pos)
 
         ran = n.range()
@@ -1289,19 +1294,22 @@ class State:
         n1_options = list(set(ran) - set(loc))  # Don't put water right next to water, depending on range
         if len(n1_options) < 1:
             print("Error: could not find any n1_options")
-            return False
+            self.water = old_water
+            return False, []
 
         n1 = np.random.choice(n1_options, replace=False)  # Pick random point of the above
 
         n1 = self.init_find_valid_n1(n1, n1_options, water_checks)
         if n1 == False:
             print("Error: could not find valid n1_option")
-            return False
+            self.water = old_water
+            return False, []
 
         n2_options = list(set(n1.range()) - set(n1.local()))  # the length of the main road is the difference between the local and the range
         if len(n2_options) < 1:
             print("Error: no n2_options")
-            return False
+            self.water = old_water
+            return False, []
 
         n2 = np.random.choice(n2_options, replace=False)  # n2 is based off of n1's range, - local to make it farther
         points = src.linedrawing.get_line((n1.center[0], n1.center[1]), (n2.center[0], n2.center[1]))
@@ -1310,12 +1318,14 @@ class State:
         points = self.init_find_path_with_n2(n1, n2, n2_options, points, limit)
         if points == False:
             print("Error: could not finish path any new n2's")
-            return False
+            self.water = old_water
+            return False, []
 
         points = self.points_to_nodes(points)  # points is the path of nodes from the chosen
         if points == False:
             print("Error: road points didn't stay in bounds!")
-            return False
+            self.water = old_water
+            return False, []
 
         (x1, y1) = points[0]
         (x2, y2) = points[len(points) - 1]
@@ -1329,17 +1339,17 @@ class State:
         status = self.init_construction(points)
         if status == False:
             print("Error: tried to build road outside of bounds!")
-            return False
+            self.water = old_water
+            return False, []
 
         p1 = (x1, y1)
         p2 = (x2, y2)
         self.init_lots(*p1, *p2)  # main street is a lot
         if self.create_road(node_pos1=p1, node_pos2=p2, road_type=src.my_utils.TYPE.MAJOR_ROAD.name, only_place_if_walkable=True) == False:
             print("Error: failed to build main st")
-            return False
+            self.water = old_water
+            return False, []
 
-        for water_tile in well_tiles:
-            self.water.append(water_tile)
 
         # debug
         # for node in self.roads:
@@ -1376,7 +1386,7 @@ class State:
         agent_a.set_lover(agent_b)
         agent_b.set_lover(agent_a)
 
-        return True
+        return True, old_water
 
 
     def init_construction(self, points):

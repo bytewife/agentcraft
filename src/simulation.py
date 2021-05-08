@@ -80,13 +80,14 @@ class Simulation:
         i=0
         max_tries = 50
         create_well = False
+        old_water = []
         while result is False:
             self.state.reset_for_restart(use_heavy=True)
             # self.state.construction.clear()
             # self.state.roads.clear()
             if i > max_tries: return False
             create_well = i > 25
-            result = self.state.init_main_st(create_well)
+            result, old_water = self.state.init_main_st(create_well)
             i+=1
 
         # build a house
@@ -113,9 +114,12 @@ class Simulation:
         schematic_args = self.state.find_build_location(0,0,building,wood,ignore_sector=True, max_y_diff=self.building_max_y_diff)
         if schematic_args is False:  # flip the x and z
             print("Error: could not find build location!")
+            self.state.water = old_water
             return False
         status, build_y = self.state.place_schematic(*schematic_args)
-        if status is False: return False
+        if status is False:
+            self.state.water = old_water
+            return False
         # self.state.place_platform(*schematic_args, build_y)
         self.state.step()  # check if this affects agent pahs. it seems to.
         print("Finished simulation init!!")

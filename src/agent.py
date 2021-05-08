@@ -639,6 +639,7 @@ class Agent:
             self.set_path_to_nearest_spot(places, 30, 10, 20, search_neighbors_instead=False)
         elif new_motive.name == self.Motive.WATER.name:
             self.set_path_to_nearest_spot(self.state.water, 10, 10, 30, search_neighbors_instead=True)
+            print(self.path)
         elif new_motive.name == self.Motive.BUILD.name:
             building, cost = self.get_appropriate_build(self.state.phase)
             result = self.state.find_build_location(self.x, self.z, building, self.building_material[:-4], self.building_max_y_diff)

@@ -203,7 +203,7 @@ class Pathfinding:
         if sector not in self.sectors_nodes.keys():
             self.sectors_nodes[sector] = set()
         i = 0
-        while len(open) > 0:# and i < MAX_SECTOR_PROPAGATION_DEPTH:  # search all adjacent until you cant go anymore
+        while len(open) > 0 and i < MAX_SECTOR_PROPAGATION_DEPTH:  # search all adjacent until you cant go anymore
             pos = open.pop(0)
             nx, nz = pos
             if not is_redoing and sectors[nx][nz] != -1:
