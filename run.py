@@ -13,10 +13,10 @@ import src.agent
 import src.states
 
 if __name__ == '__main__':
-    x1 = 20000
-    z1 = 20000
-    x2 = 20100
-    z2 = 20100
+    x1 = 40000
+    z1 = 40000
+    x2 = 40100
+    z2 = 40100
 
     area = [x1,z1,x2,z2]
     area = src.my_utils.correct_area(area)
@@ -54,10 +54,17 @@ if __name__ == '__main__':
     #HEIGHTMAP
     # for x in range(len(sim.state.blocks_arr)):
     #     for z in range(len(sim.state.blocks_arr[0][0])):
-    #         # y = sim.state.static_ground_hm[x][z]
-    #         # sim.state.set_block(x, y, z, "minecraft:oak_sign")
-    #         y = sim.state.rel_ground_hm[x][z]
-    #         sim.state.set_block(x, y, z, "minecraft:oak_sign")
+            # y = sim.state.static_ground_hm[x][z]
+            # sim.state.set_block(x, y, z, "minecraft:oak_sign")
+            # y = sim.state.rel_ground_hm[x][z]
+            # sim.state.set_block(x, y, z, "minecraft:oak_sign")
+
+    #EXT HEIGHTMAP
+    # for pos in sim.state.built_heightmap:
+    #     x,z=pos
+    #     y = sim.state.rel_ground_hm[x][z]
+    #     sim.state.set_block(x, y, z, "minecraft:oak_sign")
+
 
     #Water
     # for r in sim.state.built:

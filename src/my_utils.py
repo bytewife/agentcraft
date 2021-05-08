@@ -237,6 +237,38 @@ class TYPE_TILES:
 			"minecraft:acacia_door",
 			"minecraft:jungle_door",
 			"minecraft:dark_oak_door",
+			"minecraft:dark_oak_door",
+
+			"minecraft:spruce_door[facing=north,half=upper,hinge=left,open=false,powered=false]",
+			"minecraft:spruce_door[facing=east,half=upper,hinge=left,open=false,powered=false]",
+			"minecraft:spruce_door[facing=south,half=upper,hinge=left,open=false,powered=false]",
+			"minecraft:spruce_door[facing=west,half=upper,hinge=left,open=false,powered=false]",
+
+			"minecraft:spruce_door[facing=north,half=lower,hinge=left,open=false,powered=false]",
+			"minecraft:spruce_door[facing=east,half=lower,hinge=left,open=false,powered=false]",
+			"minecraft:spruce_door[facing=south,half=lower,hinge=left,open=false,powered=false]",
+			"minecraft:spruce_door[facing=west,half=lower,hinge=left,open=false,powered=false]",
+
+			"minecraft:spruce_door[facing=north,half=upper,hinge=right,open=false,powered=false]",
+			"minecraft:spruce_door[facing=east,half=upper,hinge=right,open=false,powered=false]",
+			"minecraft:spruce_door[facing=south,half=upper,hinge=right,open=false,powered=false]",
+			"minecraft:spruce_door[facing=west,half=upper,hinge=right,open=false,powered=false]",
+
+			"minecraft:spruce_door[facing=north,half=lower,hinge=right,open=false,powered=false]",
+			"minecraft:spruce_door[facing=east,half=lower,hinge=right,open=false,powered=false]",
+			"minecraft:spruce_door[facing=south,half=lower,hinge=right,open=false,powered=false]",
+			"minecraft:spruce_door[facing=west,half=lower,hinge=right,open=false,powered=false]",
+
+			"minecraft:spruce_door[facing=north,half=upper,hinge=left,open=true,powered=false]",
+			"minecraft:spruce_door[facing=east,half=upper,hinge=left,open=true,powered=false]",
+			"minecraft:spruce_door[facing=south,half=upper,hinge=left,open=true,powered=false]",
+			"minecraft:spruce_door[facing=west,half=upper,hinge=left,open=true,powered=false]",
+
+			"minecraft:spruce_door[facing=north,half=lower,hinge=left,open=true,powered=false]",
+			"minecraft:spruce_door[facing=east,half=lower,hinge=left,open=true,powered=false]",
+			"minecraft:spruce_door[facing=south,half=lower,hinge=left,open=true,powered=false]",
+			"minecraft:spruce_door[facing=west,half=lower,hinge=left,open=true,powered=false]",
+
 			"minecraft:grass",
 			"minecraft:oak_sapling",
 			"minecraft:spruce_sapling",

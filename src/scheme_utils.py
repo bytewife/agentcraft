@@ -270,7 +270,7 @@ def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, bui
         if (x,z) not in height_traversal: return
         height_traversal[(x,z)].pop()
         height_traversal[(x,z)].appendleft(block)
-        if all(b == "minecraft:air[]" for b in height_traversal[(x,z)]) or '_door' in list(height_traversal[(x,z)])[-1] or "_carpet" in list(height_traversal[(x,z)])[-1]:
+        if all(b in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.AIR.value] for b in height_traversal[(x,z)]) or '_door' in list(height_traversal[(x,z)])[-1] or "_carpet" in list(height_traversal[(x,z)])[-1]:
             if y - 1 == origin_y or abs(x - origin_x) < 3 or abs(x - ex) < 3 or abs(z - origin_z) < 3 or abs( z - ez) < 3:
                 exterior_heightmap[(x,z)] = y - 1
             else:
@@ -319,6 +319,7 @@ def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, bui
                 if src.manipulation.is_log_flood(pblock):
                     src.manipulation.flood_kill_logs(state, bx, by, bz, 0)
                 if ignore_block:
+                    # src.states.set_state_block(state, bx, by, bz, pblock)
                     pass
                 elif use_head == False:
                     src.states.set_state_block(state, bx, by, bz, block)

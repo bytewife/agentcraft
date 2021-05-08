@@ -101,7 +101,9 @@ class Simulation:
         use_generated_tree = False
         if len(positions) < 1:
             use_generated_tree = True
-        nearest_tree_pos = positions[0]
+            nearest_tree_pos = [0,0]
+        else:
+            nearest_tree_pos = positions[0]
 
         wood_type = self.state.blocks(nearest_tree_pos[0], self.state.rel_ground_hm[nearest_tree_pos[0]][nearest_tree_pos[1]], nearest_tree_pos[1]) if not use_generated_tree else 'oak'
         wood = src.my_utils.get_wood_type(wood_type)

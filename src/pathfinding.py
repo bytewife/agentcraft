@@ -13,6 +13,7 @@ from numpy import full_like
 import src.movement
 from bitarray.util import count_xor, rindex
 
+MAX_SECTOR_PROPAGATION_DEPTH = 150
 cardinal_cost = 100
 diagonal_cost = 141
 path_cost_diff = abs(diagonal_cost - cardinal_cost)
@@ -201,7 +202,8 @@ class Pathfinding:
         closed = set()
         if sector not in self.sectors_nodes.keys():
             self.sectors_nodes[sector] = set()
-        while len(open) > 0:  # search all adjacent until you cant go anymore
+        i = 0
+        while len(open) > 0:# and i < MAX_SECTOR_PROPAGATION_DEPTH:  # search all adjacent until you cant go anymore
             pos = open.pop(0)
             nx, nz = pos
             if not is_redoing and sectors[nx][nz] != -1:
@@ -225,12 +227,13 @@ class Pathfinding:
                             open.append(child_pos)
                         closed.add(child_pos)
                     elif childs_sector != sector:
-                        sector_sizes[childs_sector] -= 1
                         child_pos = (cx, cz)
+                        sector_sizes[childs_sector] -= 1
                         self.sectors_nodes[childs_sector].remove(child_pos)
                         if not child_pos in closed:
                             open.append(child_pos)  # the or allows re-sectoring
                         closed.add(child_pos)
+            i+=1
 
 
     def init_propagate_sector(self, x, z, sector, sectors, sector_sizes, legal_actions, is_redoing=False):
@@ -455,7 +458,8 @@ class Pathfinding:
             sectors[nx][nz] = sector
             self.sectors_nodes[sector].add(pos)
             sector_sizes[sector] += 1
-            for n in range(len(legal_actions[nx][nz])):  # check tiles reachable from here
+            # for n in range(len(legal_actions[nx][nz])):  # check tiles reachable from here
+            for n in range(8):  # check tiles reachable from here
                 depth = 0
                 depth_max = 50
                 if legal_actions[nx][nz][n] == True:
@@ -577,16 +581,16 @@ class Pathfinding:
                         #     self.sector_sizes[old_sector] -= 1
                         #     self.sector_sizes[new_sector] += 1
                         # else:
-                        sector = self.sectors[x][z]
-                        self.sector_sizes[sector] -= 1
-                        self.sectors_nodes[sector].remove((x,z))
-                        self.n_sectors += 1
-                        self.sector_sizes[self.n_sectors] = 1
-                        self.sectors_nodes[self.n_sectors] = {(x,z)}
-                        self.sectors[x][z] = self.n_sectors
                         # if this is ever called, dont call it again
                         new_sector_created = True
             if new_sector_created:
+                sector = self.sectors[x][z]
+                self.sector_sizes[sector] -= 1
+                self.sectors_nodes[sector].remove((x, z))
+                self.n_sectors += 1
+                self.sector_sizes[self.n_sectors] = 1
+                self.sectors_nodes[self.n_sectors] = {(x, z)}
+                self.sectors[x][z] = self.n_sectors
                 self.propagate_sector_depth_limited(x, z, sector=self.n_sectors, sectors=self.sectors, sector_sizes=sector_sizes, legal_actions=legal_actions, is_redoing=True)
 
                     # src.pathfinding.a+=1

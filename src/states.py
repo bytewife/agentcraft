@@ -34,6 +34,7 @@ class State:
     agent_jump_ability = 1
     heightmap_offset = -1
     node_size = 3
+    MAX_SECTOR_PROPAGATION_DEPTH = 150
 
 
     ## Create surface grid
@@ -1227,17 +1228,18 @@ class State:
         height = 2
         well_nodes = set()
         if self.out_of_bounds_Node(sx-6, sz-6) or self.out_of_bounds_Node(sx + len_x, sz + len_z) :
-            return False, -1
+            return False, -1, []
         else:
             endpoints_x = [sx, sx+len_x-1]
             endpoints_z = [sz, sz+len_z-1]
+            well_tiles = []
             highest_y = self.static_ground_hm[sx][sz] + 1
             for x in range(sx, sx + len_x + 1):
                 for z in range(sz, sz + len_z + 1):
                     if highest_y < self.static_ground_hm[x][z]:
                         highest_y = self.static_ground_hm[x][z]
             if highest_y + height > self.len_y:
-                return False
+                return False, -1, []
             # create water
             for x in range(sx, sx+len_x):
                 for z in range(sz, sz + len_z):
@@ -1254,27 +1256,29 @@ class State:
                     src.states.set_state_block(self,x,highest_y - 1, z, 'minecraft:barrel[facing=up]')
                     src.states.set_state_block(self,x,highest_y+1, z, 'minecraft:air')
                     src.states.set_state_block(self,x,highest_y+2, z, 'minecraft:air')
-                    self.water.append((x,z))
                     self.built.add(self.nodes(*self.node_pointers[(x,z)]))
                     well_nodes.add(self.nodes(*self.node_pointers[(x,z)]))
-        return well_nodes, highest_y
+                    well_tiles.append((x,z))
+        return well_nodes, highest_y, well_tiles
 
     def init_main_st(self, create_well):
+        well_tiles = []
         if len(self.water) <= 10 or create_well:
             sx = randint(0, self.last_node_pointer_x)
             sz = randint(0, self.last_node_pointer_z)
-            result, y = self.create_well(sx, sz, 4, 4)
+            result, y, well_tiles = self.create_well(sx, sz, 4, 4)
             while result is False:
                 sx = randint(0, self.last_node_pointer_x)
                 sz = randint(0, self.last_node_pointer_z)
-                result, y = self.create_well(sx, sz, 4, 4)
+                result, y, well_tiles = self.create_well(sx, sz, 4, 4)
             well_y = y-1
             if well_y >= 0:
                 self.place_platform(found_nodes_iter=result, build_y=well_y)
-        (x1, y1) = choice(self.water)
+        water = self.water+well_tiles
+        (x1, y1) = choice(water)
         n_pos = self.node_pointers[(x1, y1)]
         water_checks = 100
-        n_pos = self.init_find_water(n_pos, water_checks)
+        n_pos = self.init_find_water(water, n_pos, water_checks)
         if n_pos == False or n_pos == None:
             print("Error: could not find suitable water source!")
             return False
@@ -1333,6 +1337,9 @@ class State:
         if self.create_road(node_pos1=p1, node_pos2=p2, road_type=src.my_utils.TYPE.MAJOR_ROAD.name, only_place_if_walkable=True) == False:
             print("Error: failed to build main st")
             return False
+
+        for water_tile in well_tiles:
+            self.water.append(water_tile)
 
         # debug
         # for node in self.roads:
@@ -1410,13 +1417,13 @@ class State:
         return points
 
 
-    def init_find_water(self, n_pos, water_checks):
+    def init_find_water(self, water, n_pos, water_checks):
         i = 0
         pos = n_pos
         while pos == None:
             if i > water_checks:
                 return False
-            (x1, y1) = choice(self.water)
+            (x1, y1) = choice(water)
             pos = self.node_pointers[(x1, y1)]
             i+=1
         return n_pos
@@ -1562,7 +1569,7 @@ class State:
                         if any(not is_valid(self,tile) for tile in p2_to_diag) or not is_walkable(self, p2_to_diag): # if building is in path. try again
                             found_raycast = False
                             leeway = 0
-                            dist = len(p2_to_diag) + leeway
+                            dist = int(len(p2_to_diag)/2)
                             steps = 60
                             step_amt = 360/steps
                             status = False

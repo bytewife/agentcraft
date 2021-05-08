@@ -164,7 +164,7 @@ class Agent:
         self.happiness_decay = -0.05  # the inevitable creep of loneliness
         self.unshared_resources = {
             "water": self.water_max * 0.8,
-            "rest": self.rest_max * 0.1,
+            "rest": self.rest_max * 0.7,
             "happiness": self.happiness_max * 0.8
         }
         # self.build_params = set()
@@ -205,7 +205,6 @@ class Agent:
         if self.is_busy: return
         if found_socialization: return  # TODO unlock this somewhere
         for agent in list(self.state.agents_in_nodes[self.node.center] - {self}):
-            # if agent == self: continue
             if agent.socialize_want < agent.socialize_threshold: continue
             if found_socialization: return  # TODO unlock this somewhere
             elif agent == self.lover:
@@ -289,6 +288,7 @@ class Agent:
 
     def choose_motive(self):
         new_motive = self.calc_motive()
+        print("motive is "+str(new_motive))
         self.set_motive(new_motive)
 
     def calc_motive(self):
@@ -341,7 +341,7 @@ class Agent:
             build, cost = choice(pool)
         else:
             print('error: incorrect phase')
-            exit(1)
+            # exit(1)
         return rp+build, cost
 
     # 3D movement is a stretch goal
@@ -440,7 +440,7 @@ class Agent:
                 self.is_mid_socializing = False
                 status = self.do_idle_task()
         # the bad part about this is that jungle trees can take multiple bouts to cut
-        if self.turns_staying_still > Agent.max_turns_staying_still and status is False:  # _move in random direction if still for too long
+        if self.turns_staying_still > Agent.max_turns_staying_still and status is False and self.motive != self.Motive.REST.name:  # _move in random direction if still for too long
             print("stayed still too long and now moving!")
             nx = nz = 0
             found_open = False
