@@ -15,8 +15,8 @@ import src.states
 if __name__ == '__main__':
     x1 = 90000
     z1 = 90000
-    x2 = 90100
-    z2 = 90100
+    x2 = 91000
+    z2 = 91000
 
     area = [x1,z1,x2,z2]
     area = src.my_utils.correct_area(area)

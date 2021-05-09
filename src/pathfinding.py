@@ -14,7 +14,7 @@ from numpy import full_like
 import src.movement
 from bitarray.util import count_xor, rindex
 
-MAX_SECTOR_PROPAGATION_DEPTH = 8*150
+MAX_SECTOR_PROPAGATION_DEPTH = 10*150
 cardinal_cost = 100
 diagonal_cost = 141
 path_cost_diff = abs(diagonal_cost - cardinal_cost)

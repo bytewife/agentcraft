@@ -637,11 +637,17 @@ class Agent:
         if new_motive.name == self.Motive.REST.name:
             places = list(self.state.built_heightmap.keys())
             self.set_path_to_nearest_spot(places, 30, 10, 20, search_neighbors_instead=False)
+            if len(self.path) < 1:
+                self.turns_staying_still = self.max_turns_staying_still
+                self.unshared_resources['rest'] = self.rest_max  # this is a fallback needed for 1000x1000 optimizaiton, unfortunately
+                self.do_idle_task()
         elif new_motive.name == self.Motive.WATER.name:
             self.set_path_to_nearest_spot(self.state.water_with_adjacent_land, 10, 10, 30, search_neighbors_instead=True)
             print(self.path)
             if len(self.path) < 1:
-                self.turns_staying_still = self.max_turns_staying_still + 1
+                self.turns_staying_still = self.max_turns_staying_still
+                self.unshared_resources['water'] = self.water_max  # this is a fallback needed for 1000x1000 optimizaiton, unfortunately
+                self.do_idle_task()
         elif new_motive.name == self.Motive.BUILD.name:
             building, cost = self.get_appropriate_build(self.state.phase)
             result = self.state.find_build_location(self.x, self.z, building, self.building_material[:-4], self.building_max_y_diff)
