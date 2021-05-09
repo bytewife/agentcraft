@@ -17,7 +17,7 @@ from random import choice
 set_choices = [
 	[["minecraft:bricks", "minecraft:granite", "minecraft:polished_granite"], ["minecraft:brick_slab", "minecraft:granite_slab"]],
 	[["minecraft:stone_bricks", "minecraft:cobblestone", "minecraft:gravel"], ["minecraft:stone_brick_slab[type=bottom]", "minecraft:cobblestone_slab"]],
-	[["minecraft:gravel", "minecraft:nether_bricks", "minecraft:blackstone"], ["minecraft:stone_brick_slab[type=bottom]", "minecraft:cobblestone_slab"]],
+	[["minecraft:basalt", "minecraft:nether_bricks", "minecraft:blackstone"], ["minecraft:stone_brick_slab[type=bottom]", "minecraft:cobblestone_slab"]],
 	  # [["minecraft:sandstone", "minecraft:gravel", "minecraft:diorite"], ["minecraft:stone_brick_slab[type=bottom]", "minecraft:cobblestone_slab"],
 	#  [["minecraft:prismarine", "minecraft:prismarine_bricks", "minecraft:dark_prismarine"], ["minecraft:stone_brick_slab[type=bottom]", "minecraft:cobblestone_slab"],
 	 ]
@@ -140,11 +140,17 @@ class TYPE_TILES:
 	tile_sets = {
 		TYPE.WATER.value: {  #WATER
 			"minecraft:water",
-			"minecraft:water[level = 0]",
+			"minecraft:water[level=0]",
 			"water",
 			"water[level = 0]",
 			"minecraft:ice",
+			"minecraft:ice[]",
 			"ice",
+			"ice[]",
+			"minecraft:seagrass[]",
+			"minecraft:seagrass",
+			"seagrass[]",
+			"seagrass",
 		},
 		TYPE.TREE.value: {  # FOREST
 			"minecraft:dark_oak_log",
@@ -197,7 +203,10 @@ class TYPE_TILES:
 			"minecraft:cave_air",
 			"minecraft:vines",
 			"minecraft:snow",
+			"minecraft:snow[]",
 			"minecraft:snow[layers=1]",
+			"snow[layers=1]",
+            "snow",
 			"minecraft:sunflower",
 			"minecraft:spruce_wall_sign",
 			"minecraft:vine[east = true, north = false, south = false, up = false, west = false]",

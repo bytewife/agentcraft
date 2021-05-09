@@ -638,8 +638,10 @@ class Agent:
             places = list(self.state.built_heightmap.keys())
             self.set_path_to_nearest_spot(places, 30, 10, 20, search_neighbors_instead=False)
         elif new_motive.name == self.Motive.WATER.name:
-            self.set_path_to_nearest_spot(self.state.water, 10, 10, 30, search_neighbors_instead=True)
+            self.set_path_to_nearest_spot(self.state.water_with_adjacent_land, 10, 10, 30, search_neighbors_instead=True)
             print(self.path)
+            if len(self.path) < 1:
+                self.turns_staying_still = self.max_turns_staying_still + 1
         elif new_motive.name == self.Motive.BUILD.name:
             building, cost = self.get_appropriate_build(self.state.phase)
             result = self.state.find_build_location(self.x, self.z, building, self.building_material[:-4], self.building_max_y_diff)
@@ -671,10 +673,10 @@ class Agent:
             # try for a totally new spot
             status = False
             if new_spot_chance > 0.5:
-                nx = min(max(self.x + randint(-15, 15), 0), self.state.last_node_pointer_x)
-                nz = min(max(self.z + randint(-15, 15), 0), self.state.last_node_pointer_z)
+                nx = min(max(self.x + randint(-20, 20), 0), self.state.last_node_pointer_x)
+                nz = min(max(self.z + randint(-20, 20), 0), self.state.last_node_pointer_z)
                 if self.state.nodes(*self.state.node_pointers[(nx,nz)]) not in self.state.road_nodes:
-                    status = self.set_path_to_nearest_spot({(nx, nz)}, 10, 10, 10, search_neighbors_instead=True)
+                    status = self.set_path_to_nearest_spot({(nx, nz)}, 60, 1, 1, search_neighbors_instead=True)
 
             # reuse a sapling spot
             if status == False: status = self.set_path_to_nearest_spot(self.state.saplings, 10, 10, 10, search_neighbors_instead=True)

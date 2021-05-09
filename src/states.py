@@ -38,7 +38,7 @@ class State:
 
 
     ## Create surface grid
-    def __init__(self, rect, world_slice, precomp_legal_actions=None, blocks_file=None, precomp_pathfinder=None, precomp_sectors=None, precomp_types=None, precomp_nodes=None, precomp_node_pointers=None,max_y_offset=tallest_building_height):
+    def __init__(self, rect, world_slice, precomp_legal_actions=None, blocks_file=None, precomp_pathfinder=None, precomp_sectors=None, precomp_types=None, precomp_nodes=None, precomp_node_pointers=None,max_y_offset=tallest_building_height, water_with_adjacent_land=None):
         if world_slice:
             self.rect = rect
             self.world_slice = world_slice
@@ -141,6 +141,7 @@ class State:
             self.traverse_update_flags = np.full((len(self.rel_ground_hm), len(self.rel_ground_hm[0])), False, dtype=bool)
             self.heightmap_tiles_to_update = set()
             self.dont_update_again = set()
+            self.water_with_adjacent_land = list(set(self.water).intersection(self.tiles_with_land_neighbors))
 
             # print(self.types)
             # print(self.nodes[self.node_pointers[(5,5)]].get_type())
@@ -1455,7 +1456,8 @@ class State:
         rand_index = randint(0, len(water))
         # x1, y1 = viable_water_choices[rand_index]
         while pos == None:
-            water.remove(rand_index)
+            if rand_index in water:
+                water.remove(rand_index)
             if i > water_checks:
                 return False
             rand_index = randint(0, len(water))
@@ -1532,7 +1534,10 @@ class State:
         return nodes
 
     # might have to get point2 within the func, rather than pass it in
-    def create_road(self, node_pos1, node_pos2, road_type, points=None, leave_lot=False, correction=5, road_blocks=None,road_block_slabs=None, inner_block_rate=1.0, outer_block_rate=0.9, fringe_rate=0.05, add_as_road_type = True, bend_if_needed=False, only_place_if_walkable=False, dont_rebuild = True):
+    def create_road(self, node_pos1, node_pos2, road_type, points=None, leave_lot=False, correction=5, road_blocks=None,road_block_slabs=None, inner_block_rate=1.0, outer_block_rate=0.9, fringe_rate=0.05, add_as_road_type = True, bend_if_needed=False, only_place_if_walkable=False, dont_rebuild = True, cap_dist=30, is_capping_dist=True):
+        if is_capping_dist:
+            if math.dist(node_pos1, node_pos2) > cap_dist:
+                return False
         water_set = set(self.water)
         built_set = set(self.built)
         block_path = []
@@ -1603,7 +1608,7 @@ class State:
                         if any(not is_valid(self,tile) for tile in p2_to_diag) or not is_walkable(self, p2_to_diag): # if building is in path. try again
                             found_raycast = False
                             leeway = 0
-                            dist = int(len(p2_to_diag)/2)
+                            dist = cap_dist # CAPPED #int(len(p2_to_diag)/2)
                             steps = 60
                             step_amt = 360/steps
                             status = False

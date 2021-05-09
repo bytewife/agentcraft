@@ -142,9 +142,11 @@ def find_nearest(state, x, z, spot_coords, starting_search_radius, max_iteration
         idx = kdtree.query_ball_point([x, z], r=radius)
         if len(idx) > 0:
             result = []
+            # result = {}
             for i in idx:
                 if (state.out_of_bounds_Node(*spot_coords[i])): continue
                 result.append(spot_coords[i])
+                # result[spot_coords[i]] = 0
             return result
     return []
 

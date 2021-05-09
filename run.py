@@ -13,10 +13,10 @@ import src.agent
 import src.states
 
 if __name__ == '__main__':
-    x1 = 53000
-    z1 = 50000
-    x2 = 54000
-    z2 = 51000
+    x1 = 90000
+    z1 = 90000
+    x2 = 90100
+    z2 = 90100
 
     area = [x1,z1,x2,z2]
     area = src.my_utils.correct_area(area)
@@ -28,7 +28,7 @@ if __name__ == '__main__':
     frame_duration = 0.00
     sim = src.simulation.Simulation(area, rendering_step_duration=frame_duration, is_rendering_each_step=False)
 
-    timesteps = 1000
+    timesteps = 1500
     sim.run_with_render(timesteps)
     a = sim.state.sectors
 
