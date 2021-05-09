@@ -19,7 +19,7 @@ import numpy as np
 class Simulation:
 
     # with names? Let's look after ensembles and other's data scructure for max flexibility
-    def __init__(self, XZXZ, precomp_world_slice=None, precomp_legal_actions = None, precamp_pathfinder=None, precomp_types = None, run_start=True, precomp_sectors = None, precomp_nodes=None, precomp_node_pointers=None, phase=0, maNum=5, miNum=400, byNum= 2000, brNum=1000, buNum=10, pDecay=0.98, tDecay=0.25, corNum=5, times=1, is_rendering_each_step=True, rendering_step_duration=0.8, building_max_y_diff=1):
+    def __init__(self, XZXZ, precomp_world_slice=None, precomp_legal_actions = None, precamp_pathfinder=None, precomp_types = None, run_start=True, precomp_sectors = None, precomp_nodes=None, precomp_node_pointers=None, phase=0, maNum=5, miNum=400, byNum= 2000, brNum=1000, buNum=10, pDecay=0.98, tDecay=0.25, corNum=5, times=1, is_rendering_each_step=True, rendering_step_duration=0.8, building_max_y_diff=1,start_time=0):
         if precomp_world_slice == None:
             self.world_slice = http_framework_backup.worldLoader.WorldSlice(*XZXZ)
         else:
@@ -61,21 +61,21 @@ class Simulation:
                 str((XZXZ[3] + XZXZ[1]) / 2))
             http_framework_backup.interfaceUtils.runCommand(clean_agents)
 
-    def run_with_render(self, steps):
+    def run_with_render(self, steps, start, time_limit):
         self.decide_max_y_diff()
         viable_water_starts = list(set(self.state.water).intersection(self.state.tiles_with_land_neighbors))
         while self.start(viable_water_starts) == False:
             self.state.reset_for_restart()
             self.update_building_max_y_diff()
-        self.step(steps, is_rendering=True)
+        self.step(steps, True, start, time_limit)
 
-    def run_without_render(self, steps):
+    def run_without_render(self, steps, start, time_limit):
         self.decide_max_y_diff()
         viable_water_starts = list(set(self.state.water).intersection(self.state.tiles_with_land_neighbors))
         while self.start(viable_water_starts) == False:
             self.state.reset_for_restart()
             self.update_building_max_y_diff()
-        self.step(steps, is_rendering=False)
+        self.step(steps, False, start, time_limit)
         self.state.step(is_rendering=True, use_total_changed_blocks=True)
 
     def decide_max_y_diff(self):
@@ -147,12 +147,17 @@ class Simulation:
         self.building_max_y_diff = min(y, 6)
 
 
-    def step(self, times=1, is_rendering=True):
+    def step(self, times, is_rendering, start, time_limit):
+        current = time.time()
         for i in range(times):
+            if current - start > time_limit:
+                print("Simulation finished after "+str(current - start)+ " seconds. "+str(i)+ " steps performed, out of "+str(times)+" steps.")
+                exit(0)
             self.handle_nodes()
             self.state.update_agents(is_rendering)
             self.state.step(is_rendering)
             time.sleep(self.rendering_step_duration * is_rendering)
+            current = time.time()
 
 
 

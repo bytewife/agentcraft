@@ -8,15 +8,18 @@ __version__ = "1.0"
 
 import src.simulation
 import http_framework_backup.interfaceUtils
+import time
 import src.my_utils
 import src.agent
 import src.states
 
 if __name__ == '__main__':
+    start = time.time()
+    time_limit = 5
     x1 = 90000
     z1 = 90000
-    x2 = 91000
-    z2 = 91000
+    x2 = 90100
+    z2 = 90100
 
     area = [x1,z1,x2,z2]
     area = src.my_utils.correct_area(area)
@@ -26,10 +29,10 @@ if __name__ == '__main__':
     http_framework_backup.interfaceUtils.runCommand(clean_agents)
 
     frame_duration = 0.00
-    sim = src.simulation.Simulation(area, rendering_step_duration=frame_duration, is_rendering_each_step=False)
+    sim = src.simulation.Simulation(area, rendering_step_duration=frame_duration, is_rendering_each_step=False, start_time = start)
 
     timesteps = 1500
-    sim.run_with_render(timesteps)
+    sim.run_with_render(timesteps, start, time_limit)
     a = sim.state.sectors
 
     ## ROADS
