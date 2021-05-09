@@ -1,8 +1,8 @@
 # # import random  # standard python lib for pseudo random
 #
 # import src.scheme_utils
-# import http_framework.interfaceUtils
-# import http_framework.worldLoader
+# import http_framework_backup.interfaceUtils
+# import http_framework_backup.worldLoader
 # import src.movement
 # import src.my_utils
 # # https://stackoverflow.com/questions/65003877/understanding-leafsize-in-scipy-spatial-kdtree
@@ -23,7 +23,7 @@
 # ##############
 # areaFlex = [0, 0, 32, 32] # default build area
 # # you can set a build area in minecraft using the /setbuildarea command
-# buildArea = http_framework.interfaceUtils.requestBuildArea()
+# buildArea = http_framework_backup.interfaceUtils.requestBuildArea()
 # if buildArea != -1:
 #     x1 = buildArea["xFrom"]
 #     z1 = buildArea["zFrom"]
@@ -33,7 +33,7 @@
 # area = src.my_utils.correct_area(areaFlex)
 # # load the world data
 # # this uses the /chunks endpoint in the background
-# worldSlice = http_framework.worldLoader.WorldSlice(area)  #_so area is chunks?
+# worldSlice = http_framework_backup.worldLoader.WorldSlice(area)  #_so area is chunks?
 # sim = src.simulation.Simulation(area)
 #
 # # save_state(state, state_y, "../hope.txt")

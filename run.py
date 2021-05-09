@@ -7,23 +7,23 @@ __author__ = "aith"
 __version__ = "1.0"
 
 import src.simulation
-import http_framework.interfaceUtils
+import http_framework_backup.interfaceUtils
 import src.my_utils
 import src.agent
 import src.states
 
 if __name__ == '__main__':
-    x1 = 40000
-    z1 = 40000
-    x2 = 40100
-    z2 = 40100
+    x1 = 53000
+    z1 = 50000
+    x2 = 54000
+    z2 = 51000
 
     area = [x1,z1,x2,z2]
     area = src.my_utils.correct_area(area)
     file_name = ""
     clean_rad = int(max(abs(x2-x1), abs(z2-z1)))
     clean_agents = "kill @e[type=minecraft:armor_stand,x={},y=64,z={},distance=..{}]".format(str((x2+x1)/2), str((z2+z1)/2), clean_rad)
-    http_framework.interfaceUtils.runCommand(clean_agents)
+    http_framework_backup.interfaceUtils.runCommand(clean_agents)
 
     frame_duration = 0.00
     sim = src.simulation.Simulation(area, rendering_step_duration=frame_duration, is_rendering_each_step=False)

@@ -6,16 +6,29 @@ __all__ = []
 __author__ = "aith"
 __version__ = "1.0"
 from enum import Enum
-import http_framework.interfaceUtils
+import http_framework_backup.interfaceUtils
 import src.agent
 import numpy as np
+from random import choice
 
 # https://stackoverflow.com/questions/34470597/is-there-a-dedicated-way-to-get-the-number-of-items-in-a-python-enum
 
+#_currently I don't use the slabs here
+set_choices = [
+	[["minecraft:bricks", "minecraft:granite", "minecraft:polished_granite"], ["minecraft:brick_slab", "minecraft:granite_slab"]],
+	[["minecraft:stone_bricks", "minecraft:cobblestone", "minecraft:gravel"], ["minecraft:stone_brick_slab[type=bottom]", "minecraft:cobblestone_slab"]],
+	[["minecraft:gravel", "minecraft:nether_bricks", "minecraft:blackstone"], ["minecraft:stone_brick_slab[type=bottom]", "minecraft:cobblestone_slab"]],
+	  # [["minecraft:sandstone", "minecraft:gravel", "minecraft:diorite"], ["minecraft:stone_brick_slab[type=bottom]", "minecraft:cobblestone_slab"],
+	#  [["minecraft:prismarine", "minecraft:prismarine_bricks", "minecraft:dark_prismarine"], ["minecraft:stone_brick_slab[type=bottom]", "minecraft:cobblestone_slab"],
+	 ]
+
 ROAD_SETS = {
-	'default': ["minecraft:bricks	", "minecraft:granite", "minecraft:polished_granite"],
+	'default': ["minecraft:bricks", "minecraft:granite", "minecraft:polished_granite"],
 	'default_slabs': ["minecraft:brick_slab", "minecraft:granite_slab"]
 }
+road_set = choice(set_choices)
+ROAD_SETS['default'] = road_set[0]
+ROAD_SETS['default_slabs'] = road_set[1]
 
 STRUCTURES = {
     "decor": [
@@ -270,12 +283,29 @@ class TYPE_TILES:
 			"minecraft:spruce_door[facing=west,half=lower,hinge=left,open=true,powered=false]",
 
 			"minecraft:grass",
+			"minecraft:grass[]",
+			"grass",
+			"grass[]",
+			"minecraft:lily_of_the_valley",
+			"minecraft:lily_of_the_valley[]",
 			"minecraft:oak_sapling",
+			"minecraft:oak_sapling[stage=0]",
+			"minecraft:oak_sapling[stage=1]",
 			"minecraft:spruce_sapling",
+			"minecraft:spruce_sapling[stage=0]",
+			"minecraft:spruce_sapling[stage=1]",
 			"minecraft:birch_sapling",
+			"minecraft:birch_sapling[stage=0]",
+			"minecraft:spruce_sapling[stage=1]",
 			"minecraft:acacia_sapling",
+			"minecraft:acacia_sapling[stage=0]",
+			"minecraft:acacia_sapling[stage=1]",
 			"minecraft:jungle_sapling",
+			"minecraft:jungle_sapling[stage=0]",
+			"minecraft:jungle_sapling[stage=1]",
 			"minecraft:dark_oak_sapling",
+			"minecraft:dark_oak_sapling[stage=0]",
+			"minecraft:dark_oak_sapling[stage=1]",
 			"minecraft:oak_leaves",
 			"minecraft:spruce_leaves",
 			"minecraft:birch_leaves",
@@ -344,18 +374,31 @@ class TYPE_TILES:
 			"minecraft:flower_pot",
 			"minecraft:fern",
 			"minecraft:poppy",
+			"minecraft:poppy[]",
 			"minecraft:dandelion",
+			"minecraft:dandelion[]",
 			"minecraft:large_fern",
 			"minecraft:cornflower",
 			"minecraft:dead_bush",
 			"minecraft:tall_grass",
+			"minecraft:azure_bluet",
+			"minecraft:azure_bluet[]",
+			"azure_bluet[]",
+			"azure_bluet",
+			"tall_grass",
 			"minecraft:tall_grass[half=upper]",
 			"minecraft:tall_grass[half=lower]",
+			"tall_grass[half=upper]",
+			"tall_grass[half=lower]",
 			"minecraft:lily_pad",
 			"minecraft:allium",
+			"minecraft:allium[]",
 			"minecraft:red_tulip",
+			"minecraft:red_tulip[]",
 			"minecraft:rose_bush",
+			"minecraft:rose_bush[]",
 			"minecraft:sweet_berry_bush",
+			"minecraft:sweet_berry_bush[]",
 		},
 		TYPE.BUILT.value: {  # TODO hook this up with settingg the nodes to be built on start
 			"minecraft:oak_stairs",
@@ -375,7 +418,13 @@ class TYPE_TILES:
 			"minecraft:lava",
 		},
 		TYPE.FOREIGN_BUILT.value: {
-            "minecraft:oak_stairs",
+			"minecraft:oak_planks",
+			"minecraft:spruce_planks",
+			"minecraft:birch_planks",
+			"minecraft:acacia_planks",
+			"minecraft:dark_oak_planks",
+			"minecraft:jungle_planks",
+			"minecraft:jungle_stairs",
             "minecraft:spruce_stairs",
             "minecraft:birch_stairs",
             "minecraft:dark_oak_stairs",
@@ -495,7 +544,7 @@ def get_wood_type(block):
 
 def setBlockWithData(abs_x, abs_y, abs_z, data):
     command = "setblock {} {} {} {}".format(abs_x, abs_y, abs_z, data)
-    return http_framework.interfaceUtils.runCommand(command)
+    return http_framework_backup.interfaceUtils.runCommand(command)
 
 
 def get_heightmap(world_slice, heightmap_type="MOTION_BLOCKING_NO_LEAVES", y_offset=0):

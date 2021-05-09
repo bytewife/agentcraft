@@ -9,8 +9,8 @@ __version__ = "1.0"
 import math
 from math import floor
 
-import http_framework.interfaceUtils
-import http_framework.worldLoader
+import http_framework_backup.interfaceUtils
+import http_framework_backup.worldLoader
 import src.my_utils
 import src.movement
 import src.pathfinding
@@ -56,6 +56,7 @@ class State:
             self.lava = set()  # tile positions
             self.road_nodes = []
             self.roads = []
+            self.road_tiles = set()
             self.road_segs = set()
             self.construction = set()  # nodes where buildings can be placed
             self.lots = set()
@@ -65,6 +66,7 @@ class State:
             self.len_z = self.rect[3] - self.rect[1]
             self.end_x = self.rect[2]
             self.end_z = self.rect[3]
+            self.tiles_with_land_neighbors = set()
 
             self.interface, self.blocks_arr, self.world_y, self.len_y, self.abs_ground_hm = self.gen_blocks_array(world_slice)
 
@@ -211,13 +213,13 @@ class State:
                 result[(cx,cz)] = set()
         return result
 
-    def find_build_location(self, agentx, agentz, building_file, wood_type, ignore_sector=False, max_y_diff=4):
+    def find_build_location(self, agentx, agentz, building_file, wood_type, ignore_sector=False, max_y_diff=4, build_tries=25):
         f = open(building_file, "r")
         size = f.readline()
         f.close()
         x_size, y_size, z_size = [int(n) for n in size.split(' ')]
         i = 0
-        build_tries = 25
+        # build_tries = 25
         while i < build_tries:
             construction_site = choice(list(self.construction))
             result = self.check_build_spot(construction_site, building_file, x_size, z_size, wood_type, max_y_diff=max_y_diff)
@@ -459,6 +461,9 @@ class State:
             front_nodes.append(node)  # to use for later
         mean_y = round(y_sum / len(front_tiles))
         adjusting_y_diff = 4
+        max_y_diff = 6
+        if highest_y - lowest_y > max_y_diff:
+            return False, None
         if highest_y - lowest_y > adjusting_y_diff:
             mean_y = highest_y
         # mean_y = round(sum([self.static_ground_hm[t[0],t[1]] for t in front_tiles]) / len(front_tiles))
@@ -509,7 +514,7 @@ class State:
         # extend road to fill building front
 
         for n in front_nodes:
-            self.append_road(n.center, src.my_utils.TYPE.MINOR_ROAD.name)
+            self.append_road(n.center, src.my_utils.TYPE.MINOR_ROAD.name, dont_rebuild=False)
             # if n not in self.roads:
             #     self.append_road(n.center, src.my_utils.TYPE.MINOR_ROAD.name)
 
@@ -692,16 +697,15 @@ class State:
         def get_type(self):
             if self in self.state.built:
                 self.add_mask_type(src.my_utils.TYPE.BUILT.name)
-            all_types = set()
+            self.type = set()
             for tile_pos in self.get_tiles():
-                tx, tz = tile_pos
+                # tx, tz = tile_pos
                 # if self.state.out_of_bounds_Node(tx, tz): continue
-                all_types.add(self.state.types[tx][tz])  # each block has a single type
+                self.type.add(self.state.types[tile_pos[0]][tile_pos[1]])  # each block has a single type
             # for t in self.mask_type:
             #     all_types.add(t)
-            all_types.update(self.mask_type)
-            self.type = all_types
-            return all_types
+            self.type.update(self.mask_type)
+            return self.type
 
 
         def add_prosperity_to_node(self, amt):
@@ -885,8 +889,8 @@ class State:
         y1, y2  = get_y_bounds(abs_ground_hm)  # keep range not too large
         y2 += max_y_offset
         world_y = y1
-        interface = http_framework.interfaceUtils.Interface(x=self.world_x, y=world_y, z=self.world_z,
-                                                                 buffering=True, caching=True)
+        interface = http_framework_backup.interfaceUtils.Interface(x=self.world_x, y=world_y, z=self.world_z,
+                                                                   buffering=True, caching=True)
         if (y2 > 150):
             print("warning: Y bound is really high!")
 
@@ -897,8 +901,8 @@ class State:
         xi = 0
         yi = 0
         zi = 0
-        http_framework.interfaceUtils.globalWorldSlice = self.world_slice
-        http_framework.interfaceUtils.globalDecay = np.zeros((self.len_x, 255, self.len_z), dtype=bool)
+        http_framework_backup.interfaceUtils.globalWorldSlice = self.world_slice
+        http_framework_backup.interfaceUtils.globalDecay = np.zeros((self.len_x, 255, self.len_z), dtype=bool)
         for x in range(x1, x2):
             yi = 0
             for y in range(y1, y2):
@@ -1011,6 +1015,13 @@ class State:
     #             types[x][z] = type# each block is a list of types. The node needs to chek its assets
     #     return types
 
+    def add_adjacent_tiles_to_nodes_with_land_neighbors(self, x, z):
+        for dir in src.movement.cardinals:
+            self.tiles_with_land_neighbors.add((
+                max(min(x + dir[0], self.len_x), 0),
+                max(min(z + dir[1], self.len_z), 0)
+            ))
+
     def gen_types(self, heightmap):
         xlen = self.len_x
         zlen = self.len_z
@@ -1020,16 +1031,21 @@ class State:
         for x in range(xlen):
             for z in range(zlen):
                 type_name = self.determine_type(x, z, heightmap).name
-                if type_name == "TREE":
+                if type_name == "WATER":
+                    self.water.append((x,z))
+                elif type_name == "BROWN":
+                    self.add_adjacent_tiles_to_nodes_with_land_neighbors(x, z)
+                elif type_name == "GREEN":
+                    self.add_adjacent_tiles_to_nodes_with_land_neighbors(x, z)
+                elif type_name == "TREE":
                     self.trees.append((x, z))
+                    self.add_adjacent_tiles_to_nodes_with_land_neighbors(x,z)
                 elif type_name == "ROAD":
                     nptr = self.node_pointers[(x,z)]
                     if nptr!= None:
                         node = self.nodes(*nptr)
                         self.roads.append(node)
                         self.road_nodes.add(node)
-                elif type_name == "WATER":
-                    self.water.append((x,z))
                 elif type_name == "LAVA":
                     self.lava.add((x, z))
                 elif type_name == "FOREIGN_BUILT":
@@ -1261,7 +1277,7 @@ class State:
                     well_nodes.add(self.nodes(*self.node_pointers[(x,z)]))
         return well_nodes, highest_y, well_tiles
 
-    def init_main_st(self, create_well):
+    def init_main_st(self, create_well, viable_water_choices):
         well_tiles = []
         if len(self.water) <= 10 or create_well:
             sx = randint(0, self.last_node_pointer_x)
@@ -1279,21 +1295,27 @@ class State:
                 self.place_platform(found_nodes_iter=result, build_y=well_y)
         old_water = self.water.copy()
         self.water = self.water+well_tiles
-        (x1, y1) = choice(self.water)
+        rand_index = randint(0, len(viable_water_choices))
+        x1, y1 = viable_water_choices[rand_index]
         n_pos = self.node_pointers[(x1, y1)]
         water_checks = 100
-        n_pos = self.init_find_water(self.water, n_pos, water_checks)
+        n_pos = self.init_find_water(viable_water_choices, n_pos, water_checks)
         if n_pos == False or n_pos == None:
             print("Error: could not find suitable water source!")
             self.water = old_water
             return False, []
         n = self.nodes(*n_pos)
+        print("n being "+str(n))
 
-        ran = n.range()
         loc = n.local()
+        ran = n.range()
+        print("range being "+str(ran))
+        print("local being "+str(loc))
+        print('--------')
         n1_options = list(set(ran) - set(loc))  # Don't put water right next to water, depending on range
         if len(n1_options) < 1:
             print("Error: could not find any n1_options")
+            viable_water_choices.remove(rand_index)
             self.water = old_water
             return False, []
 
@@ -1430,10 +1452,14 @@ class State:
     def init_find_water(self, water, n_pos, water_checks):
         i = 0
         pos = n_pos
+        rand_index = randint(0, len(water))
+        # x1, y1 = viable_water_choices[rand_index]
         while pos == None:
+            water.remove(rand_index)
             if i > water_checks:
                 return False
-            (x1, y1) = choice(water)
+            rand_index = randint(0, len(water))
+            x1, y1 = water[rand_index]
             pos = self.node_pointers[(x1, y1)]
             i+=1
         return n_pos
@@ -1506,9 +1532,7 @@ class State:
         return nodes
 
     # might have to get point2 within the func, rather than pass it in
-    def create_road(self, node_pos1, node_pos2, road_type, points=None, leave_lot=False, correction=5, road_blocks=None,road_block_slabs=None, inner_block_rate=1.0, outer_block_rate=0.75, fringe_rate=0.05, add_as_road_type = True, bend_if_needed=False, only_place_if_walkable=False):
-        self.road_nodes.append(self.nodes(*self.node_pointers[node_pos1]))  # should these even go here first?
-        self.road_nodes.append(self.nodes(*self.node_pointers[node_pos2]))
+    def create_road(self, node_pos1, node_pos2, road_type, points=None, leave_lot=False, correction=5, road_blocks=None,road_block_slabs=None, inner_block_rate=1.0, outer_block_rate=0.9, fringe_rate=0.05, add_as_road_type = True, bend_if_needed=False, only_place_if_walkable=False, dont_rebuild = True):
         water_set = set(self.water)
         built_set = set(self.built)
         block_path = []
@@ -1700,14 +1724,20 @@ class State:
                     px = x # placement x
                     py = y
                     pz = z
+
+                    # if dont_rebuild and (px, pz) in self.road_tiles: continue
+                    # self.road_tiles.add((px,pz))
+
                     block = choice(src.my_utils.ROAD_SETS['default'])
                     if check_next_next_road:
                         if ndy == 0:
                             pass
                         elif ndy > 0 and nndy == 0: # slab above
                             py+=1
+                            if block[-1] == 's': block = block[:-1]  # for brick(s)
                             block += "_slab"
                         elif ndy < 0 and nndy == 0:  # slab below (in place)
+                            if block[-1] == 's': block = block[:-1]  # for brick(s)
                             block += "_slab"
                         elif ndy > 0 and nndy > 0: # slope 1
                             py+=1
@@ -1720,15 +1750,18 @@ class State:
                             elif dz < 0 and dx == 0: facing = "north"
                             else: pass
                             if facing is not None:
+                                if block[-1] == 's': block = block[:-1]  # for brick(s)
                                 block += """_stairs[facing={facing}]""".format(facing=facing)
                             else:
+                                if block[-1] == 's': block = block[:-1]  # for brick(s)
                                 block += '_slab'
                         elif ndy < 0 and nndy > 0 : # flatten next block to get slope 0
-                            set_state_block(self,px, py, pz, block)
-                            px = path[i+1][0]
-                            pz = path[i+1][1]
-                            static_temp[px][pz]+=1
-                            set_state_block(self,px, py+1, pz, block)
+                            pass
+                            # set_state_block(self,px, py, pz, block)
+                            # px = path[i+1][0]
+                            # pz = path[i+1][1]
+                            # static_temp[px][pz]+=1
+                            # set_state_block(self,px, py+1, pz, block)
                         elif ndy < 0 and nndy < 0: # slope -1
                             dx = path[i + 1][0] - path[i][0]
                             dz = path[i + 1][1] - path[i][1]
@@ -1739,24 +1772,29 @@ class State:
                             elif dz < 0 and dx == 0: facing = "south"
                             else: pass
                             if facing is not None:
+                                if block[-1] == 's': block = block[:-1]  # for brick(s)
                                 block += """_stairs[facing={facing}]""".format(facing=facing)
                             else:
+                                if block[-1] == 's': block = block[:-1]  # for brick(s)
                                 block += '_slab'
                         elif ndy > 0 and nndy < 0: # flatten (lower) next block to get slope 0
-                            set_state_block(self,px, py, pz, block)  # for curr
-                            px = path[i+1][0]
-                            pz = path[i+1][1]
-                            set_state_block(self,px, py, pz, block)  # for ahead
-                            py = static_temp[px][pz] + 1
-                            set_state_block(self,px, py, pz, "minecraft:air")  # for ahead
-                            static_temp[px][pz] = py
+                            pass
+                            # set_state_block(self,px, py, pz, block)  # for curr
+                            # px = path[i+1][0]
+                            # pz = path[i+1][1]
+                            # set_state_block(self,px, py, pz, block)  # for ahead
+                            # py = static_temp[px][pz] + 1
+                            # set_state_block(self,px, py, pz, "minecraft:air")  # for ahead
+                            # static_temp[px][pz] = py
                     elif check_next_road:
                         if ndy > 0:
                             px = path[i+1][0]
                             pz = path[i+1][1]
                             py += 1
+                            if block[-1] == 's': block = block[:-1]  # for brick(s)
                             block += "_slab"
                         elif ndy < 0:
+                            if block[-1] == 's': block = block[:-1]  # for brick(s)
                             block += "_slab"
                     static_temp[px][pz] = py+1
                     set_state_block(self, px, py, pz, block)
@@ -1768,6 +1806,7 @@ class State:
                         src.manipulation.flood_kill_leaves(self,x, y+2, z, 10)
 
         set_blocks_for_path(self,block_path,inner_block_rate)
+        block_path_set = set(block_path)
 
         aux_paths = []
         for card in src.movement.cardinals:
@@ -1783,118 +1822,128 @@ class State:
                     z = 0
                 return (x,z)
             # aux1 = src.linedrawing.get_line( p1, p2 )
-            aux_path = [clamp_to_state_coords(self, block[0]+card[0], block[1]+card[1]) for block in block_path]
-            if is_walkable(self,aux_path):
-                aux_paths.append(aux_path)
+            aux_path = []
+            for block in block_path:
+                pos = clamp_to_state_coords(self, block[0] + card[0], block[1] + card[1])
+                if abs(self.rel_ground_hm[pos[0]][pos[1]] - self.rel_ground_hm[block[0]][block[1]]) > 1: continue
+                if pos not in block_path_set:  # to avoid overlapping road blocks
+                    aux_path.append(pos)
+                    block_path_set.add(pos)
+            # aux_path = [clamp_to_state_coords(self, block[0]+card[0], block[1]+card[1]) for block in block_path]
+            # if is_walkable(self,aux_path):
+            #     aux_paths.append(aux_path)
+            set_blocks_for_path(self,aux_path, outer_block_rate)
 
-        ## borders
-        for aux_path in aux_paths:
-            # last_aux_y = self.static_ground_hm[aux_path[0][0]][aux_path[0][1]] - 1
-            length = len(aux_path)
-            static_temp = self.rel_ground_hm.copy()
-            for x in range(len(static_temp)):
-                for z in range(len(static_temp[0])):
-                    static_y = self.static_ground_hm[x][z]
-                    if static_temp[x][z] > static_y:
-                        static_temp[x][z] = static_y
-            for i in range(length):
-                x = aux_path[i][0]
-                z = aux_path[i][1]
-                # y = int(self.static_ground_hm[x][z]) - 1
-                y = int(static_temp[x][z]) - 1
-                block = self.blocks(x,y,z)
-                if self.blocks(x,y,z )== "minecraft:water" or src.manipulation.is_log(self, x, y, z):
-                    continue
-                if random() < outer_block_rate:
-                    check_next_road = True
-                    check_next_next_road = True
-                    if i >= length - 2:
-                        check_next_road = False
-                        check_next_next_road = False
-                    elif i >= length - 1:
-                        check_next_road = False
-                    next_road_y = 0
-                    next_next_road_y = 0
-                    if check_next_road:
-                        next_road_y = static_temp[aux_path[i + 1][0]][aux_path[i + 1][1]] - 1
-                    if check_next_next_road:
-                        nnx = aux_path[i + 2][0]
-                        nnz = aux_path[i + 2][1]
-                        next_next_road_y = static_temp[nnx][nnz] - 1
-                    ndy = next_road_y - y
-                    nndy = next_next_road_y - next_road_y
-                    px = x  # placement x
-                    py = y
-                    pz = z
-                    block = choice(src.my_utils.ROAD_SETS['default'])
-                    if check_next_next_road:
-                        if ndy == 0:
-                            pass
-                        elif ndy > 0 and nndy == 0:  # slab above
-                            py += 1
-                            block += "_slab"
-                        elif ndy < 0 and nndy == 0:  # slab below (in place)
-                            block += "_slab"
-                        elif ndy > 0 and nndy > 0:  # slope 1
-                            py+=1
-                            dx = block_path[i+1][0] - block_path[i][0]
-                            dz = block_path[i+1][1] - block_path[i][1]
-                            facing = None
-                            if dx > 0 and dz == 0: facing = None
-                            elif dx < 0 and dz == 0: facing = "west"
-                            elif dz > 0 and dx == 0: facing = "south"
-                            elif dz < 0 and dx == 0: facing = "north"
-                            else: pass
-                            if facing is not None:
-                                block += """_stairs[facing={facing}]""".format(facing=facing)
-                            else:
-                                block += '_slab'
-                        elif ndy < 0 and nndy > 0:  # flatten next block to get slope 0
-                            set_state_block(self, px, py, pz, block)
-                            px = aux_path[i + 1][0]
-                            pz = aux_path[i + 1][1]
-                            # py = static_temp[px][pz] + 1
-                            static_temp[px][pz] += 1
-                            # set_state_block(self,px, py, pz, "minecraft:oak_planks")
-                            set_state_block(self, px, py, pz, block)
-                            # block = "minecraft:air"
-                            # block = "minecraft:diamond_block"
-                        elif ndy < 0 and nndy < 0:  # slope -1
-                            dx = aux_path[i + 1][0] - aux_path[i][0]
-                            dz = aux_path[i + 1][1] - aux_path[i][1]
-                            facing = None
-                            if dx > 0 and dz == 0: facing = "west"
-                            elif dx < 0 and dz == 0: facing = "east"
-                            elif dz > 0 and dx == 0: facing = "north"
-                            elif dz < 0 and dx == 0: facing = "south"
-                            else: pass
-                            if facing is not None:
-                                block += """_stairs[facing={facing}]""".format(facing=facing)
-                            else:
-                                block += '_slab'
-                        elif ndy > 0 and nndy < 0:  # flatten (lower) next block to get slope 0
-                            set_state_block(self, px, py, pz, block)  # for curr
-                            px = aux_path[i + 1][0]
-                            pz = aux_path[i + 1][1]
-                            set_state_block(self, px, py, pz, block)  # for ahead
-                            ty = static_temp[px][pz] + 1
-                            set_state_block(self, px, ty, pz, "minecraft:air")  # for ahead
-                            static_temp[px][pz] += 1
-                    elif check_next_road:
-                        if ndy > 0:
-                            px = aux_path[i + 1][0]
-                            pz = aux_path[i + 1][1]
-                            py += 1
-                            block = block+"_slab"
-                        elif ndy < 0:
-                            block = block+"_slab"
-                    static_temp[px][pz] = py + 1
-                    set_state_block(self, px, py, pz, block)
-                    if not self.out_of_bounds_3D(px, py + 1, pz):
-                        if 'snow' in self.blocks(px, py + 1, pz):
-                            set_state_block(self, px, py + 1, pz, 'minecraft:air')
-                    if src.manipulation.is_leaf(self.blocks(x,y + 2,z)):
-                        src.manipulation.flood_kill_leaves(self, x, y + 2, z, 10)
+
+        # ## borders
+        # for aux_path in aux_paths:
+        #     # last_aux_y = self.static_ground_hm[aux_path[0][0]][aux_path[0][1]] - 1
+        #     length = len(aux_path)
+        #     static_temp = self.rel_ground_hm.copy()
+        #     for x in range(len(static_temp)):
+        #         for z in range(len(static_temp[0])):
+        #             static_y = self.static_ground_hm[x][z]
+        #             if static_temp[x][z] > static_y:
+        #                 static_temp[x][z] = static_y
+        #     for i in range(length):
+        #         x = aux_path[i][0]
+        #         z = aux_path[i][1]
+        #         # y = int(self.static_ground_hm[x][z]) - 1
+        #         y = int(static_temp[x][z]) - 1
+        #         block = self.blocks(x,y,z)
+        #         if self.blocks(x,y,z )== "minecraft:water" or src.manipulation.is_log(self, x, y, z):
+        #             continue
+        #         if random() < outer_block_rate:
+        #             check_next_road = True
+        #             check_next_next_road = True
+        #             if i >= length - 2:
+        #                 check_next_road = False
+        #                 check_next_next_road = False
+        #             elif i >= length - 1:
+        #                 check_next_road = False
+        #             next_road_y = 0
+        #             next_next_road_y = 0
+        #             if check_next_road:
+        #                 next_road_y = static_temp[aux_path[i + 1][0]][aux_path[i + 1][1]] - 1
+        #             if check_next_next_road:
+        #                 nnx = aux_path[i + 2][0]
+        #                 nnz = aux_path[i + 2][1]
+        #                 next_next_road_y = static_temp[nnx][nnz] - 1
+        #             ndy = next_road_y - y
+        #             nndy = next_next_road_y - next_road_y
+        #             px = x  # placement x
+        #             py = y
+        #             pz = z
+        #             block = choice(src.my_utils.ROAD_SETS['default'])
+        #             if check_next_next_road:
+        #                 if ndy == 0:
+        #                     pass
+        #                 elif ndy > 0 and nndy == 0:  # slab above
+        #                     py += 1
+        #                     block += "_slab"
+        #                 elif ndy < 0 and nndy == 0:  # slab below (in place)
+        #                     block += "_slab"
+        #                 elif ndy > 0 and nndy > 0:  # slope 1
+        #                     py+=1
+        #                     dx = block_path[i+1][0] - block_path[i][0]
+        #                     dz = block_path[i+1][1] - block_path[i][1]
+        #                     facing = None
+        #                     if dx > 0 and dz == 0: facing = None
+        #                     elif dx < 0 and dz == 0: facing = "west"
+        #                     elif dz > 0 and dx == 0: facing = "south"
+        #                     elif dz < 0 and dx == 0: facing = "north"
+        #                     else: pass
+        #                     if facing is not None:
+        #                         block += """_stairs[facing={facing}]""".format(facing=facing)
+        #                     else:
+        #                         block += '_slab'
+        #                 elif ndy < 0 and nndy > 0:  # flatten next block to get slope 0
+        #                     set_state_block(self, px, py, pz, block)
+        #                     px = aux_path[i + 1][0]
+        #                     pz = aux_path[i + 1][1]
+        #                     # py = static_temp[px][pz] + 1
+        #                     static_temp[px][pz] += 1
+        #                     # set_state_block(self,px, py, pz, "minecraft:oak_planks")
+        #                     set_state_block(self, px, py, pz, block)
+        #                     # block = "minecraft:air"
+        #                     # block = "minecraft:diamond_block"
+        #                 elif ndy < 0 and nndy < 0:  # slope -1
+        #                     dx = aux_path[i + 1][0] - aux_path[i][0]
+        #                     dz = aux_path[i + 1][1] - aux_path[i][1]
+        #                     facing = None
+        #                     if dx > 0 and dz == 0: facing = "west"
+        #                     elif dx < 0 and dz == 0: facing = "east"
+        #                     elif dz > 0 and dx == 0: facing = "north"
+        #                     elif dz < 0 and dx == 0: facing = "south"
+        #                     else: pass
+        #                     if facing is not None:
+        #                         block += """_stairs[facing={facing}]""".format(facing=facing)
+        #                     else:
+        #                         block += '_slab'
+        #                 elif ndy > 0 and nndy < 0:  # flatten (lower) next block to get slope 0
+        #                     set_state_block(self, px, py, pz, block)  # for curr
+        #                     px = aux_path[i + 1][0]
+        #                     pz = aux_path[i + 1][1]
+        #                     set_state_block(self, px, py, pz, block)  # for ahead
+        #                     ty = static_temp[px][pz] + 1
+        #                     set_state_block(self, px, ty, pz, "minecraft:air")  # for ahead
+        #                     static_temp[px][pz] += 1
+        #             elif check_next_road:
+        #                 if ndy > 0:
+        #                     px = aux_path[i + 1][0]
+        #                     pz = aux_path[i + 1][1]
+        #                     py += 1
+        #                     block = block+"_slab"
+        #                 elif ndy < 0:
+        #                     block = block+"_slab"
+        #             static_temp[px][pz] = py + 1
+        #             set_state_block(self, px, py, pz, block)
+        #             if not self.out_of_bounds_3D(px, py + 1, pz):
+        #                 if 'snow' in self.blocks(px, py + 1, pz):
+        #                     set_state_block(self, px, py + 1, pz, 'minecraft:air')
+        #             if src.manipulation.is_leaf(self.blocks(x,y + 2,z)):
+        #                 src.manipulation.flood_kill_leaves(self, x, y + 2, z, 10)
+
                     ### OG ALG
                     # check_next_road = True
                     # if i >= length-1:
@@ -1915,6 +1964,8 @@ class State:
                     # prev_road_y = y
 
         # self.set_type_road(node_path, src.my_utils.TYPE.MAJOR_ROAD.name)
+        self.road_nodes.append(self.nodes(*self.node_pointers[node_pos1]))  # should these even go here first?
+        self.road_nodes.append(self.nodes(*self.node_pointers[node_pos2]))
         if add_as_road_type:
             self.set_type_road(node_path, road_type)
         return [node_pos1, node_pos2]
@@ -1968,7 +2019,7 @@ class State:
     #     self.init_lots(x1, y1, x2, y2)  # main street is a lot
 
 
-    def append_road(self, point, road_type, leave_lot=False, correction=5, bend_if_needed = False, only_place_if_walkable=False):
+    def append_road(self, point, road_type, leave_lot=False, correction=5, bend_if_needed = False, only_place_if_walkable=False, dont_rebuild=True):
         # convert point to node
         point = self.node_pointers[point]
         node = self.nodes(*point)
@@ -2002,7 +2053,7 @@ class State:
             path_points.extend(src.linedrawing.get_line((x2, y2), point))  # append to the points list the same thing in reverse? or is this a diff line?
             # print("path points is "+str(path_points))
 
-        status = self.create_road(point, (x2, y2), road_type=road_type, points=path_points, bend_if_needed=bend_if_needed, only_place_if_walkable=True)#, only_place_if_walkable=only_place_if_walkable)
+        status = self.create_road(point, (x2, y2), road_type=road_type, points=path_points, bend_if_needed=bend_if_needed, only_place_if_walkable=True)#, only_place_if_walkable=only_place_if_walkable, dont_rebuild)
         if status == False:
             return False
 

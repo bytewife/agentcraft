@@ -10,8 +10,8 @@ __version__ = "1.0"
 import src.agent
 import src.states
 import src.my_utils
-import http_framework.worldLoader
-import http_framework.interfaceUtils
+import http_framework_backup.worldLoader
+import http_framework_backup.interfaceUtils
 import time
 import random
 import numpy as np
@@ -21,7 +21,7 @@ class Simulation:
     # with names? Let's look after ensembles and other's data scructure for max flexibility
     def __init__(self, XZXZ, precomp_world_slice=None, precomp_legal_actions = None, precamp_pathfinder=None, precomp_types = None, run_start=True, precomp_sectors = None, precomp_nodes=None, precomp_node_pointers=None, phase=0, maNum=5, miNum=400, byNum= 2000, brNum=1000, buNum=10, pDecay=0.98, tDecay=0.25, corNum=5, times=1, is_rendering_each_step=True, rendering_step_duration=0.8, building_max_y_diff=1):
         if precomp_world_slice == None:
-            self.world_slice = http_framework.worldLoader.WorldSlice(*XZXZ)
+            self.world_slice = http_framework_backup.worldLoader.WorldSlice(*XZXZ)
         else:
             self.world_slice = precomp_world_slice
         self.state = src.states.State(XZXZ, self.world_slice, precomp_pathfinder=precamp_pathfinder, precomp_legal_actions=precomp_legal_actions, precomp_types=precomp_types, precomp_sectors=precomp_sectors, precomp_nodes=precomp_nodes, precomp_node_pointers=precomp_node_pointers)
@@ -59,23 +59,37 @@ class Simulation:
             clean_agents = "kill @e[type=minecraft:armor_stand,x={},y=64,z={},distance=..100]".format(
                 str((XZXZ[2] + XZXZ[0]) / 2),
                 str((XZXZ[3] + XZXZ[1]) / 2))
-            http_framework.interfaceUtils.runCommand(clean_agents)
+            http_framework_backup.interfaceUtils.runCommand(clean_agents)
 
     def run_with_render(self, steps):
-        while self.start() == False:
+        self.decide_max_y_diff()
+        viable_water_starts = list(set(self.state.water).intersection(self.state.tiles_with_land_neighbors))
+        while self.start(viable_water_starts) == False:
             self.state.reset_for_restart()
             self.update_building_max_y_diff()
         self.step(steps, is_rendering=True)
 
     def run_without_render(self, steps):
-        while self.start() == False:
+        self.decide_max_y_diff()
+        viable_water_starts = list(set(self.state.water).intersection(self.state.tiles_with_land_neighbors))
+        while self.start(viable_water_starts) == False:
             self.state.reset_for_restart()
             self.update_building_max_y_diff()
         self.step(steps, is_rendering=False)
         self.state.step(is_rendering=True, use_total_changed_blocks=True)
 
+    def decide_max_y_diff(self):
+        if self.state.len_x > 900 or self.state.len_z > 900:
+            self.building_max_y_diff = 6
+        elif self.state.len_x > 700 or self.state.len_z > 700:
+            self.building_max_y_diff = 5
+        elif self.state.len_x > 400 or self.state.len_z > 400:
+            self.building_max_y_diff = 3
+        else:
+            self.building_max_y_diff = 2
+
     # this needs to be run manually so that we can rerun the sim if needed
-    def start(self):
+    def start(self, viable_water_starts):
         result = False  # returns agent positions or False
         i=0
         max_tries = 50
@@ -87,7 +101,7 @@ class Simulation:
             # self.state.roads.clear()
             if i > max_tries: return False
             create_well = i > 25
-            result, old_water = self.state.init_main_st(create_well)
+            result, old_water = self.state.init_main_st(create_well, viable_water_starts)
             i+=1
 
         # build a house
@@ -111,7 +125,7 @@ class Simulation:
         i = 0
         # rx = random.randint(0,self.state.last_node_pointer_x)
         # rz = random.randint(0,self.state.last_node_pointer_z)
-        schematic_args = self.state.find_build_location(0,0,building,wood,ignore_sector=True, max_y_diff=self.building_max_y_diff)
+        schematic_args = self.state.find_build_location(0,0,building,wood,ignore_sector=True, max_y_diff=self.building_max_y_diff, build_tries=100)
         if schematic_args is False:  # flip the x and z
             print("Error: could not find build location!")
             self.state.water = old_water

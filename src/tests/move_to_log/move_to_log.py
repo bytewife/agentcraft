@@ -2,7 +2,7 @@ import src.states
 import src.scheme_utils
 import src.manipulation
 import src.simulation
-import http_framework.worldLoader
+import http_framework_backup.worldLoader
 import src.my_utils
 import src.agent
 from enum import Enum
@@ -13,7 +13,7 @@ x2 = -8
 z2 = 44
 area = [x1,z1,x2,z2]
 area = src.my_utils.correct_area(area)
-worldSlice = http_framework.worldLoader.WorldSlice(area)  #_so area is chunks?
+worldSlice = http_framework_backup.worldLoader.WorldSlice(area)  #_so area is chunks?
 
 file_name = ""
 
