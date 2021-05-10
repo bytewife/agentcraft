@@ -30,8 +30,8 @@ def parse_opts(argv):
 
 Options:
      -a X1,Y1,X2,Y2  |  Set the generator's build AREA in the running Minecraft world. Avoid spaces in between numbers.
-     -t SECONDS      |  Set the TIME limit for the generator's execution.
-     -s STEPS        |  Set the number of TIME-STEPS the generator takes.
+     -t SECONDS      |  Set the TIME limit for the generator's execution. DEFAULT=3000
+     -s STEPS        |  Set the number of TIME-STEPS the generator takes. DEFAULT=1000
 """
         print(msg)
         return
@@ -84,7 +84,6 @@ if __name__ == '__main__':
     start = time.time()
     x1, z1, x2, z2 = area
     print(f"Executing in area [{str(x1)}, {str(z1)}, {str(x2)}, {str(z2)}] with {steps} steps in {time_limit} seconds!")
-    exit(1)
     area = src.my_utils.correct_area(area)
     file_name = ""
     clean_rad = int(max(abs(x2-x1), abs(z2-z1)))
@@ -140,5 +139,5 @@ if __name__ == '__main__':
     sim.state.step(1)
 
     print(src.agent.Agent.shared_resources)
-    print("done")
+    print("Execution complete! Enjoy :)")
 

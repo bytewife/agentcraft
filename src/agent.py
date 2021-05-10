@@ -382,7 +382,7 @@ class Agent:
             dx = max(min(nx-self.x, 1), -1)
             dz = max(min(nz-self.z, 1), -1)
             if self.state.legal_actions[self.x][self.z][src.movement.DeltaToDirIdx[(dx, dz)]] == 0:  # if not legal move (aka building was placed)
-                print(self.name + " was blocked by a new building! Getting new motive.")
+                # print(self.name + " was blocked by building! Getting new motive.")
                 self.choose_motive()
                 return False
             self.move_self(nx, nz, state=state, walkable_heightmap=walkable_heightmap)
@@ -441,7 +441,7 @@ class Agent:
                 status = self.do_idle_task()
         # the bad part about this is that jungle trees can take multiple bouts to cut
         if self.turns_staying_still > Agent.max_turns_staying_still and status is False and self.motive != self.Motive.REST.name:  # _move in random direction if still for too long
-            print("stayed still too long and now moving!")
+            # print("stayed still too long and now moving!")
             nx = nz = 0
             found_open = False
             for dir in src.movement.directions:
@@ -643,7 +643,7 @@ class Agent:
                 self.do_idle_task()
         elif new_motive.name == self.Motive.WATER.name:
             self.set_path_to_nearest_spot(self.state.water_with_adjacent_land, 10, 10, 30, search_neighbors_instead=True)
-            print(self.path)
+            # print(self.path)
             if len(self.path) < 1:
                 self.turns_staying_still = self.max_turns_staying_still
                 self.unshared_resources['water'] = self.water_max  # this is a fallback needed for 1000x1000 optimizaiton, unfortunately
@@ -653,7 +653,7 @@ class Agent:
             result = self.state.find_build_location(self.x, self.z, building, self.building_material[:-4], self.building_max_y_diff)
             # now move to teh road
             if result:
-                print("buildingg "+building)
+                print(f"  {self.name} is: {building[10:]}")
                 self.build_params = result
                 tx, tz = result[0].center
                 path = self.state.pathfinder.get_path((self.x, self.z), (tx, tz), self.state.len_x, self.state.len_z,
@@ -700,7 +700,6 @@ class Agent:
                     node = self.state.nodes(*self.state.node_pointers[(tx, tz)])
                     tries+=1
                 if tries > max_tries:
-                    print("Error: no places to put sapling")
                     tx = self.x
                     tz = self.z
                     # exit(1)  # TODO this is will prolly never happen

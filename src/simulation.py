@@ -64,45 +64,62 @@ class Simulation:
     def run_with_render(self, steps, start, time_limit):
         self.decide_max_y_diff()
         viable_water_starts = list(set(self.state.water).intersection(self.state.tiles_with_land_neighbors))
-        while self.start(viable_water_starts) == False:
+        max_tries = 99
+        status, attempt = self.start(viable_water_starts, -1, max_tries)
+        while status == False:
             self.state.reset_for_restart()
             self.update_building_max_y_diff()
+            status, attempt = self.start(viable_water_starts, attempt, max_tries)
+            if attempt > max_tries:
+                print("Error: could not find valid settlement location in given area! Try running with a different area.")
+                exit(1)
+            attempt += 1
         self.step(steps, True, start, time_limit)
 
     def run_without_render(self, steps, start, time_limit):
         self.decide_max_y_diff()
         viable_water_starts = list(set(self.state.water).intersection(self.state.tiles_with_land_neighbors))
-        while self.start(viable_water_starts) == False:
+        max_tries = 99
+        status, attempt = self.start(viable_water_starts, -1, max_tries)
+        while status == False:
             self.state.reset_for_restart()
             self.update_building_max_y_diff()
+            status, attempt = self.start(viable_water_starts, attempt, max_tries)
+            if attempt > max_tries:
+                print("Error: could not find valid settlement location in given area! Please try running with a different area.")
+                print("Exiting")
+                exit(1)
+            attempt += 1
         self.step(steps, False, start, time_limit)
         self.state.step(is_rendering=True, use_total_changed_blocks=True)
 
     def decide_max_y_diff(self):
         if self.state.len_x > 900 or self.state.len_z > 900:
+            print("Caution: chosen area is very large! NBT retrieval may take long.")
             self.building_max_y_diff = 6
         elif self.state.len_x > 700 or self.state.len_z > 700:
+            print("Caution: chosen area is large! NBT retrieval may take long.")
             self.building_max_y_diff = 5
         elif self.state.len_x > 400 or self.state.len_z > 400:
+            print("Caution: chosen area is large! NBT retrieval may take long.")
             self.building_max_y_diff = 3
         else:
             self.building_max_y_diff = 2
 
     # this needs to be run manually so that we can rerun the sim if needed
-    def start(self, viable_water_starts):
+    def start(self, viable_water_starts, attempt_start, max_tries):
         result = False  # returns agent positions or False
-        i=0
-        max_tries = 50
+        attempt=attempt_start-1
         create_well = False
         old_water = []
         while result is False:
+            attempt+=1
             self.state.reset_for_restart(use_heavy=True)
             # self.state.construction.clear()
             # self.state.roads.clear()
-            if i > max_tries: return False
-            create_well = i > 25
-            result, old_water = self.state.init_main_st(create_well, viable_water_starts)
-            i+=1
+            if attempt > max_tries: return False, attempt
+            create_well = attempt > 25
+            result, old_water = self.state.init_main_st(create_well, viable_water_starts, str(attempt+1)+"/"+str(max_tries+1))
 
         # build a house
         building = "./schemes/"+random.choice(src.my_utils.STRUCTURES['small'])[0]
@@ -122,24 +139,23 @@ class Simulation:
 
         wood_type = self.state.blocks(nearest_tree_pos[0], self.state.rel_ground_hm[nearest_tree_pos[0]][nearest_tree_pos[1]], nearest_tree_pos[1]) if not use_generated_tree else 'oak'
         wood = src.my_utils.get_wood_type(wood_type)
-        i = 0
         # rx = random.randint(0,self.state.last_node_pointer_x)
         # rz = random.randint(0,self.state.last_node_pointer_z)
         schematic_args = self.state.find_build_location(0,0,building,wood,ignore_sector=True, max_y_diff=self.building_max_y_diff, build_tries=100)
         if schematic_args is False:  # flip the x and z
-            print("Error: could not find build location!")
+            print(f"  Attempt {str(attempt+1)}/{str(max_tries+1)}: could not find build location! Trying again~")
             self.state.water = old_water
-            return False
+            return False, attempt
         status, build_y = self.state.place_schematic(*schematic_args)
         if status is False:
             self.state.water = old_water
-            return False
+            return False, attempt
         # self.state.place_platform(*schematic_args, build_y)
         self.state.step()  # check if this affects agent pahs. it seems to.
-        print("Finished simulation init!!")
+        print("Finished simulation init!")
         fixed_pos = (schematic_args[0].center[0]+self.state.world_x,schematic_args[0].center[1]+self.state.world_z)
         print("Successfully initialized main street! Go to position "+str(fixed_pos))
-        return True
+        return True, -1
 
 
     def update_building_max_y_diff(self):

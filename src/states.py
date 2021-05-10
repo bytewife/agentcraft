@@ -1027,7 +1027,7 @@ class State:
         xlen = self.len_x
         zlen = self.len_z
         if xlen == 0 or zlen == 0:
-            print("Error: gen_types has empty lengths.")
+            print("  Attempt: gen_types has empty lengths.")
         types = [["str" for j in range(zlen)] for i in range(xlen)]
         for x in range(xlen):
             for z in range(zlen):
@@ -1278,7 +1278,7 @@ class State:
                     well_nodes.add(self.nodes(*self.node_pointers[(x,z)]))
         return well_nodes, highest_y, well_tiles
 
-    def init_main_st(self, create_well, viable_water_choices):
+    def init_main_st(self, create_well, viable_water_choices, attempt):
         well_tiles = []
         if len(self.water) <= 10 or create_well:
             sx = randint(0, self.last_node_pointer_x)
@@ -1296,26 +1296,25 @@ class State:
                 self.place_platform(found_nodes_iter=result, build_y=well_y)
         old_water = self.water.copy()
         self.water = self.water+well_tiles
-        rand_index = randint(0, len(viable_water_choices))
+        rand_index = randint(0, len(viable_water_choices)-1)
         x1, y1 = viable_water_choices[rand_index]
         n_pos = self.node_pointers[(x1, y1)]
         water_checks = 100
         n_pos = self.init_find_water(viable_water_choices, n_pos, water_checks)
         if n_pos == False or n_pos == None:
-            print("Error: could not find suitable water source!")
+            print(f"  Attempt {attempt}: could not find suitable water source. Trying again~")
             self.water = old_water
             return False, []
         n = self.nodes(*n_pos)
-        print("n being "+str(n))
 
         loc = n.local()
         ran = n.range()
-        print("range being "+str(ran))
-        print("local being "+str(loc))
-        print('--------')
+        # print("range being "+str(ran))
+        # print("local being "+str(loc))
+        # print('--------')
         n1_options = list(set(ran) - set(loc))  # Don't put water right next to water, depending on range
         if len(n1_options) < 1:
-            print("Error: could not find any n1_options")
+            print(f"  Attempt {attempt}: could not find any valid starting road options. Trying again~")
             viable_water_choices.remove(rand_index)
             self.water = old_water
             return False, []
@@ -1324,13 +1323,13 @@ class State:
 
         n1 = self.init_find_valid_n1(n1, n1_options, water_checks)
         if n1 == False:
-            print("Error: could not find valid n1_option")
+            print(f"  Attempt {attempt}: could not find valid starting road option. Trying again~")
             self.water = old_water
             return False, []
 
         n2_options = list(set(n1.range()) - set(n1.local()))  # the length of the main road is the difference between the local and the range
         if len(n2_options) < 1:
-            print("Error: no n2_options")
+            print(f"  Attempt {attempt}: could not find ending road options. Trying again~")
             self.water = old_water
             return False, []
 
@@ -1340,13 +1339,13 @@ class State:
 
         points = self.init_find_path_with_n2(n1, n2, n2_options, points, limit)
         if points == False:
-            print("Error: could not finish path any new n2's")
+            print(f"  Attempt {attempt}: could not find ending road options. Trying again~")
             self.water = old_water
             return False, []
 
         points = self.points_to_nodes(points)  # points is the path of nodes from the chosen
         if points == False:
-            print("Error: road points didn't stay in bounds!")
+            print(f"  Attempt {attempt}: road points didn't stay in bounds! Trying again~")
             self.water = old_water
             return False, []
 
@@ -1361,7 +1360,7 @@ class State:
 
         status = self.init_construction(points)
         if status == False:
-            print("Error: tried to build road outside of bounds!")
+            print(f"  Attempt {attempt}: tried to build road outside of bounds! Trying again~")
             self.water = old_water
             return False, []
 
@@ -1369,7 +1368,7 @@ class State:
         p2 = (x2, y2)
         self.init_lots(*p1, *p2)  # main street is a lot
         if self.create_road(node_pos1=p1, node_pos2=p2, road_type=src.my_utils.TYPE.MAJOR_ROAD.name, only_place_if_walkable=True) == False:
-            print("Error: failed to build main st")
+            print(f"  Attempt {attempt}: Main street wasn't valid! Trying again~")
             self.water = old_water
             return False, []
 
@@ -1460,7 +1459,7 @@ class State:
                 water.remove(rand_index)
             if i > water_checks:
                 return False
-            rand_index = randint(0, len(water))
+            rand_index = randint(0, len(water)-1)
             x1, y1 = water[rand_index]
             pos = self.node_pointers[(x1, y1)]
             i+=1
@@ -1640,7 +1639,7 @@ class State:
             else:
                 found_road = True
             if not found_road:
-                print("create_road error: no valid road found.")
+                # print("create_road error: no valid road found.")
                 return False
         # elif only_place_if_walkable:
         #     if not is_walkable(self, block_path):
@@ -2064,7 +2063,7 @@ class State:
 
 
     def get_point_to_close_gap_minor(self, x1, z1, points):
-        print("BUILDING MINOR ROAD")
+        # print("BUILDING MINOR ROAD")
         (x_, z_) = points[1]
         x = x1 - x_
         z = z1 - z_
