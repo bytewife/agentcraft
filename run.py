@@ -6,17 +6,16 @@ __all__ = []
 __author__ = "aith"
 __version__ = "1.0"
 
-import sys, getopt
+import sys
+import getopt
 import src.simulation
-import http_framework_backup.interfaceUtils
+import http_framework.interfaceUtils
 import time
 import src.my_utils
 import src.agent
 import src.states
 
 def parse_opts(argv):
-    inputfile = ''
-    outputfile = ''
     x1 = 0
     y1 = 0
     x2 = 0
@@ -25,69 +24,77 @@ def parse_opts(argv):
     steps = 1000
 
     area_given = False
-
     def help():
-        pass
-        print("""
-Minecraft Minesim by aith
+        msg = """Minecraft Minesim by aith
      Runs an agent-based settlement generator in Minecraft! Entry for GDMC 2021.
 
 Options:
-     -a X1 Y1 X2 Y2  |  Set the generator's build AREA in the running Minecraft world.
+     -a X1,Y1,X2,Y2  |  Set the generator's build AREA in the running Minecraft world. Avoid spaces in between numbers.
      -t SECONDS      |  Set the TIME limit for the generator's execution.
      -s STEPS        |  Set the number of TIME-STEPS the generator takes.
-""")
+"""
+        print(msg)
+        return
 
     try:
-        opts, args = getopt.getopt(argv, 'ats:')
+        opts, args = getopt.getopt(argv, 'a:t:s:')
     except getopt.GetoptError:
         help()
         sys.exit(1)
     for opt, arg in opts:
-        if opt in ('-h','--h'):
+        if opt in ['-h','--h']:
             help()
             sys.exit()
-        elif opt in ('-t', '--t'):
-            if type(arg) == int:
-                time_limit= arg
-            else:
+        elif opt in ['-t', '--t']:
+            try:
+                time_limit= int(arg)
+            except ValueError:
                 print("Error: -t requires an integer.")
                 sys.exit(1)
-        elif opt in ("-s", "--s"):
-            if type(arg) == int:
-                area_given = True
-                steps = arg
-            else:
+        elif opt in ["-s", "--s"]:
+            try:
+                steps = int(arg)
+            except ValueError:
                 print("Error: -t requires an integer.")
+                sys.exit(0)
+        elif opt in ["-a", "--a"]:
+            # if type(arg) == str:
+            try:
+                nums = arg.split(',')
+                if len(nums) != 4:
+                    raise ValueError
+                nums = [int(a) for a in nums]
+            except ValueError:
+                print("Error: -a requires x1,y1,x2,y2 as integer coordinates.")
+                print("Example: -a 0,0,100,100")
                 sys.exit(1)
+            area_given = True
+            x1 = nums[0]
+            y1 = nums[1]
+            x2 = nums[2]
+            y2 = nums[3]
     if not area_given:
-        print("Error: requires area given with -a")
-        sys.exit(1)
-
-    print ('Input file is "', inputfile)
-    print ('Output file is "', outputfile)
+        print("Error: requires area given with -a. Use -h for options.")
+        sys.exit(0)
+    return [x1,y1,x2,y2], time_limit, steps
 
 if __name__ == '__main__':
-    # parse_opts(sys.argv[1:])
+    argv = sys.argv[1:]
+    area, time_limit, steps = parse_opts(argv)
     start = time.time()
-    time_limit = 5
-    x1 = 90000
-    z1 = 90000
-    x2 = 90100
-    z2 = 90100
-
-    area = [x1,z1,x2,z2]
+    x1, z1, x2, z2 = area
+    print(f"Executing in area [{str(x1)}, {str(z1)}, {str(x2)}, {str(z2)}] with {steps} steps in {time_limit} seconds!")
+    exit(1)
     area = src.my_utils.correct_area(area)
     file_name = ""
     clean_rad = int(max(abs(x2-x1), abs(z2-z1)))
     clean_agents = "kill @e[type=minecraft:armor_stand,x={},y=64,z={},distance=..{}]".format(str((x2+x1)/2), str((z2+z1)/2), clean_rad)
-    http_framework_backup.interfaceUtils.runCommand(clean_agents)
+    http_framework.interfaceUtils.runCommand(clean_agents)
 
     frame_duration = 0.00
     sim = src.simulation.Simulation(area, rendering_step_duration=frame_duration, is_rendering_each_step=False, start_time = start)
 
-    timesteps = 1500
-    sim.run_with_render(timesteps, start, time_limit)
+    sim.run_with_render(steps, start, time_limit)
     a = sim.state.sectors
 
     ## ROADS

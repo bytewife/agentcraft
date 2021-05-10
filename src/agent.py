@@ -16,7 +16,7 @@ import src.manipulation
 import src.movement
 import src.my_utils
 import src.scheme_utils
-import http_framework_backup.interfaceUtils
+import http_framework.interfaceUtils
 import names
 from random import shuffle
 
@@ -773,7 +773,7 @@ class Agent:
     def render(self):
         # kill agent
         kill_cmd = """kill @e[name={name}]""".format(name = self.name)
-        http_framework_backup.interfaceUtils.runCommand(kill_cmd)
+        http_framework.interfaceUtils.runCommand(kill_cmd)
         # pick one or the other
         R = self.is_resting * 2
         S = self.is_mid_socializing * ((self.motive == self.Motive.SOCIALIZE_LOVER.name) * 4) + ((self.motive == self.Motive.SOCIALIZE_FRIEND.name) * 6) + ((self.motive == self.Motive.SOCIALIZE_ENEMY.name) * 8)
@@ -816,7 +816,7 @@ RightArm:[{right_arm}]}}\
             left_arm=Agent.pose[self.walk_stage]["LeftArm"],
             right_arm=Agent.pose[self.walk_stage]["RightArm"],
         )  # this can be related to resources! 330 is high, 400 is low
-        http_framework_backup.interfaceUtils.runCommand(spawn_cmd)
+        http_framework.interfaceUtils.runCommand(spawn_cmd)
 
 
     def get_head_tilt(self):  # unused currnetly

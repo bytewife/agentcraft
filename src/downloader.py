@@ -9,7 +9,7 @@ __version__ = "1.0"
 
 import src.scheme_utils
 # import src.my_utils
-import http_framework_backup.worldLoader
+import http_framework.worldLoader
 
 areaFlex = [0, 0, 10, 10] # default build area
 # you can set a build area in minecraft using the /setbuildarea command

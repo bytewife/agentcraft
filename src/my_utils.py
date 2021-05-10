@@ -6,7 +6,7 @@ __all__ = []
 __author__ = "aith"
 __version__ = "1.0"
 from enum import Enum
-import http_framework_backup.interfaceUtils
+import http_framework.interfaceUtils
 import src.agent
 import numpy as np
 from random import choice
@@ -553,7 +553,7 @@ def get_wood_type(block):
 
 def setBlockWithData(abs_x, abs_y, abs_z, data):
     command = "setblock {} {} {} {}".format(abs_x, abs_y, abs_z, data)
-    return http_framework_backup.interfaceUtils.runCommand(command)
+    return http_framework.interfaceUtils.runCommand(command)
 
 
 def get_heightmap(world_slice, heightmap_type="MOTION_BLOCKING_NO_LEAVES", y_offset=0):

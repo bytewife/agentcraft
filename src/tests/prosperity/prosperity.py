@@ -2,8 +2,8 @@ import src.states
 import src.scheme_utils
 import src.manipulation
 import src.simulation
-import http_framework_backup.worldLoader
-import http_framework_backup.interfaceUtils
+import http_framework.worldLoader
+import http_framework.interfaceUtils
 import src.my_utils
 import src.agent
 import src.states
@@ -29,7 +29,7 @@ file_name = ""
 # print(np.where(a > 0.45))
 # print(a)
 clean_agents = "kill @e[type=minecraft:armor_stand,x={},y=64,z={},distance=..100]".format(str((x2+x1)/2), str((z2+z1)/2))
-http_framework_backup.interfaceUtils.runCommand(clean_agents)
+http_framework.interfaceUtils.runCommand(clean_agents)
 
 # sim = src.simulation.Simulation(area, rendering_step_duration=0.0)
 sim = src.simulation.Simulation(area, rendering_step_duration=0.0)

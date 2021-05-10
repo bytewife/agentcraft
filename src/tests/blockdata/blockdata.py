@@ -2,8 +2,8 @@ import src.states
 import src.scheme_utils
 import src.manipulation
 import src.simulation
-import http_framework_backup.worldLoader
-import http_framework_backup.interfaceUtils
+import http_framework.worldLoader
+import http_framework.interfaceUtils
 import src.my_utils
 import src.agent
 from enum import Enum
@@ -21,8 +21,8 @@ print(head)
 
 
 # If you're going to create more, watch out for escape characters
-# http_framework_backup.interfaceUtils.setBlockWithData(308, 37, 822, head)
-# http_framework_backup.interfaceUtils.setBlockWithData(307, 37, 822, sign)
+# http_framework.interfaceUtils.setBlockWithData(308, 37, 822, head)
+# http_framework.interfaceUtils.setBlockWithData(307, 37, 822, sign)
 
 ## This is for myself when I want to download head id's
 ## I do this because you currently cannot get this kind of data from the http interface
@@ -63,5 +63,5 @@ print(head)
 #     hand2="oak_log",
 #     head_tilt="350"# this can be related to resources! 330 is high, 400 is low
 # )
-# print(http_framework_backup.interfaceUtils.runCommand(summon))
+# print(http_framework.interfaceUtils.runCommand(summon))
 print("done")

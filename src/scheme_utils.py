@@ -7,7 +7,7 @@ __author__ = "aith"
 __version__ = "1.0"
 
 
-import http_framework_backup.interfaceUtils
+import http_framework.interfaceUtils
 import src.manipulation
 from enum import Enum
 from collections import deque
@@ -41,7 +41,7 @@ def download_area(origin_x, origin_y, origin_z, end_x, end_y, end_z, flexible_ti
     for y in range(end_y, origin_y-dir_y, -dir_y):
         for z in range(origin_z, end_z+dir_z, dir_z):
             for x in range(origin_x, end_x+dir_x, dir_x):
-                block = http_framework_backup.interfaceUtils.getBlock(x, y, z)[10:].ljust(100, ' ')  # polished_blackstone_brick_stairs
+                block = http_framework.interfaceUtils.getBlock(x, y, z)[10:].ljust(100, ' ')  # polished_blackstone_brick_stairs
 
                 if flexible_tiles:
                     first_underscore = None
@@ -132,13 +132,13 @@ def place_schematic_in_world(file_name, origin_x, origin_y, origin_z, dir_x=1, d
                 block = adjust_property_by_rotation(block, property="facing=", longest_len=5, rot=rot, shortest_len=4,
                                                     rot_factor=1)
                 if rot == 0:
-                    http_framework_backup.interfaceUtils.setBlock(sx + xi, y, sz + zi, block)
+                    http_framework.interfaceUtils.setBlock(sx + xi, y, sz + zi, block)
                 if rot == 1:
-                    http_framework_backup.interfaceUtils.setBlock(sx + zi, y, sz + xi, block)
+                    http_framework.interfaceUtils.setBlock(sx + zi, y, sz + xi, block)
                 if rot == 2:
-                    http_framework_backup.interfaceUtils.setBlock(ex - xi - 1, y, ez - zi - 1, block)
+                    http_framework.interfaceUtils.setBlock(ex - xi - 1, y, ez - zi - 1, block)
                 if rot == 3:
-                    http_framework_backup.interfaceUtils.setBlock(ex - zi + 1, y, ez - xi - 3, block)  # this is a hack for now
+                    http_framework.interfaceUtils.setBlock(ex - zi + 1, y, ez - xi - 3, block)  # this is a hack for now
                 i += 1
                 xi += 1
             zi += 1
@@ -169,7 +169,7 @@ def place_schematic_in_world(file_name, origin_x, origin_y, origin_z, dir_x=1, d
     #         for x in range(origin_x, end_x+1, dir_x):
     #             index =yi*length_z*length_x + zi*length_x + xi
     #             block = "minecraft:"+assets[index]
-    #             http_framework_backup.interfaceUtils.placeBlockBatched(x, y, z, block, n_blocks)#, n_blocks-1)
+    #             http_framework.interfaceUtils.placeBlockBatched(x, y, z, block, n_blocks)#, n_blocks-1)
     #             xi += 1
     #         zi += 1
     #     yi -= 1

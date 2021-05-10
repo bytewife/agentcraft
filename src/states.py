@@ -9,8 +9,8 @@ __version__ = "1.0"
 import math
 from math import floor
 
-import http_framework_backup.interfaceUtils
-import http_framework_backup.worldLoader
+import http_framework.interfaceUtils
+import http_framework.worldLoader
 import src.my_utils
 import src.movement
 import src.pathfinding
@@ -890,7 +890,7 @@ class State:
         y1, y2  = get_y_bounds(abs_ground_hm)  # keep range not too large
         y2 += max_y_offset
         world_y = y1
-        interface = http_framework_backup.interfaceUtils.Interface(x=self.world_x, y=world_y, z=self.world_z,
+        interface = http_framework.interfaceUtils.Interface(x=self.world_x, y=world_y, z=self.world_z,
                                                                    buffering=True, caching=True)
         if (y2 > 150):
             print("warning: Y bound is really high!")
@@ -902,8 +902,8 @@ class State:
         xi = 0
         yi = 0
         zi = 0
-        http_framework_backup.interfaceUtils.globalWorldSlice = self.world_slice
-        http_framework_backup.interfaceUtils.globalDecay = np.zeros((self.len_x, 255, self.len_z), dtype=bool)
+        http_framework.interfaceUtils.globalWorldSlice = self.world_slice
+        http_framework.interfaceUtils.globalDecay = np.zeros((self.len_x, 255, self.len_z), dtype=bool)
         for x in range(x1, x2):
             yi = 0
             for y in range(y1, y2):

@@ -10,8 +10,8 @@ __version__ = "1.0"
 import src.agent
 import src.states
 import src.my_utils
-import http_framework_backup.worldLoader
-import http_framework_backup.interfaceUtils
+import http_framework.worldLoader
+import http_framework.interfaceUtils
 import time
 import random
 import numpy as np
@@ -21,7 +21,7 @@ class Simulation:
     # with names? Let's look after ensembles and other's data scructure for max flexibility
     def __init__(self, XZXZ, precomp_world_slice=None, precomp_legal_actions = None, precamp_pathfinder=None, precomp_types = None, run_start=True, precomp_sectors = None, precomp_nodes=None, precomp_node_pointers=None, phase=0, maNum=5, miNum=400, byNum= 2000, brNum=1000, buNum=10, pDecay=0.98, tDecay=0.25, corNum=5, times=1, is_rendering_each_step=True, rendering_step_duration=0.8, building_max_y_diff=1,start_time=0):
         if precomp_world_slice == None:
-            self.world_slice = http_framework_backup.worldLoader.WorldSlice(*XZXZ)
+            self.world_slice = http_framework.worldLoader.WorldSlice(*XZXZ)
         else:
             self.world_slice = precomp_world_slice
         self.state = src.states.State(XZXZ, self.world_slice, precomp_pathfinder=precamp_pathfinder, precomp_legal_actions=precomp_legal_actions, precomp_types=precomp_types, precomp_sectors=precomp_sectors, precomp_nodes=precomp_nodes, precomp_node_pointers=precomp_node_pointers)
@@ -59,7 +59,7 @@ class Simulation:
             clean_agents = "kill @e[type=minecraft:armor_stand,x={},y=64,z={},distance=..100]".format(
                 str((XZXZ[2] + XZXZ[0]) / 2),
                 str((XZXZ[3] + XZXZ[1]) / 2))
-            http_framework_backup.interfaceUtils.runCommand(clean_agents)
+            http_framework.interfaceUtils.runCommand(clean_agents)
 
     def run_with_render(self, steps, start, time_limit):
         self.decide_max_y_diff()
