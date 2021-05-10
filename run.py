@@ -22,6 +22,8 @@ def parse_opts(argv):
     y2 = 0
     time_limit = 3000
     steps = 1500
+    frame_length = 0.4
+    is_rendering_per_frame = True
 
     area_given = False
     def help():
@@ -32,15 +34,17 @@ Options:
      -a X1,Y1,X2,Y2  |  Set the generator's build AREA in the running Minecraft world. Avoid spaces in between numbers.
      -t SECONDS      |  Set the TIME limit for the generator's execution. DEFAULT={time_limit}
      -s STEPS        |  Set the number of TIME-STEPS the generator takes. DEFAULT={steps}
+     -f FRAMELENGTH  |  Set the duration of each frame of render. DEFAULT={frame_length} seconds
+     --norender      |  Disable per-frame rendering (for performance) 
 
 Example:
-     python3 run.py -a 0,0,200,200 -t 600 -s 1000
+     python3 run.py -a 0,0,200,200 -t 600 -s 1000 -f 0.4 --norender
 """
         print(msg)
         return
 
     try:
-        opts, args = getopt.getopt(argv, 'a:t:s:')
+        opts, args = getopt.getopt(argv, 'a:t:s:f:', ['norender'])
     except getopt.GetoptError:
         help()
         sys.exit(1)
@@ -76,14 +80,22 @@ Example:
             y1 = nums[1]
             x2 = nums[2]
             y2 = nums[3]
+        elif opt in ["-f", "--f"]:
+            try:
+                frame_length = float(arg)
+            except ValueError:
+                print("Error: -f requires an decimal number.")
+                sys.exit(0)
+        elif opt == '--norender':
+            is_rendering_per_frame = False
     if not area_given:
         print("Error: requires area given with -a. Use -h for options.")
         sys.exit(0)
-    return [x1,y1,x2,y2], time_limit, steps
+    return [x1,y1,x2,y2], time_limit, steps, frame_length, is_rendering_per_frame
 
 if __name__ == '__main__':
     argv = sys.argv[1:]
-    area, time_limit, steps = parse_opts(argv)
+    area, time_limit, steps, frame_duration, is_rendering_per_frame = parse_opts(argv)
     start = time.time()
     x1, z1, x2, z2 = area
     print(f"Executing in area [{str(x1)}, {str(z1)}, {str(x2)}, {str(z2)}] with {steps} steps in {time_limit} seconds!")
@@ -93,21 +105,23 @@ if __name__ == '__main__':
     clean_agents = "kill @e[type=minecraft:armor_stand,x={},y=64,z={},distance=..{}]".format(str((x2+x1)/2), str((z2+z1)/2), clean_rad)
     http_framework.interfaceUtils.runCommand(clean_agents)
 
-    frame_duration = 0.00
+    # frame_duration = 0.00
     sim = src.simulation.Simulation(area, rendering_step_duration=frame_duration, is_rendering_each_step=False, start_time = start)
 
-    sim.run_with_render(steps, start, time_limit)
-    a = sim.state.sectors
+    if is_rendering_per_frame:
+        sim.run_with_render(steps, start, time_limit)
+    else:
+        sim.run_without_render(steps, start, time_limit)
 
     ## ROADS
-    for r in sim.state.roads:
-        if r in sim.state.construction:
-            # sim.state.construction.discard(r)
-            pass
-        x = r.center[0]
-        z = r.center[1]
-        y = sim.state.rel_ground_hm[x][z] + 1
-        sim.state.set_block(x,y,z,"minecraft:redstone_block")
+    # for r in sim.state.roads:
+    #     if r in sim.state.construction:
+    #         # sim.state.construction.discard(r)
+    #         pass
+    #     x = r.center[0]
+    #     z = r.center[1]
+    #     y = sim.state.rel_ground_hm[x][z] + 1
+    #     sim.state.set_block(x,y,z,"minecraft:redstone_block")
 
     ## CONSTRUCTION
     # for b in sim.state.construction:
@@ -139,7 +153,7 @@ if __name__ == '__main__':
     #     y = sim.state.rel_ground_hm[x][z] + 1
     #     sim.state.set_block(x,y,z,"minecraft:gold_block")
 
-    sim.state.step(1)
+    # sim.state.step(1)
 
     print(src.agent.Agent.shared_resources)
     print("Execution complete! Enjoy your new settlement :)")

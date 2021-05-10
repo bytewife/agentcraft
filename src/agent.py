@@ -785,8 +785,8 @@ summon minecraft:armor_stand {x} {y} {z} {{NoGravity: 1, ShowArms:1, NoBasePlate
 mall:{is_small}, CustomName: '{{"text":"{name}", "color":"customcolor", "bold":false, "underlined":false, \
 "strikethrough":false, "italic":false, "obscurated":false}}', \
 ArmorItems:[{{id:"{boots}",Count:1b}},\
-{{id:"{lower_armor}",Count:1b}},\
-{{id:"{upper_armor}",Count:1b}},\
+{{id:"{lower_armor}",Count:1b,tag:{{display:{{color:{lower_armor_color}}}}}}},\
+{{id:"{upper_armor}",Count:1b,tag:{{display:{{color:{upper_armor_color}}}}}}},\
 {{id:"player_head",Count:1b,tag:{{{head}}}}}],\
 HandItems:[{{id:"{hand1}", Count:1b}},{{id:"{hand2}", Count:1b}}],\
 Pose:{{ \
@@ -806,7 +806,9 @@ RightArm:[{right_arm}]}}\
             head=self.head,
             boots="leather_boots",
             upper_armor="leather_chestplate",
-            lower_armor= "leather_leggings{display:{color:10329495}}",
+            upper_armor_color= self.state.flag_color[1],
+            lower_armor= "leather_leggings",
+            lower_armor_color= self.state.flag_color[1],
             hand1=self.current_action_item,
             hand2=self.favorite_item,
             head_rot=Agent.pose[self.walk_stage]["Head"],
