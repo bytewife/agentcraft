@@ -142,6 +142,7 @@ class State:
             self.heightmap_tiles_to_update = set()
             self.dont_update_again = set()
             self.water_with_adjacent_land = list(set(self.water).intersection(self.tiles_with_land_neighbors))
+            self.flag_color = choice(['white', 'orange', 'magenta', 'light_blue', 'yellow', 'lime', 'pink', 'gray', 'light_gray', 'cyan', 'purple', 'blue', 'brown', 'green', 'red', 'black'])
 
             # print(self.types)
             # print(self.nodes[self.node_pointers[(5,5)]].get_type())

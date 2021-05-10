@@ -21,17 +21,20 @@ def parse_opts(argv):
     x2 = 0
     y2 = 0
     time_limit = 3000
-    steps = 1000
+    steps = 1500
 
     area_given = False
     def help():
-        msg = """Minecraft Minesim by aith
+        msg = f"""Minecraft Minesim by aith
      Runs an agent-based settlement generator in Minecraft! Entry for GDMC 2021.
 
 Options:
      -a X1,Y1,X2,Y2  |  Set the generator's build AREA in the running Minecraft world. Avoid spaces in between numbers.
-     -t SECONDS      |  Set the TIME limit for the generator's execution. DEFAULT=3000
-     -s STEPS        |  Set the number of TIME-STEPS the generator takes. DEFAULT=1000
+     -t SECONDS      |  Set the TIME limit for the generator's execution. DEFAULT={time_limit}
+     -s STEPS        |  Set the number of TIME-STEPS the generator takes. DEFAULT={steps}
+
+Example:
+     python3 run.py -a 0,0,200,200 -t 600 -s 1000
 """
         print(msg)
         return
@@ -139,5 +142,5 @@ if __name__ == '__main__':
     sim.state.step(1)
 
     print(src.agent.Agent.shared_resources)
-    print("Execution complete! Enjoy :)")
+    print("Execution complete! Enjoy your new settlement :)")
 

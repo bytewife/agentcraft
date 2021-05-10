@@ -288,6 +288,7 @@ def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, bui
                 block = blocks[index]
                 use_head = False
                 ignore_block = False
+                use_flag_color = False
                 # check for flex tile
                 if block[0] == '#':
                     insert_pos = int(block[1])
@@ -296,6 +297,8 @@ def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, bui
                     ignore_block = True
                 elif block[:11] == "player_head":
                     use_head = True
+                elif block[0] == '@':
+                    block = state.flag_color+block[1:]
                 block = adjust_property_by_rotation(block, property="facing=", longest_len=5, rot=rot, shortest_len=4, rot_factor=1)
                 by = y
                 bx = None

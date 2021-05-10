@@ -653,7 +653,7 @@ class Agent:
             result = self.state.find_build_location(self.x, self.z, building, self.building_material[:-4], self.building_max_y_diff)
             # now move to teh road
             if result:
-                print(f"  {self.name} is: {building[10:]}")
+                print(f"  {self.name} is building: {building[10:]}")
                 self.build_params = result
                 tx, tz = result[0].center
                 path = self.state.pathfinder.get_path((self.x, self.z), (tx, tz), self.state.len_x, self.state.len_z,
