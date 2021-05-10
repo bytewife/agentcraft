@@ -13,7 +13,12 @@ from random import choice
 
 # https://stackoverflow.com/questions/34470597/is-there-a-dedicated-way-to-get-the-number-of-items-in-a-python-enum
 
-colors = [('white', '16383998'), ('orange', '16351261'), ('magenta', '13061821'), ('light_blue', '3847130'), ('yellow', '16701501'), ('lime', '8439583'), ('pink', '15961002'), ('gray', '4673362'), ('light_gray', '10329495'), ('cyan', '1481884'), ('purple', '8991416'), ('blue', '3949738'), ('brown', '8606770'), ('green', '6192150'), ('red', '11546150'), ('black', '1908001')]
+colors = [('white', '16383998'), ('orange', '16351261'), ('magenta', '13061821'), ('light_blue', '3847130'), ('yellow', '16701501'), ('lime', '8439583'), ('pink', '15961002'), ('gray', '4673362'), ('cyan', '1481884'), ('purple', '8991416'), ('blue', '3949738'), ('brown', '8606770'), ('green', '6192150'), ('red', '11546150'), ('black', '1908001')]
+boots_per_phase = {
+	1: 'leather_boots',
+	2: 'iron_boots',
+	3: 'gold_boots'
+}
 #_currently I don't use the slabs here
 set_choices = [
 	[["minecraft:bricks", "minecraft:granite", "minecraft:polished_granite"], ["minecraft:brick_slab", "minecraft:granite_slab"]],

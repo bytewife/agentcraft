@@ -22,7 +22,7 @@ def parse_opts(argv):
     y2 = 0
     time_limit = 3000
     steps = 1500
-    frame_length = 0.4
+    frame_length = 0.20
     is_rendering_per_frame = True
 
     area_given = False

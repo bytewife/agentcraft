@@ -298,7 +298,8 @@ def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, bui
                 elif block[:11] == "player_head":
                     use_head = True
                 elif block[0] == '@':
-                    block = state.flag_color+block[0][1:]
+                    block = state.flag_color[0]+block[1:]
+                    # print("with flag is "+block)
                 block = adjust_property_by_rotation(block, property="facing=", longest_len=5, rot=rot, shortest_len=4, rot_factor=1)
                 by = y
                 bx = None

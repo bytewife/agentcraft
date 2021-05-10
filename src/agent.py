@@ -804,7 +804,7 @@ RightArm:[{right_arm}]}}\
             name=self.name,
             is_small="false",
             head=self.head,
-            boots="leather_boots",
+            boots=src.my_utils.boots_per_phase[self.state.phase],
             upper_armor="leather_chestplate",
             upper_armor_color= self.state.flag_color[1],
             lower_armor= "leather_leggings",

@@ -1281,7 +1281,8 @@ class State:
 
     def init_main_st(self, create_well, viable_water_choices, attempt):
         well_tiles = []
-        if len(self.water) <= 10 or create_well:
+        water_choices = viable_water_choices
+        if len(self.water) <= 10:# or create_well:
             sx = randint(0, self.last_node_pointer_x)
             sz = randint(0, self.last_node_pointer_z)
             result, y, well_tiles = self.create_well(sx, sz, 4, 4)
@@ -1295,13 +1296,14 @@ class State:
             well_y = y-1
             if well_y >= 0:
                 self.place_platform(found_nodes_iter=result, build_y=well_y)
+            water_choices = well_tiles
         old_water = self.water.copy()
         self.water = self.water+well_tiles
-        rand_index = randint(0, len(viable_water_choices)-1)
-        x1, y1 = viable_water_choices[rand_index]
+        rand_index = randint(0, len(water_choices)-1)
+        x1, y1 = water_choices[rand_index]
         n_pos = self.node_pointers[(x1, y1)]
         water_checks = 100
-        n_pos = self.init_find_water(viable_water_choices, n_pos, water_checks)
+        n_pos, rand_index = self.init_find_water(water_choices, n_pos, water_checks, rand_index)
         if n_pos == False or n_pos == None:
             print(f"  Attempt {attempt}: could not find suitable water source. Trying again~")
             self.water = old_water
@@ -1316,7 +1318,7 @@ class State:
         n1_options = list(set(ran) - set(loc))  # Don't put water right next to water, depending on range
         if len(n1_options) < 1:
             print(f"  Attempt {attempt}: could not find any valid starting road options. Trying again~")
-            viable_water_choices.remove(rand_index)
+            # viable_water_choices.remove(rand_index)
             self.water = old_water
             return False, []
 
@@ -1450,10 +1452,10 @@ class State:
         return points
 
 
-    def init_find_water(self, water, n_pos, water_checks):
+    def init_find_water(self, water, n_pos, water_checks, rand_index):
         i = 0
         pos = n_pos
-        rand_index = randint(0, len(water))
+        rand_index = rand_index
         # x1, y1 = viable_water_choices[rand_index]
         while pos == None:
             if rand_index in water:
@@ -1464,7 +1466,7 @@ class State:
             x1, y1 = water[rand_index]
             pos = self.node_pointers[(x1, y1)]
             i+=1
-        return n_pos
+        return n_pos, rand_index
 
 
     def is_valid_n(self, node):
@@ -2125,7 +2127,7 @@ class State:
             # if road_type is not src.my_utils.TYPE.MINOR_ROAD.name and abs(x2 - x) > xthr and abs(
                 if node2.lot is not None:
                     (cx2, cy2) = node2.lot.center
-                    print('center is '+str((cx2, cy2)))
+                    # print('center is '+str((cx2, cy2)))
                     # print('with xz '+str((x,z)))
                     # (x, z) = (x + x - cx2, z + z - cy2)  ### CHANGED
                     # print('going to is '+str((x, z)))
