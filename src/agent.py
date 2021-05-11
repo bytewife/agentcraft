@@ -16,6 +16,7 @@ import src.manipulation
 import src.movement
 import src.my_utils
 import src.scheme_utils
+import src.chronicle
 import http_framework.interfaceUtils
 import names
 from random import shuffle
@@ -39,6 +40,21 @@ class Agent:
         Motive.SOCIALIZE_FRIEND: 10,
         Motive.SOCIALIZE_ENEMY: 10,
     }
+
+    # going first, doing second. Note: socializing is doubled bc 2 agents
+    chronicle_rates = {
+        Motive.LOGGING.name: (0.2, 0.05),
+        Motive.BUILD.name: (0.2, 0.2),
+        Motive.SOCIALIZE_LOVER.name: (0.0, 0.35),
+        Motive.SOCIALIZE_FRIEND.name: (0.0, 0.35),
+        Motive.SOCIALIZE_ENEMY.name: (0.0, 0.35),
+        Motive.REST.name: (0.2, 0.00),
+        Motive.REPLENISH_TREE.name: (0.0, 0.05),
+        Motive.PROPAGATE.name: (0.0, 1.0),
+        Motive.WATER.name: (0.0, 0.2),
+        Motive.IDLE.name: (0.0, 0.00),
+    }
+
 
     shared_resource_list = [
         "oak_log",
@@ -197,6 +213,7 @@ class Agent:
         self.mutual_friends = set()
         self.mutual_enemies = set()
         self.lover = lover
+        self.children = []
         # self.construction_site = construction_site
 
     def socialize(self, found_socialization):  #
@@ -206,6 +223,8 @@ class Agent:
         if found_socialization: return  # TODO unlock this somewhere
         for agent in list(self.state.agents_in_nodes[self.node.center] - {self}):
             if agent.socialize_want < agent.socialize_threshold: continue
+            self.socialize_partner = agent
+            agent.socialize_partner = self
             if found_socialization: return  # TODO unlock this somewhere
             elif agent == self.lover:
                 self.set_motive(self.Motive.SOCIALIZE_LOVER)
@@ -235,8 +254,6 @@ class Agent:
                     agent.set_motive(self.Motive.SOCIALIZE_ENEMY)
             self.approach_agent(agent)  # go to path, and both agents interact once follow_path is done and friend nearby
             agent.await_agent(self)
-            self.socialize_partner = agent
-            agent.socialize_partner = self
             self.socialize_partner_pos = (agent.x, agent.z)
             agent.socialize_partner_pos = (self.x, self.z)
             # self.socialize_want = 0
@@ -388,6 +405,8 @@ class Agent:
             self.move_self(nx, nz, state=state, walkable_heightmap=walkable_heightmap)
             self.turns_staying_still = 0
         else:
+            original_motive = self.motive
+            social_partner = self.socialize_partner
             if self.motive == self.Motive.REST.name:
                 status = self.do_rest_task()
             if self.motive == self.Motive.WATER.name:
@@ -439,6 +458,9 @@ class Agent:
             elif self.motive == self.Motive.IDLE.name:
                 self.is_mid_socializing = False
                 status = self.do_idle_task()
+            src.chronicle.chronicle_event(Agent.chronicle_rates[original_motive][1], original_motive, 'doing',
+                                          self.state.step_number, self, social_partner)
+
         # the bad part about this is that jungle trees can take multiple bouts to cut
         if self.turns_staying_still > Agent.max_turns_staying_still and status is False and self.motive != self.Motive.REST.name:  # _move in random direction if still for too long
             # print("stayed still too long and now moving!")
@@ -467,7 +489,7 @@ class Agent:
     def complete_socialization(self):
         # reset values
         self.socialize_want = 0
-        self.socialize_partner = None
+        # self.socialize_partner = None
         self.is_mid_socializing = False
         self.found_and_moving_to_socialization = False
 
@@ -503,6 +525,8 @@ class Agent:
 
         child = Agent(self.state, *empty_spot, self.state.rel_ground_hm, name=names.get_first_name(), head=choice(src.states.State.agent_heads), parent_1=self, parent_2=self.lover)
         self.state.add_agent(child)
+        self.children.append(child)
+        self.lover.children.append(child)
         self.set_motive(self.Motive.IDLE)
         return True
 
@@ -721,6 +745,9 @@ class Agent:
             pass
         elif new_motive.name == self.Motive.IDLE.name: # just let it go into follow_path
             pass
+        #going chronicles
+        src.chronicle.chronicle_event(Agent.chronicle_rates[new_motive.name][0], new_motive.name, 'going', self.state.step_number, self)
+
 
     def set_path_to_nearest_spot(self, search_array, starting_search_radius, max_iterations, radius_inc=1, search_neighbors_instead=True):
         closed = set()
@@ -831,3 +858,4 @@ RightArm:[{right_arm}]}}\
 #        RightLeg: [348f, 18f, 0f], \
 #        LeftArm: [348f, 308f, 0f], \
 #        RightArm: [348f, 67f, 0f]}} \
+

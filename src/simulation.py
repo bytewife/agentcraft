@@ -15,6 +15,8 @@ import http_framework.interfaceUtils
 import time
 import random
 import numpy as np
+import src.chronicle
+import wonderwords
 
 class Simulation:
 
@@ -47,6 +49,10 @@ class Simulation:
         self.prosperity = 0
         self.building_max_y_diff = 1
         self.building_max_y_diff_tries = 0
+        self.chronicles_pos = None
+        self.settlement_name = src.chronicle.word_picker.random_words(include_parts_of_speech=['nouns'])[0]+random.choice(['town', 'bottom', 'land', 'dom', 'fields', 'lot', 'valley', ' Heights'])
+        self.original_agent = None
+
 
         # parse heads
         f = open("./assets/agent_heads.out.txt")
@@ -74,7 +80,18 @@ class Simulation:
                 print("Error: could not find valid settlement location in given area! Try running with a different area.")
                 exit(1)
             attempt += 1
-        self.step(steps, True, start, time_limit)
+        finished_fully, times, steps = self.step(steps-1, True, start, time_limit)
+        x = self.chronicles_pos[0]
+        z = self.chronicles_pos[1]
+        y = self.state.rel_ground_hm[x][z]
+        http_framework.interfaceUtils.runCommand(f'setblock {x+self.state.world_x} {y+self.state.world_y} {z+self.state.world_z} minecraft:chest')
+        src.chronicle.place_chronicles(self.state, x, y, z, f"History of {self.settlement_name}", self.original_agent.name)
+        finished_fully = self.step(1, True, start, time_limit)
+        print("Simulation finished after " + str(time.time() - start) + " seconds. " + str(
+            steps+1) + " steps performed, out of " + str(times+1) + " steps.")
+        print(f"Chronicles placed at {self.state.world_x+x}, {self.state.world_y+y}, {self.state.world_z+z}! ")
+        exit(0)
+
 
     def run_without_render(self, steps, start, time_limit):
         self.decide_max_y_diff()
@@ -90,8 +107,18 @@ class Simulation:
                 print("Exiting")
                 exit(1)
             attempt += 1
-        self.step(steps, False, start, time_limit)
+        finished_fully, times, steps = self.step(steps-1, False, start, time_limit)
+        x = self.chronicles_pos[0]
+        z = self.chronicles_pos[1]
+        y = self.state.rel_ground_hm[x][z]
+        http_framework.interfaceUtils.runCommand(
+            f'setblock {x + self.state.world_x} {y + self.state.world_y} {z + self.state.world_z} minecraft:chest')
+        finished_fully = src.chronicle.place_chronicles(self.state, x, y, z, f"History of {self.settlement_name}", self.original_agent.name)
         self.state.step(is_rendering=True, use_total_changed_blocks=True)
+        print("Simulation finished after " + str(time.time() - start) + " seconds. " + str(
+            steps+1) + " steps performed, out of " + str(times+1) + " steps.")
+        print(f"Chronicles placed at {self.state.world_x+x}, {self.state.world_y+y}, {self.state.world_z+z}! ")
+        exit(0)
 
     def decide_max_y_diff(self):
         if self.state.len_x > 900 or self.state.len_z > 900:
@@ -119,7 +146,7 @@ class Simulation:
             # self.state.roads.clear()
             if attempt > max_tries: return False, attempt
             create_well = attempt > 25
-            result, old_water = self.state.init_main_st(create_well, viable_water_starts, str(attempt+1)+"/"+str(max_tries+1))
+            result, old_water, self.chronicles_pos, self.original_agent = self.state.init_main_st(create_well, viable_water_starts, str(attempt+1)+"/"+str(max_tries+1))
 
         # build a house
         building = "./schemes/"+random.choice(src.my_utils.STRUCTURES['small'])[0]
@@ -165,15 +192,15 @@ class Simulation:
 
     def step(self, times, is_rendering, start, time_limit):
         current = time.time()
-        for i in range(times):
-            if current - start > time_limit:
-                print("Simulation finished after "+str(current - start)+ " seconds. "+str(i)+ " steps performed, out of "+str(times)+" steps.")
-                exit(0)
+        for i in range(times+1):
+            if current - start > time_limit - 10: # to allow for book-writing
+                return False, times, i
             self.handle_nodes()
             self.state.update_agents(is_rendering)
             self.state.step(is_rendering)
             time.sleep(self.rendering_step_duration * is_rendering)
             current = time.time()
+        return True, times, i
 
 
 

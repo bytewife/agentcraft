@@ -1,28 +1,66 @@
 import src.agent
+import http_framework.interfaceUtils
+import src.states
+from random import choice, random
+import wonderwords
 
-chronicle = ""
+word_picker = wonderwords.RandomWord()
 
 chronicle_events = {
-    src.agent.Agent.Motive.LOGGING.name: {"going": [],},
-    src.agent.Agent.Motive.BUILD.name: {"going": [],},
-    src.agent.Agent.Motive.SOCIALIZE_LOVER.name: {"going": [],},
-    src.agent.Agent.Motive.SOCIALIZE_FRIEND.name: {"going": [],},
-    src.agent.Agent.Motive.SOCIALIZE_ENEMY.name: {"going": [],},
-    src.agent.Agent.Motive.PROPAGATE.name: {"going": [],},
-    src.agent.Agent.Motive.REST.name: {"going": [],},
-    src.agent.Agent.Motive.REPLENISH_TREE.name: {"going": [],},
-    src.agent.Agent.Motive.IDLE.name: {"going": [],},
-    src.agent.Agent.Motive.WATER.name: {"going": [],},
-
+    "LOGGING": {"going": ["{a.name} wrote one {A} song about {l.name}. It became a local hit. ", "{a.name} catalogued some {A} variety of fauna during their walk. "],
+                "doing": ["{a.name} discovered a{n} {A} style of log-cutting! It was shared amongst friends. ", "{a.name} hacked away at a{n} {A} {a.last_log_type} tree. "]},
+    "BUILD": {"going": ["{a.name} gathered {A} supplies to follow the {a.build_params[4]} blueprint! ", "{a.name} gathered advice from {l} for their next building project. "],
+              "doing": ["{a.name} built based on the {a.build_params[4]} blueprint. It turned out straight {A}. ", "{a.name}'s {A} {a.build_params[4]} rendition was told across the land! "],},
+    "SOCIALIZE_LOVER": {"doing": ["{a.name} and {l.name} exchanged {A} gifts to express their honeymoon. ", "{a.name} and {l.name} shouted thankful words for {a.parent_1}'s approval for their marriage! " ],},
+    "SOCIALIZE_FRIEND": {"doing": ["{a.name} and {s.name} found spare time perform a joint spiritual rite the {A} deity! ", "{a.name} and {s.name}'s {A} collectively discovered how to craft with {A} logs! "],},
+    "SOCIALIZE_ENEMY": {"doing": ["{a.name} insulted {s.name}'s parent, {s.parent_1}, for their {A}-ness. ", "{a.name} and {s.name} broke into a{n} {A} sparring match after an insult was flung towards {a.name.lover}. "],},
+    "PROPAGATE": {"doing": ["{a.name} blessed the land with {c.name}- named for their {A}-ness! ", "{a.name} found time in their busy day to bear {c.name}! The deities said they'll be {A}. "],},
+    "REST": {"going": ["{a.name} was seen sleepwalking while speaking {A} things of {l.name}. ", "Gossip spread about {a.name}, saying they were ditching work to conjure {A} dreams. "],
+                 "doing": [""],},
+    "REPLENISH_TREE": {"going": [],
+                       "doing": ["{a.name} grew a tree with a distinctly {A} characteristic. ", "{a.name} nurtured a tree so large, it could occupy even the most {A} of loggers! "]},
+    "IDLE": {"going": [],},
+    "WATER": {"doing": ["{a.name} was ailed with the {A} by drinking from the local watering hole. ", "{a.name} caught a {A} fish during their water-break! {l.name} cooked it for their friends and family. ", "{a.name} asserted the watering hole to be {A}. {l.name} was sent to investigate it. "],},
 }
 
 LINES_PER_PAGE = 15
 MAX_TEXT_PER_PAGE = LINES_PER_PAGE*23
 MAX_PAGES_PER_BOOK = 4
 
-chronicles = [['']]  # array of BOOKS with arrays of PAGE text
+chronicles_empty = [['']]
+chronicles = chronicles_empty.copy()  # array of BOOKS with arrays of PAGE text
 chronicle_book_index = 0
 chronicle_page_index = 0
+
+def chronicle_event(threshold_rate, motive, subcategory, time, agent, support=None):
+    adjective = word_picker.random_words(include_parts_of_speech=['adjectives'])[0]
+    adjective_mod = 'n' if adjective[0] in ['a','e','i','o','u'] else ''
+    if random() < threshold_rate:
+        print("Motive is "+motive)
+        print("subcategory is is "+subcategory)
+        lover = agent.lover if agent.lover != None else agent.parent_2
+        print("agent is "+str(agent.name))
+        print("their parent is "+str(agent.parent_2.name))
+        print("lover is "+str(lover.name))
+        choices = choice(chronicle_events[motive][subcategory])
+        child = None if len(agent.children) < 1 else agent.children[-1]
+        result = choices.format(t=time, a=agent, l=lover, s=support, c=child, A=adjective, n=adjective_mod)
+        append_to_chronicle(result)
+
+def append_to_chronicle(new_text):
+    global chronicle_page_index, chronicle_book_index
+    text = chronicles[chronicle_book_index][chronicle_page_index] + new_text
+    if len(text) > MAX_TEXT_PER_PAGE:
+        if chronicle_page_index < MAX_PAGES_PER_BOOK:
+            chronicle_page_index += 1
+            chronicles[chronicle_book_index].append(new_text)
+        elif chronicle_book_index+1 < 30:  # add new book if there's space in chest
+            chronicle_page_index = 0
+            chronicle_book_index += 1
+            chronicles.append([new_text])  # append BOOK with PAGE
+    else:
+        chronicles[chronicle_book_index][chronicle_page_index] += new_text
+
 
 def make_book(text_pages, title ="", author ="", desc =""):
     bookstart = "pages:["
@@ -60,27 +98,13 @@ def make_book(text_pages, title ="", author ="", desc =""):
     result += booktitle+bookauthor+bookdesc+"}"
     return result
 
-def add_item_to_chest(x, y, z, items):
+def add_items_to_chest(x, y, z, items):
     for id,v in enumerate(items):
         command = "replaceitem block {} {} {} {} {} {}".format(x, y, z,
                                                                "container."+str(id),
                                                                v[0],
                                                                v[1])
-        print(command) # run commund here
-
-def append_to_chronicle(new_text):
-    global chronicle_page_index, chronicle_book_index
-    text = chronicles[chronicle_book_index][chronicle_page_index] + new_text
-    if len(text) > MAX_TEXT_PER_PAGE:
-        if chronicle_page_index < MAX_PAGES_PER_BOOK:
-            chronicle_page_index += 1
-            chronicles[chronicle_book_index].append(new_text)
-        elif chronicle_book_index+1 < 30:  # add new book if there's space in chest
-            chronicle_page_index = 0
-            chronicle_book_index += 1
-            chronicles.append([new_text])  # append BOOK with PAGE
-    else:
-        chronicles[chronicle_book_index][chronicle_page_index] += new_text
+        http_framework.interfaceUtils.runCommand(command)
 
 def create_chronicles(title, author):
     result = []
@@ -90,3 +114,12 @@ def create_chronicles(title, author):
         result.append((make_book(book, title, author),1))
         i+=1
     return result
+
+def place_chronicles(state, x,y,z, title, author):
+    nbt_books = create_chronicles(title, author)
+    # src.states.set_state_block(state, x,y,z, "minecraft:chest")
+    ax = state.world_x+x
+    ay = state.world_y+y
+    az = state.world_z+z
+    add_items_to_chest(ax, ay, az, nbt_books)
+    # still need to step afterwards to render

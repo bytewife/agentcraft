@@ -23,6 +23,7 @@ from scipy.interpolate import interp1d
 import src.linedrawing
 import src.manipulation
 import names
+import src.chronicle
 
 class State:
 
@@ -143,6 +144,10 @@ class State:
             self.dont_update_again = set()
             self.water_with_adjacent_land = list(set(self.water).intersection(self.tiles_with_land_neighbors))
             self.flag_color = choice(src.my_utils.colors)
+            self.step_number = 0
+
+            self.adam = DummyParent("Adam, the Original")
+            self.eve = DummyParent("Eve, the Original")
 
             # print(self.types)
             # print(self.nodes[self.node_pointers[(5,5)]].get_type())
@@ -187,6 +192,7 @@ class State:
         self.total_changed_blocks = {}
         self.total_changed_blocks_xz.clear()
         self.changed_blocks_xz.clear()
+        src.chronicle.chronicles = src.chronicle.chronicles_empty.copy()
         if use_heavy:
             self.agents_in_nodes = self.init_agents_in_nodes()
 
@@ -1127,6 +1133,7 @@ class State:
         # if i > 0:
         #     print(str(i)+" assets rendered")
         self.update_phase()
+        self.step_number+=1
 
 
 
@@ -1279,6 +1286,7 @@ class State:
                     well_nodes.add(self.nodes(*self.node_pointers[(x,z)]))
         return well_nodes, highest_y, well_tiles
 
+
     def init_main_st(self, create_well, viable_water_choices, attempt):
         well_tiles = []
         water_choices = viable_water_choices
@@ -1292,7 +1300,7 @@ class State:
                 result, y, well_tiles = self.create_well(sx, sz, 4, 4)
             if result == False:
                 print("could not build well")
-                return False, []
+                return False, [], [], None
             well_y = y-1
             if well_y >= 0:
                 self.place_platform(found_nodes_iter=result, build_y=well_y)
@@ -1307,7 +1315,7 @@ class State:
         if n_pos == False or n_pos == None:
             print(f"  Attempt {attempt}: could not find suitable water source. Trying again~")
             self.water = old_water
-            return False, []
+            return False, [], [], None
         n = self.nodes(*n_pos)
 
         loc = n.local()
@@ -1320,7 +1328,7 @@ class State:
             print(f"  Attempt {attempt}: could not find any valid starting road options. Trying again~")
             # viable_water_choices.remove(rand_index)
             self.water = old_water
-            return False, []
+            return False, [], [], None
 
         n1 = np.random.choice(n1_options, replace=False)  # Pick random point of the above
 
@@ -1328,13 +1336,13 @@ class State:
         if n1 == False:
             print(f"  Attempt {attempt}: could not find valid starting road option. Trying again~")
             self.water = old_water
-            return False, []
+            return False, [], [], None
 
         n2_options = list(set(n1.range()) - set(n1.local()))  # the length of the main road is the difference between the local and the range
         if len(n2_options) < 1:
             print(f"  Attempt {attempt}: could not find ending road options. Trying again~")
             self.water = old_water
-            return False, []
+            return False, [], [], None
 
         n2 = np.random.choice(n2_options, replace=False)  # n2 is based off of n1's range, - local to make it farther
         points = src.linedrawing.get_line((n1.center[0], n1.center[1]), (n2.center[0], n2.center[1]))
@@ -1344,13 +1352,13 @@ class State:
         if points == False:
             print(f"  Attempt {attempt}: could not find ending road options. Trying again~")
             self.water = old_water
-            return False, []
+            return False, [], [], None
 
         points = self.points_to_nodes(points)  # points is the path of nodes from the chosen
         if points == False:
             print(f"  Attempt {attempt}: road points didn't stay in bounds! Trying again~")
             self.water = old_water
-            return False, []
+            return False, [], [], None
 
         (x1, y1) = points[0]
         (x2, y2) = points[len(points) - 1]
@@ -1365,7 +1373,7 @@ class State:
         if status == False:
             print(f"  Attempt {attempt}: tried to build road outside of bounds! Trying again~")
             self.water = old_water
-            return False, []
+            return False, [], [], None
 
         p1 = (x1, y1)
         p2 = (x2, y2)
@@ -1373,7 +1381,7 @@ class State:
         if self.create_road(node_pos1=p1, node_pos2=p2, road_type=src.my_utils.TYPE.MAJOR_ROAD.name, only_place_if_walkable=True) == False:
             print(f"  Attempt {attempt}: Main street wasn't valid! Trying again~")
             self.water = old_water
-            return False, []
+            return False, [], [], None
 
 
         # debug
@@ -1383,19 +1391,22 @@ class State:
         if self.sectors[x1, y1] != self.sectors[x2][y2]:
             p1 = p2  # make sure agents spawn in same sector
 
+
         # add starter agent 1
         head = choice(State.agent_heads)
         agent_a = src.agent.Agent(self, *p1, walkable_heightmap=self.rel_ground_hm,
-                                    name=names.get_first_name(), head=head)
+                                    name=names.get_first_name(), parent_1=self.adam, parent_2=self.eve, head=head)
         self.add_agent(agent_a)
         agent_a.is_child_bearing = True
 
         # add starter agent 2
         head = choice(State.agent_heads)
         agent_b = src.agent.Agent(self, *p1, walkable_heightmap=self.rel_ground_hm,
-                                    name=names.get_first_name(), head=head)
+                                    name=names.get_first_name(), parent_1=self.adam, parent_2=self.eve, head=head)
         self.add_agent(agent_b)
         agent_b.is_child_bearing = False
+
+        print(f"{agent_b.name}'s parent is {agent_b.parent_1.name}")
 
         # add child
         head = choice(State.agent_heads)
@@ -1411,7 +1422,12 @@ class State:
         agent_a.set_lover(agent_b)
         agent_b.set_lover(agent_a)
 
-        return True, old_water
+        # src.chronicle.chronicle_event(agent_a.motive, 'going', 900, agent_a)
+        # print(src.chronicle.chronicles)
+        # exit(1)
+        # src.chronicle.place_chronicles(agen)
+
+        return True, old_water, p1, agent_a
 
 
     def init_construction(self, points):
@@ -2283,4 +2299,6 @@ class Lot:
     def get_nodes(self):
         return self.nodes
 
-
+class DummyParent(object):
+    def __init__(self, name):
+        self.name = name
