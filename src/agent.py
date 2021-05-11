@@ -43,15 +43,15 @@ class Agent:
 
     # going first, doing second. Note: socializing is doubled bc 2 agents
     chronicle_rates = {
-        Motive.LOGGING.name: (0.2, 0.05),
+        Motive.LOGGING.name: (0.05, 0.05),
         Motive.BUILD.name: (0.2, 0.2),
-        Motive.SOCIALIZE_LOVER.name: (0.0, 0.35),
-        Motive.SOCIALIZE_FRIEND.name: (0.0, 0.35),
-        Motive.SOCIALIZE_ENEMY.name: (0.0, 0.35),
+        Motive.SOCIALIZE_LOVER.name: (0.0, 0.4),
+        Motive.SOCIALIZE_FRIEND.name: (0.0, 0.4),
+        Motive.SOCIALIZE_ENEMY.name: (0.0, 0.4),
         Motive.REST.name: (0.2, 0.00),
-        Motive.REPLENISH_TREE.name: (0.0, 0.05),
+        Motive.REPLENISH_TREE.name: (0.0, 0.01),
         Motive.PROPAGATE.name: (0.0, 1.0),
-        Motive.WATER.name: (0.0, 0.2),
+        Motive.WATER.name: (0.0, 0.4),
         Motive.IDLE.name: (0.0, 0.00),
     }
 

@@ -6,6 +6,7 @@ __all__ = []
 __author__ = "aith"
 __version__ = "1.0"
 
+
 import math
 from math import floor
 
@@ -36,7 +37,6 @@ class State:
     heightmap_offset = -1
     node_size = 3
     MAX_SECTOR_PROPAGATION_DEPTH = 150
-
 
     ## Create surface grid
     def __init__(self, rect, world_slice, precomp_legal_actions=None, blocks_file=None, precomp_pathfinder=None, precomp_sectors=None, precomp_types=None, precomp_nodes=None, precomp_node_pointers=None,max_y_offset=tallest_building_height, water_with_adjacent_land=None):
@@ -146,8 +146,8 @@ class State:
             self.flag_color = choice(src.my_utils.colors)
             self.step_number = 0
 
-            self.adam = DummyParent("Adam, the Original")
-            self.eve = DummyParent("Eve, the Original")
+            self.adam = src.agent.Agent(self,0,0, self.rel_ground_hm, "Adam, the Original", "")
+            self.eve = src.agent.Agent(self, 0, 0, self.rel_ground_hm, "Eve, the Original", "")
 
             # print(self.types)
             # print(self.nodes[self.node_pointers[(5,5)]].get_type())
@@ -1395,18 +1395,18 @@ class State:
         # add starter agent 1
         head = choice(State.agent_heads)
         agent_a = src.agent.Agent(self, *p1, walkable_heightmap=self.rel_ground_hm,
-                                    name=names.get_first_name(), parent_1=self.adam, parent_2=self.eve, head=head)
+                                    name=names.get_first_name(),parent_1=self.adam, parent_2=self.eve, head=head)
         self.add_agent(agent_a)
         agent_a.is_child_bearing = True
 
         # add starter agent 2
         head = choice(State.agent_heads)
         agent_b = src.agent.Agent(self, *p1, walkable_heightmap=self.rel_ground_hm,
-                                    name=names.get_first_name(), parent_1=self.adam, parent_2=self.eve, head=head)
+                                  name=names.get_first_name(), parent_1=self.adam, parent_2=self.eve, head=head)
         self.add_agent(agent_b)
         agent_b.is_child_bearing = False
 
-        print(f"{agent_b.name}'s parent is {agent_b.parent_1.name}")
+        # print(f"{agent_b.name}'s parent is {agent_b.parent_1.name}")
 
         # add child
         head = choice(State.agent_heads)
@@ -2298,7 +2298,3 @@ class Lot:
 
     def get_nodes(self):
         return self.nodes
-
-class DummyParent(object):
-    def __init__(self, name):
-        self.name = name

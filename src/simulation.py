@@ -17,6 +17,7 @@ import random
 import numpy as np
 import src.chronicle
 import wonderwords
+import run
 
 class Simulation:
 
@@ -50,7 +51,7 @@ class Simulation:
         self.building_max_y_diff = 1
         self.building_max_y_diff_tries = 0
         self.chronicles_pos = None
-        self.settlement_name = src.chronicle.word_picker.random_words(include_parts_of_speech=['nouns'])[0]+random.choice(['town', 'bottom', 'land', 'dom', 'fields', 'lot', 'valley', ' Heights'])
+        self.settlement_name = str.capitalize(src.chronicle.word_picker.random_words(include_parts_of_speech=['nouns'])[0])+random.choice(['town', 'bottom', 'land', 'dom', 'fields', 'lot', 'valley', ' Heights'])
         self.original_agent = None
 
 
@@ -68,6 +69,8 @@ class Simulation:
             http_framework.interfaceUtils.runCommand(clean_agents)
 
     def run_with_render(self, steps, start, time_limit):
+        is_writing = run.IS_WRITING_CHRONICLE_TO_CONSOLE
+        run.IS_WRITING_CHRONICLE_TO_CONSOLE = False
         self.decide_max_y_diff()
         viable_water_starts = list(set(self.state.water).intersection(self.state.tiles_with_land_neighbors))
         max_tries = 99
@@ -80,6 +83,7 @@ class Simulation:
                 print("Error: could not find valid settlement location in given area! Try running with a different area.")
                 exit(1)
             attempt += 1
+        run.IS_WRITING_CHRONICLE_TO_CONSOLE = is_writing
         finished_fully, times, steps = self.step(steps-1, True, start, time_limit)
         x = self.chronicles_pos[0]
         z = self.chronicles_pos[1]
@@ -94,6 +98,8 @@ class Simulation:
 
 
     def run_without_render(self, steps, start, time_limit):
+        is_writing = run.IS_WRITING_CHRONICLE_TO_CONSOLE
+        run.IS_WRITING_CHRONICLE_TO_CONSOLE = False
         self.decide_max_y_diff()
         viable_water_starts = list(set(self.state.water).intersection(self.state.tiles_with_land_neighbors))
         max_tries = 99
@@ -107,6 +113,7 @@ class Simulation:
                 print("Exiting")
                 exit(1)
             attempt += 1
+        run.IS_WRITING_CHRONICLE_TO_CONSOLE = is_writing
         finished_fully, times, steps = self.step(steps-1, False, start, time_limit)
         x = self.chronicles_pos[0]
         z = self.chronicles_pos[1]
