@@ -17,7 +17,7 @@ colors = [('white', '16383998'), ('orange', '16351261'), ('magenta', '13061821')
 boots_per_phase = {
 	1: 'leather_boots',
 	2: 'iron_boots',
-	3: 'gold_boots'
+	3: 'golden_boots'
 }
 #_currently I don't use the slabs here
 set_choices = [
@@ -170,6 +170,8 @@ class TYPE_TILES:
 			"minecraft:grass_block",
 			"minecraft:sand"
 			"minecraft:dirt",
+			"minecraft:podzol",
+			"minecraft:sand",
 			# "minecraft:oak_sapling",
 		},
 		TYPE.BROWN.value: {  # BROWN

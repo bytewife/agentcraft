@@ -34,6 +34,7 @@ chronicle_book_index = 0
 chronicle_page_index = 0
 
 def chronicle_event(threshold_rate, motive, subcategory, time, agent, support=None):
+    if not run.IS_WRITING_CHRONICLE: return
     adjective = word_picker.random_words(include_parts_of_speech=['adjectives'])[0]
     adjective_mod = 'n' if adjective[0] in ['a','e','i','o','u'] else ''
     try:
@@ -127,3 +128,18 @@ def place_chronicles(state, x,y,z, title, author):
     az = state.world_z+z
     add_items_to_chest(ax, ay, az, nbt_books)
     # still need to step afterwards to render
+
+def setSignText(x, y, z, line1 = "", line2 = "", line3 = "", line4 = ""):
+    l1 = 'Text1:\'{"text":"'+line1+'"}\''
+    l2 = 'Text2:\'{"text":"'+line2+'"}\''
+    l3 = 'Text3:\'{"text":"'+line3+'"}\''
+    l4 = 'Text4:\'{"text":"'+line4+'"}\''
+    blockNBT = "{"+l1+","+l2+","+l3+","+l4+"}"
+    http_framework.interfaceUtils.runCommand("data merge block {} {} {} ".format(x, y, z)
+                              + blockNBT)
+
+def write_coords_to_sign(x,y,z,start_xz, chronicle_coords):
+    if run.IS_WRITING_CHRONICLE:
+        setSignText(x,y,z,f"result x {start_xz[0]}", f"result z {start_xz[1]}", "chronicles at", f"{start_xz[0]}, {start_xz[1]}")
+    else:
+        setSignText(x,y,z,f"result x {start_xz[0]}", f"result z {start_xz[1]}")

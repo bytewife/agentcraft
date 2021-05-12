@@ -15,10 +15,13 @@ import src.my_utils
 import src.agent
 import src.states
 
-IS_RENDERING_FRAMEWISE = False
-IS_WRITING_CHRONICLE_TO_CONSOLE = True
+IS_RENDERING_FRAMEWISE = True
+IS_WRITING_CHRONICLE = True
+IS_WRITING_CHRONICLE_TO_CONSOLE = False
+IS_WRITING_LOCATION_AT_MIDPOINT = True
 
 def parse_opts(argv):
+    global IS_WRITING_CHRONICLE_TO_CONSOLE, IS_RENDERING_FRAMEWISE, IS_WRITING_CHRONICLE, IS_WRITING_LOCATION_AT_MIDPOINT
     x1 = 0
     y1 = 0
     x2 = 0
@@ -26,7 +29,6 @@ def parse_opts(argv):
     time_limit = 3000
     steps = 1500
     frame_length = 0.20
-    IS_RENDERING_FRAMEWISE = True
 
     area_given = False
     def help():
@@ -34,21 +36,26 @@ def parse_opts(argv):
      Runs an agent-based settlement generator in Minecraft! Entry for GDMC 2021.
 
 Options:
-     -a X1,Y1,X2,Y2  |  Set the generator's build AREA in the running Minecraft world. Avoid spaces in between numbers.
-     -t SECONDS      |  Set the TIME limit for the generator's execution. DEFAULT={time_limit}
-     -s STEPS        |  Set the number of TIME-STEPS the generator takes. DEFAULT={steps}
-     -f FRAMELENGTH  |  Set the duration of each frame of render. DEFAULT={frame_length} seconds
-     --norender      |  Disable per-frame rendering (for performance) 
-     --printhistory  |  Write the chronicle's output to console
+     -a X1,Y1,X2,Y2   |  Set the generator's build AREA in the running Minecraft world. Avoid spaces in between numbers.
+     -t SECONDS       |  Set the TIME limit for the generator's execution. DEFAULT={time_limit}
+     -s STEPS         |  Set the number of TIME-STEPS the generator takes. DEFAULT={steps}
+     -f FRAMELENGTH   |  Set the duration of each frame of render. DEFAULT={frame_length} seconds
+     --norender       |  Disable per-frame rendering (for performance) 
+     --nochronicle    |  Disable writing to chronicle
+     --printchronicle |  Write the chronicle's output to console
+     --leavesign      |  Render a sign at the center of the given area describing the location of the settlement.
 
 Example:
      python3 run.py -a 0,0,200,200 -t 600 -s 1000 -f 0.4 --norender
+     
+Warning:
+     With larger areas, such as 1000x1000, the initialization can take long. If necessary, using the --norender flag can speed up settlement generation.
 """
         print(msg)
         return
 
     try:
-        opts, args = getopt.getopt(argv, 'a:t:s:f:', ['norender', 'printhistory'])
+        opts, args = getopt.getopt(argv, 'a:t:s:f:', ['norender', 'printchronicle', 'nochronicle', 'leavesign'])
     except getopt.GetoptError:
         help()
         sys.exit(1)
@@ -69,7 +76,6 @@ Example:
                 print("Error: -t requires an integer.")
                 sys.exit(0)
         elif opt in ["-a", "--a"]:
-            # if type(arg) == str:
             try:
                 nums = arg.split(',')
                 if len(nums) != 4:
@@ -92,8 +98,12 @@ Example:
                 sys.exit(0)
         elif opt == '--norender':
             IS_RENDERING_FRAMEWISE = False
-        elif opt == '--printhistory':
+        elif opt == '--nochronicle':
+            IS_WRITING_CHRONICLE = False
+        elif opt == '--printchronicle':
             IS_WRITING_CHRONICLE_TO_CONSOLE = True
+        elif opt == '--leavesign':
+            IS_WRITING_LOCATION_AT_MIDPOINT = True
     if not area_given:
         print("Error: requires area given with -a. Use -h for options.")
         sys.exit(0)

@@ -53,6 +53,7 @@ class Simulation:
         self.chronicles_pos = None
         self.settlement_name = str.capitalize(src.chronicle.word_picker.random_words(include_parts_of_speech=['nouns'])[0])+random.choice(['town', 'bottom', 'land', 'dom', 'fields', 'lot', 'valley', ' Heights'])
         self.original_agent = None
+        self.settlement_pos = None
 
 
         # parse heads
@@ -93,7 +94,16 @@ class Simulation:
         finished_fully = self.step(1, True, start, time_limit)
         print("Simulation finished after " + str(time.time() - start) + " seconds. " + str(
             steps+1) + " steps performed, out of " + str(times+1) + " steps.")
-        print(f"Chronicles placed at {self.state.world_x+x}, {self.state.world_y+y}, {self.state.world_z+z}! ")
+        cx = self.state.world_x+x
+        cz = self.state.world_z+z
+        print(f"Chronicles placed at {cx}, {self.state.world_y + y}, {cz}! ")
+        if run.IS_WRITING_LOCATION_AT_MIDPOINT:
+            sx = int(self.state.world_x + self.state.len_x/2)
+            sz = int(self.state.world_z + self.state.len_z/2)
+            sy = self.state.world_y + self.state.rel_ground_hm[int(self.state.len_x/2)][int(self.state.len_z/2)]
+            http_framework.interfaceUtils.runCommand(
+                f'setblock {sx} {sy} {sz} minecraft:oak_sign')
+            src.chronicle.write_coords_to_sign(sx, sy, sz, self.settlement_pos, (cx, cz))
         exit(0)
 
 
@@ -124,18 +134,27 @@ class Simulation:
         self.state.step(is_rendering=True, use_total_changed_blocks=True)
         print("Simulation finished after " + str(time.time() - start) + " seconds. " + str(
             steps+1) + " steps performed, out of " + str(times+1) + " steps.")
-        print(f"Chronicles placed at {self.state.world_x+x}, {self.state.world_y+y}, {self.state.world_z+z}! ")
+        cx = self.state.world_x+x
+        cz = self.state.world_z+z
+        print(f"Chronicles placed at {cx}, {self.state.world_y+y}, {cz}! ")
+        if run.IS_WRITING_LOCATION_AT_MIDPOINT:
+            sx = int(self.state.world_x + self.state.len_x/2)
+            sz = int(self.state.world_z + self.state.len_z/2)
+            sy = self.state.world_y + self.state.rel_ground_hm[int(self.state.len_x/2)][int(self.state.len_z/2)]
+            http_framework.interfaceUtils.runCommand(
+                f'setblock {sx} {sy} {sz} minecraft:oak_sign')
+            src.chronicle.write_coords_to_sign(sx, sy, sz, self.settlement_pos, (cx,cz))
         exit(0)
 
     def decide_max_y_diff(self):
         if self.state.len_x > 900 or self.state.len_z > 900:
-            print("Caution: chosen area is very large! NBT retrieval may take long.")
+            print("Caution: chosen area is very large! Generator initialization may take long.")
             self.building_max_y_diff = 6
         elif self.state.len_x > 700 or self.state.len_z > 700:
-            print("Caution: chosen area is large! NBT retrieval may take long.")
+            print("Caution: chosen area is large! Generator initialization may take long.")
             self.building_max_y_diff = 5
         elif self.state.len_x > 400 or self.state.len_z > 400:
-            print("Caution: chosen area is large! NBT retrieval may take long.")
+            print("Caution: chosen area is large! Generator initialization may take long.")
             self.building_max_y_diff = 3
         else:
             self.building_max_y_diff = 2
@@ -187,8 +206,8 @@ class Simulation:
         # self.state.place_platform(*schematic_args, build_y)
         self.state.step()  # check if this affects agent pahs. it seems to.
         print("Finished simulation init!")
-        fixed_pos = (schematic_args[0].center[0]+self.state.world_x,schematic_args[0].center[1]+self.state.world_z)
-        print("Successfully initialized main street! Go to position "+str(fixed_pos))
+        self.settlement_pos = (schematic_args[0].center[0] + self.state.world_x, schematic_args[0].center[1] + self.state.world_z)
+        print("Successfully initialized main street! Go to position " + str(self.settlement_pos))
         return True, -1
 
 

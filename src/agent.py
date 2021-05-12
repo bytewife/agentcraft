@@ -23,6 +23,11 @@ from random import shuffle
 
 class Agent:
 
+
+    small_pool = src.my_utils.STRUCTURES['decor'] + src.my_utils.STRUCTURES['small']
+    med_pool = src.my_utils.STRUCTURES['decor'] + src.my_utils.STRUCTURES['decor'] + src.my_utils.STRUCTURES['decor'] + src.my_utils.STRUCTURES['decor'] + src.my_utils.STRUCTURES['small'] + src.my_utils.STRUCTURES['med'] + src.my_utils.STRUCTURES['med']
+    large_pool = src.my_utils.STRUCTURES['decor'] + src.my_utils.STRUCTURES['med'] + src.my_utils.STRUCTURES['large']
+
     class Motive(Enum):
         LOGGING = 0
         REST = 1
@@ -51,7 +56,7 @@ class Agent:
         Motive.REST.name: (0.2, 0.00),
         Motive.REPLENISH_TREE.name: (0.0, 0.01),
         Motive.PROPAGATE.name: (0.0, 1.0),
-        Motive.WATER.name: (0.0, 0.4),
+        Motive.WATER.name: (0.0, 0.05),
         Motive.IDLE.name: (0.0, 0.00),
     }
 
@@ -348,13 +353,13 @@ class Agent:
         build = ''
         cost = 0 # TODO
         if phase == 1:
-            pool = src.my_utils.STRUCTURES['decor'] + src.my_utils.STRUCTURES['small']
+            pool = Agent.small_pool
             build, cost = choice(pool)
         elif phase == 2:
-            pool = src.my_utils.STRUCTURES['decor'] + src.my_utils.STRUCTURES['decor'] + src.my_utils.STRUCTURES['small'] + src.my_utils.STRUCTURES['med']
+            pool = Agent.med_pool
             build, cost = choice(pool)
         elif phase == 3:
-            pool = src.my_utils.STRUCTURES['decor'] + src.my_utils.STRUCTURES['decor'] + src.my_utils.STRUCTURES['med'] + src.my_utils.STRUCTURES['large']
+            pool = Agent.large_pool
             build, cost = choice(pool)
         else:
             print('error: incorrect phase')
