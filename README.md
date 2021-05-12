@@ -29,6 +29,22 @@ Restart Minecraft and launch the Forge Installation again. The mod should now ap
 
 When you open a world the HTTP Server will be started automatically, and you should now be able to send HTTP requests to it.
 
+## Usage
+```
+Options:
+     -a X1,Y1,X2,Y2   |  Set the generator's build AREA in the running Minecraft world. Avoid spaces in between numbers.
+     -t SECONDS       |  Set the TIME limit for the generator's execution. DEFAULT={time_limit}
+     -s STEPS         |  Set the number of TIME-STEPS the generator takes. DEFAULT={steps}
+     -f FRAMELENGTH   |  Set the duration of each frame of render. DEFAULT={frame_length} seconds
+     --norender       |  Disable per-frame rendering (for performance) 
+     --nochronicle    |  Disable writing to chronicle
+     --printchronicle |  Write the chronicle's output to console
+     --leavesign      |  Render a sign at the center of the given area describing the location of the settlement.
+
+Example:
+     python3 run.py -a 0,0,200,200 -t 590 -s 2000 -f 0.4 --leavesign
+ ```
+
 ## Credits
 This project would not have been possible without:   
 + [Nils Gawlik](https://github.com/nilsgawlik) for their [http server](https://github.com/nilsgawlik/gdmc_http_interface), which let's me communicate with a running Minecraft process!
