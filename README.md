@@ -9,7 +9,7 @@ Tested on Minecraft 1.16.5
 ### Install Dependencies
 Install the following packages with pip:
 ```
-bitarray enum numpy names nbt scipy wonderwords
+bitarray numpy names nbt scipy wonderwords
 ```
 
 ### Install Forge
@@ -33,9 +33,9 @@ When you open a world the HTTP Server will be started automatically, and you sho
 ```
 Options:
      -a X1,Y1,X2,Y2   |  Set the generator's build AREA in the running Minecraft world. Avoid spaces in between numbers.
-     -t SECONDS       |  Set the TIME limit for the generator's execution. DEFAULT={time_limit}
-     -s STEPS         |  Set the number of TIME-STEPS the generator takes. DEFAULT={steps}
-     -f FRAMELENGTH   |  Set the duration of each frame of render. DEFAULT={frame_length} seconds
+     -t SECONDS       |  Set the TIME limit for the generator's execution. 
+     -s STEPS         |  Set the number of TIME-STEPS the generator takes. 
+     -f FRAMELENGTH   |  Set the duration of each frame of render.  seconds
      --norender       |  Disable per-frame rendering (for performance) 
      --nochronicle    |  Disable writing to chronicle
      --printchronicle |  Write the chronicle's output to console
