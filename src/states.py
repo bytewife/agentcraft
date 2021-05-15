@@ -691,8 +691,8 @@ class State:
             radius = math.floor(self.size / 2)
             for x in range(-radius, radius + 1):
                 for z in range(-radius, radius + 1):
-                    nx = self.center[0] + x
-                    nz = self.center[1] + z
+                    nx = max(min(self.center[0] + x, self.state.last_node_pointer_x), 0)
+                    nz = max(min(self.center[1] + z, self.state.last_node_pointer_z), 0)
                     tiles.append((nx,nz))
             return tiles
 
@@ -709,6 +709,7 @@ class State:
             for tile_pos in self.get_tiles():
                 # tx, tz = tile_pos
                 # if self.state.out_of_bounds_Node(tx, tz): continue
+                # print(tile_pos)
                 self.type.add(self.state.types[tile_pos[0]][tile_pos[1]])  # each block has a single type
             # for t in self.mask_type:
             #     all_types.add(t)
@@ -1843,7 +1844,7 @@ class State:
 
 
         def set_blocks_for_path_aux(self, main_path, aux_path, rate, blocks_ordered):
-            for i in range(len(blocks_ordered)):
+            for i in range(len(blocks_ordered)):  # this can be a diff length thaan the blocks_ordered
                 x,z = aux_path[i]
                 set_state_block(self,x,blocks_ordered[i][1],z, blocks_ordered[i][0])
 
