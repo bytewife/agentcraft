@@ -18,10 +18,11 @@ import src.states
 IS_RENDERING_FRAMEWISE = True
 IS_WRITING_CHRONICLE = True
 IS_WRITING_CHRONICLE_TO_CONSOLE = False
-IS_WRITING_LOCATION_AT_MIDPOINT = True
+IS_WRITING_LOCATION_AT_MIDPOINT = False
+IS_INCREASING_TICK_RATE = False
 
 def parse_opts(argv):
-    global IS_WRITING_CHRONICLE_TO_CONSOLE, IS_RENDERING_FRAMEWISE, IS_WRITING_CHRONICLE, IS_WRITING_LOCATION_AT_MIDPOINT
+    global IS_WRITING_CHRONICLE_TO_CONSOLE, IS_RENDERING_FRAMEWISE, IS_WRITING_CHRONICLE, IS_WRITING_LOCATION_AT_MIDPOINT, IS_INCREASING_TICK_RATE
     x1 = 0
     y1 = 0
     x2 = 0
@@ -44,6 +45,7 @@ Options:
      --nochronicle    |  Disable writing to chronicle
      --printchronicle |  Write the chronicle's output to console
      --leavesign      |  Render a sign at the center of the given area describing the location of the settlement.
+     --inctick        |  Increase the tick speed of the generator to 100. WARNING: this reset the tick rate afterwards. This is merely for the judges.
 
 Example:
      python3 run.py -a 0,0,200,200 -t 600 -s 1000 -f 0.4 --norender
@@ -55,7 +57,7 @@ Warning:
         return
 
     try:
-        opts, args = getopt.getopt(argv, 'a:t:s:f:', ['norender', 'printchronicle', 'nochronicle', 'leavesign'])
+        opts, args = getopt.getopt(argv, 'a:t:s:f:', ['norender', 'printchronicle', 'nochronicle', 'leavesign', 'inctick'])
     except getopt.GetoptError:
         help()
         sys.exit(1)
@@ -104,6 +106,8 @@ Warning:
             IS_WRITING_CHRONICLE_TO_CONSOLE = True
         elif opt == '--leavesign':
             IS_WRITING_LOCATION_AT_MIDPOINT = True
+        elif opt == '--inctick':
+            IS_INCREASING_TICK_RATE = True
     if not area_given:
         print("Error: requires area given with -a. Use -h for options.")
         sys.exit(0)
@@ -118,16 +122,20 @@ if __name__ == '__main__':
     area = src.my_utils.correct_area(area)
     file_name = ""
     clean_rad = int(max(abs(x2-x1), abs(z2-z1)))
-    clean_agents = "kill @e[type=minecraft:armor_stand,x={},y=64,z={},distance=..{}]".format(str((x2+x1)/2), str((z2+z1)/2), clean_rad)
-    http_framework.interfaceUtils.runCommand(clean_agents)
+    clean_agents_cmd = "kill @e[type=minecraft:armor_stand,x={},y=64,z={},distance=..{}]".format(str((x2+x1)/2), str((z2+z1)/2), clean_rad)
+    http_framework.interfaceUtils.runCommand(clean_agents_cmd)
+
+    if IS_INCREASING_TICK_RATE:
+        inc_tick_cmd = "gamerule randomTickSpeed 100"
+        http_framework.interfaceUtils.runCommand(inc_tick_cmd)
 
     # frame_duration = 0.00
     sim = src.simulation.Simulation(area, rendering_step_duration=frame_duration, is_rendering_each_step=False, start_time = start)
 
     if IS_RENDERING_FRAMEWISE:
-        sim.run_with_render(steps, start, time_limit)
+        sim.run_with_render(steps, start, time_limit, IS_WRITING_LOCATION_AT_MIDPOINT)
     else:
-        sim.run_without_render(steps, start, time_limit)
+        sim.run_without_render(steps, start, time_limit, IS_WRITING_LOCATION_AT_MIDPOINT)
 
     ## ROADS
     # for r in sim.state.roads:

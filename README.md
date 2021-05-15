@@ -4,12 +4,12 @@ An adaptive settlement creation using a social agent simulation in Minecraft! Th
 ![Timelapse gif](demo.gif)
 
 ## How to Run
-Tested on Minecraft 1.16.5
+Tested on Minecraft 1.16.5, Python 3.9
 
 ### Install Dependencies
 Install the following packages with pip:
 ```
-bitarray numpy names nbt scipy wonderwords
+bitarray numpy names nbt requests scipy wonderwords
 ```
 
 ### Install Forge

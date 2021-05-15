@@ -1708,6 +1708,7 @@ class State:
         prev_road_y = self.static_ground_hm[block_path[0][0]][block_path[0][1]] - 1
 
         def set_blocks_for_path(self, path, rate):
+            blocks_ordered = []
             static_temp = self.rel_ground_hm.copy()
             for x in range(len(static_temp)):
                 for z in range(len(static_temp[0])):
@@ -1719,32 +1720,32 @@ class State:
                 x = path[i][0]
                 z = path[i][1]
                 y = int(static_temp[x][z]) - 1
-                if self.blocks(x,y,z )== "minecraft:water":
+                if self.blocks(x, y, z) == "minecraft:water":
                     continue
                 if src.manipulation.is_log(self, x, y + 1, z):
                     src.manipulation.flood_kill_logs(self, x, y + 1, z)
                     if (x, z) in self.trees:  # when sniped
-                        self.trees.remove((x,z))
+                        self.trees.remove((x, z))
                 if random() < rate:
                     # kill tree
                     check_next_road = True
                     check_next_next_road = True
-                    if i >= length-2:
+                    if i >= length - 2:
                         check_next_road = False
                         check_next_next_road = False
-                    elif i >= length-1:
+                    elif i >= length - 1:
                         check_next_road = False
                     next_road_y = 0
                     next_next_road_y = 0
                     if check_next_road:
-                        next_road_y = static_temp[path[i+1][0]][path[i+1][1]] - 1
+                        next_road_y = static_temp[path[i + 1][0]][path[i + 1][1]] - 1
                     if check_next_next_road:
                         nnx = path[i + 2][0]
                         nnz = path[i + 2][1]
-                        next_next_road_y =static_temp[nnx][nnz] - 1
+                        next_next_road_y = static_temp[nnx][nnz] - 1
                     ndy = next_road_y - y
                     nndy = next_next_road_y - next_road_y
-                    px = x # placement x
+                    px = x  # placement x
                     py = y
                     pz = z
 
@@ -1755,52 +1756,62 @@ class State:
                     if check_next_next_road:
                         if ndy == 0:
                             pass
-                        elif ndy > 0 and nndy == 0: # slab above
-                            py+=1
+                        elif ndy > 0 and nndy == 0:  # slab above
+                            py += 1
                             if block[-1] == 's': block = block[:-1]  # for brick(s)
                             block += "_slab"
                         elif ndy < 0 and nndy == 0:  # slab below (in place)
                             if block[-1] == 's': block = block[:-1]  # for brick(s)
                             block += "_slab"
-                        elif ndy > 0 and nndy > 0: # slope 1
-                            py+=1
-                            dx = path[i+1][0] - path[i][0]
-                            dz = path[i+1][1] - path[i][1]
+                        elif ndy > 0 and nndy > 0:  # slope 1
+                            py += 1
+                            dx = path[i + 1][0] - path[i][0]
+                            dz = path[i + 1][1] - path[i][1]
                             facing = None
-                            if dx > 0 and dz == 0: facing = None
-                            elif dx < 0 and dz == 0: facing = "west"
-                            elif dz > 0 and dx == 0: facing = "south"
-                            elif dz < 0 and dx == 0: facing = "north"
-                            else: pass
+                            if dx > 0 and dz == 0:
+                                facing = None
+                            elif dx < 0 and dz == 0:
+                                facing = "west"
+                            elif dz > 0 and dx == 0:
+                                facing = "south"
+                            elif dz < 0 and dx == 0:
+                                facing = "north"
+                            else:
+                                pass
                             if facing is not None:
                                 if block[-1] == 's': block = block[:-1]  # for brick(s)
                                 block += """_stairs[facing={facing}]""".format(facing=facing)
                             else:
                                 if block[-1] == 's': block = block[:-1]  # for brick(s)
                                 block += '_slab'
-                        elif ndy < 0 and nndy > 0 : # flatten next block to get slope 0
+                        elif ndy < 0 and nndy > 0:  # flatten next block to get slope 0
                             pass
                             # set_state_block(self,px, py, pz, block)
                             # px = path[i+1][0]
                             # pz = path[i+1][1]
                             # static_temp[px][pz]+=1
                             # set_state_block(self,px, py+1, pz, block)
-                        elif ndy < 0 and nndy < 0: # slope -1
+                        elif ndy < 0 and nndy < 0:  # slope -1
                             dx = path[i + 1][0] - path[i][0]
                             dz = path[i + 1][1] - path[i][1]
                             facing = None
-                            if dx > 0 and dz == 0: facing = "west"
-                            elif dx < 0 and dz == 0: facing = "east"
-                            elif dz > 0 and dx == 0: facing = "north"
-                            elif dz < 0 and dx == 0: facing = "south"
-                            else: pass
+                            if dx > 0 and dz == 0:
+                                facing = "west"
+                            elif dx < 0 and dz == 0:
+                                facing = "east"
+                            elif dz > 0 and dx == 0:
+                                facing = "north"
+                            elif dz < 0 and dx == 0:
+                                facing = "south"
+                            else:
+                                pass
                             if facing is not None:
                                 if block[-1] == 's': block = block[:-1]  # for brick(s)
                                 block += """_stairs[facing={facing}]""".format(facing=facing)
                             else:
                                 if block[-1] == 's': block = block[:-1]  # for brick(s)
                                 block += '_slab'
-                        elif ndy > 0 and nndy < 0: # flatten (lower) next block to get slope 0
+                        elif ndy > 0 and nndy < 0:  # flatten (lower) next block to get slope 0
                             pass
                             # set_state_block(self,px, py, pz, block)  # for curr
                             # px = path[i+1][0]
@@ -1811,24 +1822,32 @@ class State:
                             # static_temp[px][pz] = py
                     elif check_next_road:
                         if ndy > 0:
-                            px = path[i+1][0]
-                            pz = path[i+1][1]
+                            px = path[i + 1][0]
+                            pz = path[i + 1][1]
                             py += 1
                             if block[-1] == 's': block = block[:-1]  # for brick(s)
                             block += "_slab"
                         elif ndy < 0:
                             if block[-1] == 's': block = block[:-1]  # for brick(s)
                             block += "_slab"
-                    static_temp[px][pz] = py+1
+                    static_temp[px][pz] = py + 1
+                    # set_state_block(self, px, py, pz, block)
+                    if not self.out_of_bounds_3D(px, py + 1, pz):
+                        if 'snow' in self.blocks(px, py + 1, pz):
+                            set_state_block(self, px, py + 1, pz, 'minecraft:air')
                     set_state_block(self, px, py, pz, block)
-                    if not self.out_of_bounds_3D(px, py+1, pz):
-                        if 'snow' in self.blocks(px, py+1, pz):
-                            set_state_block(self, px, py+1, pz, 'minecraft:air')
-                    set_state_block(self, px, py, pz, block)
-                    if src.manipulation.is_leaf(self.blocks(x,y+2,z)):
-                        src.manipulation.flood_kill_leaves(self,x, y+2, z, 10)
+                    if src.manipulation.is_leaf(self.blocks(x, y + 2, z)):
+                        src.manipulation.flood_kill_leaves(self, x, y + 2, z, 10)
+                    blocks_ordered.append((block, py))
+            return blocks_ordered
 
-        set_blocks_for_path(self,block_path,inner_block_rate)
+
+        def set_blocks_for_path_aux(self, main_path, aux_path, rate, blocks_ordered):
+            for i in range(len(blocks_ordered)):
+                x,z = aux_path[i]
+                set_state_block(self,x,blocks_ordered[i][1],z, blocks_ordered[i][0])
+
+        blocks_ordered = set_blocks_for_path(self,block_path,inner_block_rate)
         block_path_set = set(block_path)
 
         aux_paths = []
@@ -1855,7 +1874,7 @@ class State:
             # aux_path = [clamp_to_state_coords(self, block[0]+card[0], block[1]+card[1]) for block in block_path]
             # if is_walkable(self,aux_path):
             #     aux_paths.append(aux_path)
-            set_blocks_for_path(self,aux_path, outer_block_rate)
+            set_blocks_for_path_aux(self, block_path, aux_path, outer_block_rate, blocks_ordered)
 
 
         # ## borders

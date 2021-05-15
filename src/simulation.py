@@ -69,7 +69,7 @@ class Simulation:
                 str((XZXZ[3] + XZXZ[1]) / 2))
             http_framework.interfaceUtils.runCommand(clean_agents)
 
-    def run_with_render(self, steps, start, time_limit):
+    def run_with_render(self, steps, start, time_limit, is_writing_sign):
         is_writing = run.IS_WRITING_CHRONICLE_TO_CONSOLE
         run.IS_WRITING_CHRONICLE_TO_CONSOLE = False
         self.decide_max_y_diff()
@@ -89,15 +89,15 @@ class Simulation:
         x = self.chronicles_pos[0]
         z = self.chronicles_pos[1]
         y = self.state.rel_ground_hm[x][z]
+        finished_fully = self.step(1, True, start, time_limit)
         http_framework.interfaceUtils.runCommand(f'setblock {x+self.state.world_x} {y+self.state.world_y} {z+self.state.world_z} minecraft:chest')
         src.chronicle.place_chronicles(self.state, x, y, z, f"History of {self.settlement_name}", self.original_agent.name)
-        finished_fully = self.step(1, True, start, time_limit)
         print("Simulation finished after " + str(time.time() - start) + " seconds. " + str(
             steps+1) + " steps performed, out of " + str(times+1) + " steps.")
         cx = self.state.world_x+x
         cz = self.state.world_z+z
         print(f"Chronicles placed at {cx}, {self.state.world_y + y}, {cz}! ")
-        if run.IS_WRITING_LOCATION_AT_MIDPOINT:
+        if is_writing_sign:
             sx = int(self.state.world_x + self.state.len_x/2)
             sz = int(self.state.world_z + self.state.len_z/2)
             sy = self.state.world_y + self.state.rel_ground_hm[int(self.state.len_x/2)][int(self.state.len_z/2)]
@@ -107,7 +107,7 @@ class Simulation:
         exit(0)
 
 
-    def run_without_render(self, steps, start, time_limit):
+    def run_without_render(self, steps, start, time_limit, is_writing_sign):
         is_writing = run.IS_WRITING_CHRONICLE_TO_CONSOLE
         run.IS_WRITING_CHRONICLE_TO_CONSOLE = False
         self.decide_max_y_diff()
@@ -128,16 +128,16 @@ class Simulation:
         x = self.chronicles_pos[0]
         z = self.chronicles_pos[1]
         y = self.state.rel_ground_hm[x][z]
+        self.state.step(is_rendering=True, use_total_changed_blocks=True)
         http_framework.interfaceUtils.runCommand(
             f'setblock {x + self.state.world_x} {y + self.state.world_y} {z + self.state.world_z} minecraft:chest')
         finished_fully = src.chronicle.place_chronicles(self.state, x, y, z, f"History of {self.settlement_name}", self.original_agent.name)
-        self.state.step(is_rendering=True, use_total_changed_blocks=True)
         print("Simulation finished after " + str(time.time() - start) + " seconds. " + str(
             steps+1) + " steps performed, out of " + str(times+1) + " steps.")
         cx = self.state.world_x+x
         cz = self.state.world_z+z
         print(f"Chronicles placed at {cx}, {self.state.world_y+y}, {cz}! ")
-        if run.IS_WRITING_LOCATION_AT_MIDPOINT:
+        if is_writing_sign:
             sx = int(self.state.world_x + self.state.len_x/2)
             sz = int(self.state.world_z + self.state.len_z/2)
             sy = self.state.world_y + self.state.rel_ground_hm[int(self.state.len_x/2)][int(self.state.len_z/2)]
@@ -148,13 +148,13 @@ class Simulation:
 
     def decide_max_y_diff(self):
         if self.state.len_x > 900 or self.state.len_z > 900:
-            print("Caution: chosen area is very large! Generator initialization may take long.")
+            print("Caution: chosen area is very large! Generator initialization may take a long time.")
             self.building_max_y_diff = 6
         elif self.state.len_x > 700 or self.state.len_z > 700:
-            print("Caution: chosen area is large! Generator initialization may take long.")
+            print("Caution: chosen area is large! Generator initialization may take a long time.")
             self.building_max_y_diff = 5
         elif self.state.len_x > 400 or self.state.len_z > 400:
-            print("Caution: chosen area is large! Generator initialization may take long.")
+            print("Caution: chosen area is large! Generator initialization may take a long time.")
             self.building_max_y_diff = 3
         else:
             self.building_max_y_diff = 2
