@@ -76,6 +76,7 @@ class State:
             self.heightmaps = world_slice.heightmaps
             self.built = set()
             self.foreign_built = set()
+            self.road_set = choice(src.my_utils.set_choices)
 
             if precomp_nodes is None or precomp_node_pointers is None:
                 self.nodes_dict, self.node_pointers = self.gen_nodes(self.len_x, self.len_z, self.node_size)
@@ -456,6 +457,8 @@ class State:
                 fx = nx + r * (use_x ^ 0) + (use_x ^ 1) * offset
                 fz = nz + r * (use_x ^ 1) + (use_x ^ 0) * offset
                 front_tiles.append((fx, fz))
+                if self.out_of_bounds_Node(fx, fz):  # TODO: get rid of this and let prior fnuctions deal with it- prolly causes a bug
+                    return False, None
                 fy = self.static_ground_hm[fx,fz]
                 if highest_y < fy:
                     highest_y = fy
@@ -1710,6 +1713,7 @@ class State:
 
         def set_blocks_for_path(self, path, rate):
             blocks_ordered = []
+            blocks_set = set()
             static_temp = self.rel_ground_hm.copy()
             for x in range(len(static_temp)):
                 for z in range(len(static_temp[0])):
@@ -1752,18 +1756,21 @@ class State:
 
                     # if dont_rebuild and (px, pz) in self.road_tiles: continue
                     # self.road_tiles.add((px,pz))
+                    blocks_set.add((px, pz))
+                    block_type = 0
+                    data = ''
 
-                    block = choice(src.my_utils.ROAD_SETS['default'])
+                    block = choice(self.road_set[0])
                     if check_next_next_road:
                         if ndy == 0:
                             pass
                         elif ndy > 0 and nndy == 0:  # slab above
                             py += 1
-                            if block[-1] == 's': block = block[:-1]  # for brick(s)
-                            block += "_slab"
+                            block = choice(self.road_set[1])
+                            block_type = 1
                         elif ndy < 0 and nndy == 0:  # slab below (in place)
-                            if block[-1] == 's': block = block[:-1]  # for brick(s)
-                            block += "_slab"
+                            block = choice(self.road_set[1])
+                            block_type = 1
                         elif ndy > 0 and nndy > 0:  # slope 1
                             py += 1
                             dx = path[i + 1][0] - path[i][0]
@@ -1780,11 +1787,17 @@ class State:
                             else:
                                 pass
                             if facing is not None:
-                                if block[-1] == 's': block = block[:-1]  # for brick(s)
-                                block += """_stairs[facing={facing}]""".format(facing=facing)
+                                data = """[facing={facing}]""".format(facing=facing)
+                                block = choice(self.road_set[2]) + data
+                                block_type = 2
                             else:
-                                if block[-1] == 's': block = block[:-1]  # for brick(s)
-                                block += '_slab'
+                                # testing diagonals where would be stairs
+                                py -= 1
+                                # block = choice(self.road_set[0])
+                                block = "minecraft:crimson_slab"
+                                block_type = 0
+                                # block = choice(self.road_set[1])
+                                # block_type = 1
                         elif ndy < 0 and nndy > 0:  # flatten next block to get slope 0
                             pass
                             # set_state_block(self,px, py, pz, block)
@@ -1807,11 +1820,20 @@ class State:
                             else:
                                 pass
                             if facing is not None:
-                                if block[-1] == 's': block = block[:-1]  # for brick(s)
-                                block += """_stairs[facing={facing}]""".format(facing=facing)
+                                data = """[facing={facing}]""".format(facing=facing)
+                                block = choice(self.road_set[2]) + data
+                                block_type = 2
                             else:
-                                if block[-1] == 's': block = block[:-1]  # for brick(s)
-                                block += '_slab'
+                                # testing diagonals where would be stairs
+                                # py -= 1  # TESTING
+                                # block = choice(self.road_set[0])
+                                block = "minecraft:stone_slab"
+                                block_type = 0
+                                # block = choice(self.road_set[1])
+                                # block_type = 1
+
+                                # if block[-1] == 's': block = block[:-1]  # for brick(s)
+                                # block += '_slab'
                         elif ndy > 0 and nndy < 0:  # flatten (lower) next block to get slope 0
                             pass
                             # set_state_block(self,px, py, pz, block)  # for curr
@@ -1826,11 +1848,15 @@ class State:
                             px = path[i + 1][0]
                             pz = path[i + 1][1]
                             py += 1
-                            if block[-1] == 's': block = block[:-1]  # for brick(s)
-                            block += "_slab"
+                            block = choice(self.road_set[1])
+                            block_type = 1
+                            # if block[-1] == 's': block = block[:-1]  # for brick(s)
+                            # block += "_slab"
                         elif ndy < 0:
-                            if block[-1] == 's': block = block[:-1]  # for brick(s)
-                            block += "_slab"
+                            block = choice(self.road_set[1])
+                            block_type = 1
+                            # if block[-1] == 's': block = block[:-1]  # for brick(s)
+                            # block += "_slab"
                     static_temp[px][pz] = py + 1
                     # set_state_block(self, px, py, pz, block)
                     if not self.out_of_bounds_3D(px, py + 1, pz):
@@ -1839,17 +1865,39 @@ class State:
                     set_state_block(self, px, py, pz, block)
                     if src.manipulation.is_leaf(self.blocks(x, y + 2, z)):
                         src.manipulation.flood_kill_leaves(self, x, y + 2, z, 10)
-                    blocks_ordered.append((block, py))
-            return blocks_ordered
+                    blocks_ordered.append((block_type, px, py, pz, data))
+            return blocks_ordered, blocks_set
 
 
-        def set_blocks_for_path_aux(self, main_path, aux_path, rate, blocks_ordered):
-            for i in range(len(blocks_ordered)):  # this can be a diff length thaan the blocks_ordered
-                x,z = aux_path[i]
-                set_state_block(self,x,blocks_ordered[i][1],z, blocks_ordered[i][0])
+        def set_blocks_for_path_aux(self, main_path, aux_path, rate, blocks_ordered, main_path_set):
+            # for i in range(len(aux_path)):  # this can be a diff length thaan the blocks_ordered
+            #     x,z = aux_path[i]
+            #     set_state_block(self,x,blocks_ordered[i][1],z, blocks_ordered[i][0])
+            for spot in blocks_ordered:
+                type, x, y, z, data = spot
+                if (x+1, z) not in main_path_set and random() < rate:
+                    if self.blocks(x+1, y+1, z) in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.GREEN.value]:
+                        set_state_block(self,x+1,y+1,z, "minecraft:air")
+                    set_state_block(self,x+1,y,z, choice(self.road_set[type])+data)
+                    main_path_set.add((x+1,z))
+                if (x-1, z) not in main_path_set and random() < rate:
+                    if self.blocks(x-1, y+1, z) in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.GREEN.value]:
+                        set_state_block(self,x-1,y+1,z, "minecraft:air")
+                    set_state_block(self,x-1,y,z, choice(self.road_set[type])+data)
+                    main_path_set.add((x - 1, z))
+                if (x, z+1) not in main_path_set and random() < rate:
+                    if self.blocks(x, y+1, z+1) in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.GREEN.value]:
+                        set_state_block(self,x,y+1,z+1, "minecraft:air")
+                    set_state_block(self,x,y,z+1, choice(self.road_set[type])+data)
+                main_path_set.add((x, z + 1))
+                if (x, z-1) not in main_path_set and random() < rate:
+                    if self.blocks(x, y+1, z-1) in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.GREEN.value]:
+                        set_state_block(self,x,y+1,z-1, "minecraft:air")
+                    set_state_block(self,x,y,z-1, choice(self.road_set[type])+data)
+                    main_path_set.add((x, z - 1))
 
-        blocks_ordered = set_blocks_for_path(self,block_path,inner_block_rate)
-        block_path_set = set(block_path)
+        blocks_ordered, blocks_set = set_blocks_for_path(self,block_path,inner_block_rate)
+        # block_path_set = set(block_path)
 
         aux_paths = []
         for card in src.movement.cardinals:
@@ -1869,13 +1917,13 @@ class State:
             for block in block_path:
                 pos = clamp_to_state_coords(self, block[0] + card[0], block[1] + card[1])
                 if abs(self.rel_ground_hm[pos[0]][pos[1]] - self.rel_ground_hm[block[0]][block[1]]) > 1: continue
-                if pos not in block_path_set:  # to avoid overlapping road blocks
+                if pos not in blocks_set:  # to avoid overlapping road blocks
                     aux_path.append(pos)
-                    block_path_set.add(pos)
+                    # blocks_set.add(pos)
             # aux_path = [clamp_to_state_coords(self, block[0]+card[0], block[1]+card[1]) for block in block_path]
             # if is_walkable(self,aux_path):
             #     aux_paths.append(aux_path)
-            set_blocks_for_path_aux(self, block_path, aux_path, outer_block_rate, blocks_ordered)
+        set_blocks_for_path_aux(self, block_path, aux_paths, outer_block_rate, blocks_ordered, blocks_set)
 
 
         # ## borders
