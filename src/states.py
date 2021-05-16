@@ -77,6 +77,7 @@ class State:
             self.built = set()
             self.foreign_built = set()
             self.road_set = choice(src.my_utils.set_choices)
+            self.generated_a_road = False  # prevents buildings blocking in the roads
 
             if precomp_nodes is None or precomp_node_pointers is None:
                 self.nodes_dict, self.node_pointers = self.gen_nodes(self.len_x, self.len_z, self.node_size)
@@ -146,6 +147,7 @@ class State:
             self.water_with_adjacent_land = list(set(self.water).intersection(self.tiles_with_land_neighbors))
             self.flag_color = choice(src.my_utils.colors)
             self.step_number = 0
+            self.last_platform_extension = "minecraft:dirt"
 
             self.adam = src.agent.Agent(self,0,0, self.rel_ground_hm, "Adam, the Original", "")
             self.eve = src.agent.Agent(self, 0, 0, self.rel_ground_hm, "Eve, the Original", "")
@@ -382,10 +384,11 @@ class State:
             result.append(y)
         return result
 
-    def place_platform(self, found_road=None, ctrn_node=None, found_nodes_iter=None, ctrn_dir=None, bld=None, rot=None, min_nodes_in_x=None, min_nodes_in_z=None, built_arr=None, wood_type="oak", build_y=None):
+    def place_platform(self, found_road=None, ctrn_node=None, found_nodes_iter=None, ctrn_dir=None, bld=None, rot=None, min_nodes_in_x=None, min_nodes_in_z=None, built_arr=None, wood_type="oak", build_y=None, use_scaffolding=True):
         # py = self.static_ground_hm[found_road.center[0]][found_road.center[1]] - 1
         # py = self.get_highest_height_in_node(found_road,self.static_ground_hm) - 1
         found_nodes = list(found_nodes_iter)
+        fill = "minecraft:scaffolding"
         py = build_y - 1
         for node in found_nodes:
             for tile in node.get_tiles():
@@ -393,16 +396,44 @@ class State:
                 tz = tile[1]
                 traverse = self.traverse_up(tx, tz, py-1)
                 block = self.blocks(tx,py,tz)
-                if block in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.PASSTHROUGH.value] or block in src.my_utils.ROAD_SETS['default_slabs']:
+
+                if block in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.PASSTHROUGH.value]:
                     # block = self.blocks[tx][self.static_ground_hm[tx][tz]-1][tz]
                     # print("block is "+str(block))
                     block = self.blocks(tx,self.static_ground_hm[tx][tz] - 1,tz)
-                    if len(traverse) > 0:
+                    if block in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.MAJOR_ROAD.value]:
+                        block = "minecraft:dirt"
+                    if not use_scaffolding:
+                        fill = block
+                    if len(traverse) > 1:
                         for y in traverse:
-                            set_state_block(self, tx, y, tz, "minecraft:scaffolding")
+                            set_state_block(self, tx, y, tz, fill)
                         block = wood_type + '_planks'
+                    elif len(traverse) == 1:
+                        set_state_block(self, tx, py-1, tz, block)
                         # block = self.last + '_planks'
                     set_state_block(self,tx, py, tz, block)
+        return True
+
+    def place_scaffold_block(self, tx, build_y, tz):
+        # py = self.static_ground_hm[found_road.center[0]][found_road.center[1]] - 1
+        # py = self.get_highest_height_in_node(found_road,self.static_ground_hm) - 1
+        # fill = "minecraft:scaffolding"
+        py = build_y - 1
+        traverse = self.traverse_up(tx, tz, py-1)
+        block = self.blocks(tx,py,tz)
+        if block in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.PASSTHROUGH.value] or block in src.my_utils.ROAD_SETS['default_slabs']:
+            # block = self.blocks[tx][self.static_ground_hm[tx][tz]-1][tz]
+            # print("block is "+str(block))
+            block = self.blocks(tx,self.static_ground_hm[tx][tz] - 1,tz)
+            fill = block
+            # fill = "minecraft:diamond_block"
+            if len(traverse) > 0:
+                for y in traverse:
+                    set_state_block(self, tx, y, tz, fill)
+                # block = wood_type + '_planks'
+                # block = self.last + '_planks'
+            set_state_block(self,tx, py, tz, fill)
         return True
 
     def place_schematic(self,found_road, ctrn_node, found_nodes, ctrn_dir, bld, rot, min_nodes_in_x, min_nodes_in_z, built_arr, wood_type, ignore_road=False):
@@ -903,8 +934,8 @@ class State:
         world_y = y1
         interface = http_framework.interfaceUtils.Interface(x=self.world_x, y=world_y, z=self.world_z,
                                                                    buffering=True, caching=True)
-        if (y2 > 150):
-            print("warning: Y bound is really high!")
+        # if (y2 > 150):
+            # print("warning: Y bound is really high!")
 
         len_z = abs(z2 - z1)
         len_y = abs(y2 - y1)
@@ -1721,6 +1752,12 @@ class State:
                     if static_temp[x][z] > static_y:
                         static_temp[x][z] = static_y
             length = len(path)
+
+            up_slab_next = False
+            up_stairs_next = False
+            next_facing = False
+            down_stairs_capping = False
+            is_diagonal = False
             for i in range(length):
                 x = path[i][0]
                 z = path[i][1]
@@ -1731,6 +1768,11 @@ class State:
                     src.manipulation.flood_kill_logs(self, x, y + 1, z)
                     if (x, z) in self.trees:  # when sniped
                         self.trees.remove((x, z))
+
+                if src.manipulation.is_sapling(self, x, y + 1, z):
+                    set_state_block(self, x, y + 1, z, "minecraft:air")
+                    if (x, z) in self.saplings:  # when sniped
+                        self.saplings.remove((x, z))
                 if random() < rate:
                     # kill tree
                     check_next_road = True
@@ -1753,110 +1795,181 @@ class State:
                     px = x  # placement x
                     py = y
                     pz = z
+                    # if (px, pz) in self.road_tiles: continue
+
+                    if (px, pz) in self.road_tiles or (py-1 >= 0 and self.blocks(px, py - 1, pz) in src.my_utils.TYPE_TILES.tile_sets[
+                        src.my_utils.TYPE.MAJOR_ROAD.value]): continue  # might not work well.
 
                     # if dont_rebuild and (px, pz) in self.road_tiles: continue
                     # self.road_tiles.add((px,pz))
-                    blocks_set.add((px, pz))
                     block_type = 0
-                    data = ''
+                    facing_data = False
 
                     block = choice(self.road_set[0])
-                    if check_next_next_road:
-                        if ndy == 0:
-                            pass
-                        elif ndy > 0 and nndy == 0:  # slab above
-                            py += 1
-                            block = choice(self.road_set[1])
-                            block_type = 1
-                        elif ndy < 0 and nndy == 0:  # slab below (in place)
-                            block = choice(self.road_set[1])
-                            block_type = 1
-                        elif ndy > 0 and nndy > 0:  # slope 1
-                            py += 1
-                            dx = path[i + 1][0] - path[i][0]
-                            dz = path[i + 1][1] - path[i][1]
-                            facing = None
-                            if dx > 0 and dz == 0:
-                                facing = None
-                            elif dx < 0 and dz == 0:
-                                facing = "west"
-                            elif dz > 0 and dx == 0:
-                                facing = "south"
-                            elif dz < 0 and dx == 0:
-                                facing = "north"
-                            else:
-                                pass
-                            if facing is not None:
-                                data = """[facing={facing}]""".format(facing=facing)
-                                block = choice(self.road_set[2]) + data
-                                block_type = 2
-                            else:
-                                # testing diagonals where would be stairs
-                                py -= 1
-                                # block = choice(self.road_set[0])
-                                block = "minecraft:crimson_slab"
-                                block_type = 0
-                                # block = choice(self.road_set[1])
-                                # block_type = 1
-                        elif ndy < 0 and nndy > 0:  # flatten next block to get slope 0
-                            pass
-                            # set_state_block(self,px, py, pz, block)
-                            # px = path[i+1][0]
-                            # pz = path[i+1][1]
-                            # static_temp[px][pz]+=1
-                            # set_state_block(self,px, py+1, pz, block)
-                        elif ndy < 0 and nndy < 0:  # slope -1
-                            dx = path[i + 1][0] - path[i][0]
-                            dz = path[i + 1][1] - path[i][1]
-                            facing = None
-                            if dx > 0 and dz == 0:
-                                facing = "west"
-                            elif dx < 0 and dz == 0:
-                                facing = "east"
-                            elif dz > 0 and dx == 0:
-                                facing = "north"
-                            elif dz < 0 and dx == 0:
-                                facing = "south"
-                            else:
-                                pass
-                            if facing is not None:
-                                data = """[facing={facing}]""".format(facing=facing)
-                                block = choice(self.road_set[2]) + data
-                                block_type = 2
-                            else:
-                                # testing diagonals where would be stairs
-                                # py -= 1  # TESTING
-                                # block = choice(self.road_set[0])
-                                block = "minecraft:stone_slab"
-                                block_type = 0
-                                # block = choice(self.road_set[1])
-                                # block_type = 1
 
-                                # if block[-1] == 's': block = block[:-1]  # for brick(s)
-                                # block += '_slab'
-                        elif ndy > 0 and nndy < 0:  # flatten (lower) next block to get slope 0
+                    # if not in road already, traverse down and fill with scaffold
+                    # in a separate if-block because I want them to check nexts as well
+                    # TODO make sure these arent overriden
+                    if up_slab_next or up_stairs_next:
+                        if up_slab_next:
+                            up_slab_next = False
+                            block = choice(self.road_set[1])
+                            block_type = 1
+                        elif up_stairs_next:
+                            if next_facing is not None:
+                                facing_data = next_facing
+                                # block = choice(self.road_set[2]) + data
+                                block = choice(self.road_set[2]) + """[facing={facing}]""".format(facing=facing_data)
+                                block_type = 2
+                                # cap_with_stairs = True
+                            else:
+                                # testing diagonals where would be stairs
+                                # py -= 1
+                                block = choice(self.road_set[0])
+                                block_type = 1  # slab to make it smooth nonetheless
+                                is_diagonal = True
+                            up_stairs_next = False
+
+                        # guarantee another forward check
+                        if ndy > 0 and nndy == 0:  # slab above
+                            up_slab_next = True
                             pass
-                            # set_state_block(self,px, py, pz, block)  # for curr
-                            # px = path[i+1][0]
-                            # pz = path[i+1][1]
-                            # set_state_block(self,px, py, pz, block)  # for ahead
-                            # py = static_temp[px][pz] + 1
-                            # set_state_block(self,px, py, pz, "minecraft:air")  # for ahead
-                            # static_temp[px][pz] = py
-                    elif check_next_road:
-                        if ndy > 0:
-                            px = path[i + 1][0]
-                            pz = path[i + 1][1]
-                            py += 1
-                            block = choice(self.road_set[1])
-                            block_type = 1
-                            # if block[-1] == 's': block = block[:-1]  # for brick(s)
-                            # block += "_slab"
-                        elif ndy < 0:
-                            block = choice(self.road_set[1])
-                            block_type = 1
-                            # if block[-1] == 's': block = block[:-1]  # for brick(s)
-                            # block += "_slab"
+                        elif ndy > 0 and nndy > 0:  # slope 1
+                            # py += 1
+                            dx = path[i + 2][0] - path[i+1][0]
+                            dz = path[i + 2][1] - path[i+1][1]
+                            next_facing = None
+                            up_stairs_next = True
+                            # test if this is right
+                            if dx > 0 and dz == 0:
+                                next_facing = "east"
+                            elif dx < 0 and dz == 0:
+                                next_facing = "west"
+                            elif dz > 0 and dx == 0:
+                                next_facing = "south"
+                            elif dz < 0 and dx == 0:
+                                next_facing = "north"
+                            else:
+                                pass
+                    else:
+                        if check_next_next_road:
+                            if ndy == 0:
+                                pass
+                            elif ndy > 0 and nndy == 0:  # slab above
+                                up_slab_next = True
+                                pass
+                                # py += 1
+                                # block = choice(self.road_set[1])
+                                # block_type = 1
+                            elif ndy < 0 and nndy < 0:  # slope -1
+                                dx = path[i + 1][0] - path[i][0]
+                                dz = path[i + 1][1] - path[i][1]
+                                facing = None
+                                down_stairs_capping = True
+                                if dx > 0 and dz == 0:
+                                    facing = "west"
+                                elif dx < 0 and dz == 0:
+                                    facing = "east"
+                                elif dz > 0 and dx == 0:
+                                    facing = "north"
+                                elif dz < 0 and dx == 0:
+                                    facing = "south"
+                                else:
+                                    pass
+                                if facing is not None:
+                                    facing_data = facing
+                                    block = choice(self.road_set[2]) + """[facing={facing}]""".format(facing=facing_data)
+                                    block_type = 2
+                                else:
+                                    block = choice(self.road_set[0])
+                                    block_type = 1
+                                    is_diagonal = True
+                                    # block = choice(self.road_set[1])
+                                    # block_type = 1
+
+                                    # if block[-1] == 's': block = block[:-1]  # for brick(s)
+                                    # block += '_slab'
+
+                            elif down_stairs_capping:  # slope -1
+                                down_stairs_capping = False
+                                dx = path[i + 1][0] - path[i][0]
+                                dz = path[i + 1][1] - path[i][1]
+                                facing = None
+                                if dx > 0 and dz == 0:
+                                    facing = "west"  # west = (1,0)
+                                elif dx < 0 and dz == 0:
+                                    facing = "east"  # east = (-1,0)
+                                elif dz > 0 and dx == 0:
+                                    facing = "north"
+                                elif dz < 0 and dx == 0:
+                                    facing = "south"
+                                else:
+                                    pass
+                                if facing is not None:
+                                    facing_data = facing
+                                    block = choice(self.road_set[2]) + """[facing={facing}]""".format(facing=facing_data)
+                                    block_type = 2
+                                else:
+                                    block = choice(self.road_set[0])
+                                    block_type = 1
+                                    is_diagonal = True
+                                    # block = choice(self.road_set[1])
+                                    # block_type = 1
+
+                                    # if block[-1] == 's': block = block[:-1]  # for brick(s)
+                                    # block += '_slab'
+
+                            elif ndy < 0 and nndy == 0:  # slab below (in place)
+                                block = choice(self.road_set[1])
+                                block_type = 1
+
+                            elif ndy > 0 and nndy > 0:  # slope 1
+                                # py += 1
+                                dx = path[i + 2][0] - path[i+1][0]
+                                dz = path[i + 2][1] - path[i+1][1]
+                                next_facing = None
+                                up_stairs_next = True
+                                # test if this is right
+                                if dx > 0 and dz == 0:
+                                    next_facing = "east"
+                                elif dx < 0 and dz == 0:
+                                    next_facing = "west"
+                                elif dz > 0 and dx == 0:
+                                    next_facing = "south"
+                                elif dz < 0 and dx == 0:
+                                    next_facing = "north"
+                                else:
+                                    pass
+                            elif ndy < 0 and nndy > 0:  # flatten next block to get slope 0
+                                pass
+                                # set_state_block(self,px, py, pz, block)
+                                # px = path[i+1][0]
+                                # pz = path[i+1][1]
+                                # static_temp[px][pz]+=1
+                                # set_state_block(self,px, py+1, pz, block)
+                            elif ndy > 0 and nndy < 0:  # flatten (lower) next block to get slope 0
+                                pass
+                                # set_state_block(self,px, py, pz, block)  # for curr
+                                # px = path[i+1][0]
+                                # pz = path[i+1][1]
+                                # set_state_block(self,px, py, pz, block)  # for ahead
+                                # py = static_temp[px][pz] + 1
+                                # set_state_block(self,px, py, pz, "minecraft:air")  # for ahead
+                                # static_temp[px][pz] = py
+                        elif check_next_road:
+                            if ndy > 0:
+                                px = path[i + 1][0]
+                                pz = path[i + 1][1]
+                                # py += 1
+                                block = choice(self.road_set[1])
+                                block_type = 1
+                                # if block[-1] == 's': block = block[:-1]  # for brick(s)
+                                # block += "_slab"
+                            elif ndy < 0:
+                                block = choice(self.road_set[1])
+                                block_type = 1
+                                # if block[-1] == 's': block = block[:-1]  # for brick(s)
+                                # block += "_slab"
                     static_temp[px][pz] = py + 1
                     # set_state_block(self, px, py, pz, block)
                     if not self.out_of_bounds_3D(px, py + 1, pz):
@@ -1865,39 +1978,69 @@ class State:
                     set_state_block(self, px, py, pz, block)
                     if src.manipulation.is_leaf(self.blocks(x, y + 2, z)):
                         src.manipulation.flood_kill_leaves(self, x, y + 2, z, 10)
-                    blocks_ordered.append((block_type, px, py, pz, data))
+                    is_slab_or_stairs = block_type > 0
+                    blocks_set.add((px, pz, is_slab_or_stairs))
+                    blocks_ordered.append((block_type, px, py, pz, facing_data, is_diagonal))
+                    facing_data = False
+                    is_diagonal = False
+                    if block_type == 1:
+                        self.road_tiles.add((px,pz))
             return blocks_ordered, blocks_set
 
 
         def set_blocks_for_path_aux(self, main_path, aux_path, rate, blocks_ordered, main_path_set):
-            # for i in range(len(aux_path)):  # this can be a diff length thaan the blocks_ordered
-            #     x,z = aux_path[i]
-            #     set_state_block(self,x,blocks_ordered[i][1],z, blocks_ordered[i][0])
-            for spot in blocks_ordered:
-                type, x, y, z, data = spot
-                if (x+1, z) not in main_path_set and random() < rate:
-                    if self.blocks(x+1, y+1, z) in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.GREEN.value]:
-                        set_state_block(self,x+1,y+1,z, "minecraft:air")
-                    set_state_block(self,x+1,y,z, choice(self.road_set[type])+data)
-                    main_path_set.add((x+1,z))
-                if (x-1, z) not in main_path_set and random() < rate:
-                    if self.blocks(x-1, y+1, z) in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.GREEN.value]:
-                        set_state_block(self,x-1,y+1,z, "minecraft:air")
-                    set_state_block(self,x-1,y,z, choice(self.road_set[type])+data)
-                    main_path_set.add((x - 1, z))
-                if (x, z+1) not in main_path_set and random() < rate:
-                    if self.blocks(x, y+1, z+1) in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.GREEN.value]:
-                        set_state_block(self,x,y+1,z+1, "minecraft:air")
-                    set_state_block(self,x,y,z+1, choice(self.road_set[type])+data)
-                main_path_set.add((x, z + 1))
-                if (x, z-1) not in main_path_set and random() < rate:
-                    if self.blocks(x, y+1, z-1) in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.GREEN.value]:
-                        set_state_block(self,x,y+1,z-1, "minecraft:air")
-                    set_state_block(self,x,y,z-1, choice(self.road_set[type])+data)
-                    main_path_set.add((x, z - 1))
+            def add_aux_block(self,x,y,z,offx, offz,type,facing, is_diagonal_stairs, dx, dz):
+                nx = x + offx
+                nz = z + offz
+                if (nx, nz) in self.road_tiles or self.blocks(nx,y-1,nz) in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.MAJOR_ROAD.value]: return False  # might not work well.
+                nonlocal main_path_set
+                if src.manipulation.is_log(self, nx, y + 1, nz):
+                    src.manipulation.flood_kill_logs(self, nx, y + 1, nz)
+                    if (nx, nz) in self.trees:  # when sniped
+                        self.trees.remove((nx, nz))
+
+                if src.manipulation.is_sapling(self, nx, y + 1, nz):
+                    set_state_block(self,nx,y+1,nz,"minecraft:air")
+                    if (nx, nz) in self.saplings:  # when sniped
+                        self.saplings.remove((nx, nz))
+
+
+                if (nx, nz, 1) not in main_path_set and random() < rate:  # prioritize slabs... might overwrite important sutff
+                    if self.blocks(nx, y+1, nz) in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.GREEN.value].union(src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.PASSTHROUGH.value]) and self.nodes(*self.node_pointers[(nx,nz)]) not in self.built:
+                        self.place_scaffold_block(nx, y, nz)
+                        set_state_block(self,nx,y+1,nz, "minecraft:air")
+                    if (nx,nz) in self.exterior_heightmap:
+                        self.place_scaffold_block(nx, y, nz)
+                        set_state_block(self,nx,y,nz, choice(self.road_set[0]))
+                    else:
+                        if facing:
+                            if (facing[0] in ['e','w'] and offx == 0) or (facing[0] in ['n','s'] and offz == 0):
+                                self.place_scaffold_block(nx, y, nz)
+                                set_state_block(self,nx,y,nz, choice(self.road_set[type])+"""[facing={facing}]""".format(facing=facing))
+                        else:  # normal stuff
+                            if dx is not None and (is_diagonal and dx == -offx or is_diagonal and dz == -offz):
+                                type = 0
+                            self.place_scaffold_block(nx, y, nz)
+                            set_state_block(self, nx, y, nz, choice(self.road_set[type]))
+                    is_slab_or_stairs = type > 0
+                    main_path_set.add((x+offx,z+offz, is_slab_or_stairs))
+                    if type == 1:
+                        self.road_tiles.add((nx, nz))
+
+            length = len(blocks_ordered)
+            for i in range(length):
+                type, x, y, z, facing, is_diagonal = blocks_ordered[i]
+                dx = dz = None
+                if i+1 < length:
+                    ntype, nx, ny, nz, nfacing, nis_diagonal = blocks_ordered[i+1]
+                    dx = nx - x
+                    dz = nz - z
+                add_aux_block(self,x,y,z,1,0,type,facing,is_diagonal, dx,dz)
+                add_aux_block(self,x,y,z,-1,0,type,facing, is_diagonal, dx,dz)
+                add_aux_block(self,x,y,z,0,1,type,facing, is_diagonal,dx,dz)
+                add_aux_block(self,x,y,z,0,-1,type,facing, is_diagonal,dx,dz)
 
         blocks_ordered, blocks_set = set_blocks_for_path(self,block_path,inner_block_rate)
-        # block_path_set = set(block_path)
 
         aux_paths = []
         for card in src.movement.cardinals:
@@ -2116,7 +2259,7 @@ class State:
         node = self.nodes(*point)
         if point is None or node is None:
             print("tried to build road outside of Node bounds!")
-            return
+            return False
         # self.roads.append((point1))
         closest_point, path_points = self.get_closest_point(node=self.nodes(*self.node_pointers[point]), # get closest point to any road
                                                               lots=[],
@@ -2126,7 +2269,7 @@ class State:
                                                               leave_lot=False,
                                                               correction=correction)
         if closest_point == None:
-            return
+            return False
         (x2, y2) = closest_point
         closest_point = None
         # print("given point is ")
@@ -2147,6 +2290,7 @@ class State:
         status = self.create_road(point, (x2, y2), road_type=road_type, points=path_points, bend_if_needed=bend_if_needed, only_place_if_walkable=True)#, only_place_if_walkable=only_place_if_walkable, dont_rebuild)
         if status == False:
             return False
+        return True
 
 
     def get_point_to_close_gap_minor(self, x1, z1, points):
@@ -2252,7 +2396,7 @@ class State:
 
 
 def set_state_block(state, x, y, z, block_name):
-    if state.out_of_bounds_3D(x,y,z): return False
+    if state.out_of_bounds_Node(x,z) or y >= state.len_y: return False
     state.traverse_from[x][z] = max(y, state.traverse_from[x][z])
     # if y > state.traverse_from[x][z]:
     #     state.traverse_from[x][z] = y

@@ -45,7 +45,6 @@ Options:
      --nochronicle    |  Disable writing to chronicle
      --printchronicle |  Write the chronicle's output to console
      --leavesign      |  Render a sign at the center of the given area describing the location of the settlement.
-     --inctick        |  Increase the tick speed of the generator to 100. WARNING: this reset the tick rate afterwards. This is merely for the judges.
 
 Example:
      python3 run.py -a 0,0,200,200 -t 600 -s 1000 -f 0.4 --norender

@@ -59,7 +59,99 @@ def is_sapling(state, x, y, z):
     if state.out_of_bounds_3D(x, y, z):
         return False
     block = state.blocks(x,y,z)
-    return 'sapling' in block[:min(len(block), 27)]  # and block[:2] != "st":  # let's ignore stripped
+    return block in {
+        "minecraft:oak_sapling",
+        "minecraft:oak_sapling[stage=0]",
+        "minecraft:oak_sapling[stage=1]",
+        "minecraft:oak_sapling[stage=2]",
+        "minecraft:oak_sapling[stage=3]",
+        "minecraft:spruce_sapling",
+        "minecraft:spruce_sapling[stage=0]",
+        "minecraft:spruce_sapling[stage=1]",
+        "minecraft:spruce_sapling[stage=2]",
+        "minecraft:spruce_sapling[stage=3]",
+        "minecraft:birch_sapling",
+        "minecraft:birch_sapling[stage=0]",
+        "minecraft:birch_sapling[stage=1]",
+        "minecraft:birch_sapling[stage=2]",
+        "minecraft:birch_sapling[stage=3]",
+        "minecraft:jungle_sapling",
+        "minecraft:jungle_sapling[stage=0]",
+        "minecraft:jungle_sapling[stage=1]",
+        "minecraft:jungle_sapling[stage=2]",
+        "minecraft:jungle_sapling[stage=3]",
+        "minecraft:acacia_sapling",
+        "minecraft:acacia_sapling[stage=0]",
+        "minecraft:acacia_sapling[stage=1]",
+        "minecraft:acacia_sapling[stage=2]",
+        "minecraft:acacia_sapling[stage=3]",
+        "minecraft:dark_oak_sapling",
+        "minecraft:dark_oak_sapling[stage=0]",
+        "minecraft:dark_oak_sapling[stage=1]",
+        "minecraft:dark_oak_sapling[stage=2]",
+        "minecraft:dark_oak_sapling[stage=3]",
+        "minecraft:oak_sapling",
+        "minecraft:oak_sapling[stage=0]",
+        "minecraft:oak_sapling[stage=1]",
+        "minecraft:oak_sapling[stage=2]",
+        "minecraft:oak_sapling[stage=3]",
+        "minecraft:spruce_sapling",
+        "minecraft:spruce_sapling[stage=0]",
+        "minecraft:spruce_sapling[stage=1]",
+        "minecraft:spruce_sapling[stage=2]",
+        "minecraft:spruce_sapling[stage=3]",
+        "minecraft:birch_sapling",
+        "minecraft:birch_sapling[stage=0]",
+        "minecraft:birch_sapling[stage=1]",
+        "minecraft:birch_sapling[stage=2]",
+        "minecraft:birch_sapling[stage=3]",
+        "minecraft:jungle_sapling",
+        "minecraft:jungle_sapling[stage=0]",
+        "minecraft:jungle_sapling[stage=1]",
+        "minecraft:jungle_sapling[stage=2]",
+        "minecraft:jungle_sapling[stage=3]",
+        "minecraft:acacia_sapling",
+        "minecraft:acacia_sapling[stage=0]",
+        "minecraft:acacia_sapling[stage=1]",
+        "minecraft:acacia_sapling[stage=2]",
+        "minecraft:acacia_sapling[stage=3]",
+        "minecraft:dark_oak_sapling",
+        "minecraft:dark_oak_sapling[stage=0]",
+        "minecraft:dark_oak_sapling[stage=1]",
+        "minecraft:dark_oak_sapling[stage=2]",
+        "minecraft:dark_oak_sapling[stage=3]",
+
+        "oak_sapling",
+        "oak_sapling[stage=0]",
+        "oak_sapling[stage=1]",
+        "oak_sapling[stage=2]",
+        "oak_sapling[stage=3]",
+        "spruce_sapling",
+        "spruce_sapling[stage=0]",
+        "spruce_sapling[stage=1]",
+        "spruce_sapling[stage=2]",
+        "spruce_sapling[stage=3]",
+        "birch_sapling",
+        "birch_sapling[stage=0]",
+        "birch_sapling[stage=1]",
+        "birch_sapling[stage=2]",
+        "birch_sapling[stage=3]",
+        "jungle_sapling",
+        "jungle_sapling[stage=0]",
+        "jungle_sapling[stage=1]",
+        "jungle_sapling[stage=2]",
+        "jungle_sapling[stage=3]",
+        "acacia_sapling",
+        "acacia_sapling[stage=0]",
+        "acacia_sapling[stage=1]",
+        "acacia_sapling[stage=2]",
+        "acacia_sapling[stage=3]",
+        "dark_oak_sapling",
+        "dark_oak_sapling[stage=0]",
+        "dark_oak_sapling[stage=1]",
+        "dark_oak_sapling[stage=2]",
+        "dark_oak_sapling[stage=3]",
+    }
 
 
 def is_water(state, x, y, z):
@@ -72,10 +164,7 @@ def is_log(state, x, y, z):
     if state.out_of_bounds_3D(x, y, z):
         return False
     block = state.blocks(x,y,z)
-    # print("it's a "+str(block))
-    # block is not None and
-    block = block[:min(len(block), 23)]
-    return 'log' in block and "st" not in block  # let's ignore stripped
+    return block in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.TREE.value]
 
 
 def collect_water_at(state, x, y, z, times=1):
@@ -152,7 +241,7 @@ def cut_tree_at(state, x, y, z, times=1):
 
 
 def do_recur_on_adjacent(state, x, y, z, target_block_checker, recur_func, forward_call, itr):
-    if itr > 20: return
+    if itr > 10: return
     forward_call(state.blocks, x, y, z)
     adj_blocks = state.get_all_adjacent_blocks(x, y, z)
     for block in adj_blocks:
@@ -169,7 +258,7 @@ def flood_kill_leaves(state, leaf_x, leaf_y, leaf_z, itr):
 
 
 def is_log_flood(block):
-    return block is not None and block[-3:] == 'log' and block[:2] != "st"
+    return block in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.TREE.value]
 
 def flood_kill_logs(state, log_x, log_y, log_z, itr=12):
     def to_air(blocks, x, y, z):

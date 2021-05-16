@@ -320,7 +320,7 @@ def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, bui
                 pblock = state.blocks(bx,by,bz)
                 if src.manipulation.is_leaf(pblock):
                     src.manipulation.flood_kill_leaves(state, bx, by, bz, 0)
-                if src.manipulation.is_log_flood(pblock):
+                if src.manipulation.is_log(state,bx,by,bz):
                     src.manipulation.flood_kill_logs(state, bx, by, bz, 0)
                 if ignore_block:
                     # src.states.set_state_block(state, bx, by, bz, pblock)

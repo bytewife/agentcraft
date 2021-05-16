@@ -320,7 +320,7 @@ class Agent:
             return self.Motive.WATER
         elif self.is_child_bearing and self.courtship_current >= self.courtship_requirement:
             return self.Motive.PROPAGATE
-        elif self.check_can_build(self.state.phase):
+        elif self.state.generated_a_road and self.check_can_build(self.state.phase):
             return self.Motive.BUILD
         else:
             actions = (self.Motive.LOGGING, self.Motive.REPLENISH_TREE)
@@ -539,6 +539,9 @@ class Agent:
     def do_replenish_tree_task(self):
         def is_in_state_saplings(state, x, y, z):
             result = (x,z) in state.saplings
+            if result and state.nodes(*state.node_pointers[(x,z)]) in state.roads:
+                state.saplings.remove((x,z))
+                result = False
             if result:
                 if src.manipulation.is_log(state, x,y,z):
                     start = 0
@@ -700,7 +703,7 @@ class Agent:
                 # there are no build spots. so let's do something else
                 self.set_motive(self.Motive.LOGGING)
         elif new_motive.name == self.Motive.LOGGING.name:
-            self.set_path_to_nearest_spot(self.state.trees, 5, 10, 5, search_neighbors_instead=True)  # this affects spawl
+            self.set_path_to_nearest_spot(self.state.trees, 5, 9, 5, search_neighbors_instead=True)  # this affects spawl
             if len(self.path) < 1:  # if no trees were found
                 self.set_motive(self.Motive.REPLENISH_TREE)
         elif new_motive.name == self.Motive.REPLENISH_TREE.name:
@@ -708,8 +711,8 @@ class Agent:
             # try for a totally new spot
             status = False
             if new_spot_chance > 0.5:
-                nx = min(max(self.x + randint(-20, 20), 0), self.state.last_node_pointer_x)
-                nz = min(max(self.z + randint(-20, 20), 0), self.state.last_node_pointer_z)
+                nx = min(max(self.x + randint(-15, 15), 0), self.state.last_node_pointer_x)
+                nz = min(max(self.z + randint(-15, 15), 0), self.state.last_node_pointer_z)
                 if self.state.nodes(*self.state.node_pointers[(nx,nz)]) not in self.state.road_nodes:
                     status = self.set_path_to_nearest_spot({(nx, nz)}, 60, 1, 1, search_neighbors_instead=True)
 

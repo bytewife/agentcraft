@@ -262,11 +262,13 @@ class Simulation:
                 if node.local_prosperity > self.brNum:  # bridge/new lot minimum
                     # print("built major bridge road")
                     # self.state.append_road(point=(i, j), road_type=src.my_utils.TYPE.MAJOR_ROAD.name, leave_lot=True, correction=self.corNum, bend_if_needed=True)
-                    self.state.append_road(point=(i, j), road_type=src.my_utils.TYPE.MAJOR_ROAD.name, correction=self.corNum, bend_if_needed=True, only_place_if_walkable=True)
+                    if self.state.append_road(point=(i, j), road_type=src.my_utils.TYPE.MAJOR_ROAD.name, correction=self.corNum, bend_if_needed=True, only_place_if_walkable=True):
+                        self.state.generated_a_road = True
                     # print("road 1: at point "+str((i,j)))
                 else:
                     # print("built major normal road")
-                    self.state.append_road(point=(i, j), road_type=src.my_utils.TYPE.MAJOR_ROAD.name, correction=self.corNum, bend_if_needed=True, only_place_if_walkable=True)
+                    if self.state.append_road(point=(i, j), road_type=src.my_utils.TYPE.MAJOR_ROAD.name, correction=self.corNum, bend_if_needed=True, only_place_if_walkable=True):
+                        self.state.generated_a_road = True
                     # print("road 2: at point " + str((i, j)))
             if node.local_prosperity > self.buNum and road_found_near:
                 # print("prosperity fulfilled; creating building")
