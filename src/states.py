@@ -2018,7 +2018,7 @@ class State:
                                 self.place_scaffold_block(nx, y, nz)
                                 set_state_block(self,nx,y,nz, choice(self.road_set[type])+"""[facing={facing}]""".format(facing=facing))
                         else:  # normal stuff
-                            if dx is not None and (is_diagonal and dx == -offx or is_diagonal and dz == -offz):
+                            if dx is not None and (is_diagonal_stairs and dx == -offx or is_diagonal_stairs and dz == -offz):
                                 type = 0
                             self.place_scaffold_block(nx, y, nz)
                             set_state_block(self, nx, y, nz, choice(self.road_set[type]))

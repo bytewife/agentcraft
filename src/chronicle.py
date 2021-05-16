@@ -115,7 +115,7 @@ def create_chronicles(title, author):
     result = []
     i = 0
     for book in chronicles:
-        curr_title = title+f" {str(i)}"
+        curr_title = title+f" {str(i+1)}"
         result.append((make_book(book, curr_title, author),1))
         i+=1
     return result
