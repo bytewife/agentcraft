@@ -242,7 +242,7 @@ def cut_tree_at(state, x, y, z, times=1):
 
 def do_recur_on_adjacent(state, x, y, z, target_block_checker, recur_func, forward_call, itr):
     if itr > 10: return
-    forward_call(state.blocks, x, y, z)
+    forward_call(state, x, y, z)
     adj_blocks = state.get_all_adjacent_blocks(x, y, z)
     for block in adj_blocks:
         if target_block_checker(block[0]):
@@ -251,7 +251,7 @@ def do_recur_on_adjacent(state, x, y, z, target_block_checker, recur_func, forwa
 
 
 def flood_kill_leaves(state, leaf_x, leaf_y, leaf_z, itr):
-    def leaf_to_air(blocks, x, y, z):
+    def leaf_to_air(state, x, y, z):
         # src.states.set_state_block(x,y,z, 'minecraft:air')
         src.states.set_state_block(state, x, y, z, 'minecraft:air')
     do_recur_on_adjacent(state, leaf_x, leaf_y, leaf_z, is_leaf, do_recur_on_adjacent, leaf_to_air, itr)
@@ -261,7 +261,7 @@ def is_log_flood(block):
     return block in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.TREE.value]
 
 def flood_kill_logs(state, log_x, log_y, log_z, itr=12):
-    def to_air(blocks, x, y, z):
+    def to_air(state, x, y, z):
         src.states.set_state_block(state, x, y, z, 'minecraft:air')
     do_recur_on_adjacent(state, log_x, log_y, log_z, is_log_flood, do_recur_on_adjacent, to_air, itr)
 

@@ -403,6 +403,7 @@ class State:
                     block = self.blocks(tx,self.static_ground_hm[tx][tz] - 1,tz)
                     if block in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.MAJOR_ROAD.value]:
                         block = "minecraft:dirt"
+                        set_state_block(self, tx, self.static_ground_hm[tx][tz] - 1, tz, block)
                     if not use_scaffolding:
                         fill = block
                     if len(traverse) > 1:
@@ -1994,20 +1995,15 @@ class State:
                 nz = z + offz
                 if (nx, nz) in self.road_tiles or self.blocks(nx,y-1,nz) in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.MAJOR_ROAD.value]: return False  # might not work well.
                 nonlocal main_path_set
-                testing = 0
                 if src.manipulation.is_log(self, nx, y + 1, nz):
                     src.manipulation.flood_kill_logs(self, nx, y + 1, nz)
-                    testing = 1
                     if (nx, nz) in self.trees:  # when sniped
                         self.trees.remove((nx, nz))
-                        testing = 2
 
                 if src.manipulation.is_sapling(self, nx, y + 1, nz):
                     set_state_block(self,nx,y+1,nz,"minecraft:air")
                     if (nx, nz) in self.saplings:  # when sniped
                         self.saplings.remove((nx, nz))
-                    testing = 3
-                print(self.blocks(nx, y+1, nz) + " is "+str(testing))
 
 
                 if (nx, nz, 1) not in main_path_set and random() < rate:  # prioritize slabs... might overwrite important sutff

@@ -541,7 +541,8 @@ class Agent:
             result = (x,z) in state.saplings
             if self.state.blocks(x,self.state.static_ground_hm[x][z], z) in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.MAJOR_ROAD.value]:
                 src.states.set_state_block(self.state,x,self.state.static_ground_hm[x][z]+1, z, "minecraft:air")
-                state.saplings.remove((x,z))
+                if (x,z) in state.saplings:
+                    state.saplings.remove((x,z))
                 result = False
             if result:
                 if src.manipulation.is_log(state, x,y,z):
