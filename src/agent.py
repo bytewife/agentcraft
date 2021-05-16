@@ -539,7 +539,8 @@ class Agent:
     def do_replenish_tree_task(self):
         def is_in_state_saplings(state, x, y, z):
             result = (x,z) in state.saplings
-            if result and state.nodes(*state.node_pointers[(x,z)]) in state.roads:
+            if self.state.blocks(x,self.state.static_ground_hm[x][z], z) in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.MAJOR_ROAD.value]:
+                src.states.set_state_block(self.state,x,self.state.static_ground_hm[x][z]+1, z, "minecraft:air")
                 state.saplings.remove((x,z))
                 result = False
             if result:
