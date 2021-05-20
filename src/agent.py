@@ -48,7 +48,7 @@ class Agent:
 
     # going first, doing second. Note: socializing is doubled bc 2 agents
     chronicle_rates = {
-        Motive.LOGGING.name: (0.05, 0.05),
+        Motive.LOGGING.name: (0.05, 0.02),
         Motive.BUILD.name: (0.2, 0.2),
         Motive.SOCIALIZE_LOVER.name: (0.0, 0.4),
         Motive.SOCIALIZE_FRIEND.name: (0.0, 0.4),
@@ -185,7 +185,7 @@ class Agent:
         self.happiness_decay = -0.05  # the inevitable creep of loneliness
         self.unshared_resources = {
             "water": self.water_max * 0.8,
-            "rest": self.rest_max * 0.7,
+            "rest": self.rest_max * 0.1,
             "happiness": self.happiness_max * 0.8
         }
         # self.build_params = set()
@@ -742,7 +742,7 @@ class Agent:
                                                       self.state.legal_actions)
                 self.set_path(path)
                 self.is_placing_sapling = True
-            self.is_busy = True  # dont get interrupted because operations were expensive
+            # self.is_busy = True  # dont get interrupted because operations were expensive
         elif new_motive.name == self.Motive.PROPAGATE.name:
             # TODO go to own house instead?
             places = list(self.state.built_heightmap.keys())

@@ -24,7 +24,7 @@ chronicle_events = {
     "WATER": {"doing": ["{a.name} was ailed with the {A} by drinking from the local watering hole.", "{a.name} caught a {A} fish during their water-break! {l.name} cooked it for their friends and family.", "{a.name} asserted the watering hole to be {A}. {l.name} was sent to investigate it."],},
 }
 
-LINES_PER_PAGE = 15 # actually is 18 but need buffer
+LINES_PER_PAGE = 13 # actually is 18 but need buffer
 MAX_TEXT_PER_PAGE = LINES_PER_PAGE*18 # actually is 23 but need buffer
 MAX_PAGES_PER_BOOK = 4
 

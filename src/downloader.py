@@ -1,5 +1,5 @@
 #! /usr/bin/python3
-"""###
+"""### Downloads buildings from a running MC world into a file
 
 """
 __all__ = []
