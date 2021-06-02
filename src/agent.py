@@ -185,7 +185,7 @@ class Agent:
         self.happiness_decay = -0.05  # the inevitable creep of loneliness
         self.unshared_resources = {
             "water": self.water_max * 0.8,
-            "rest": self.rest_max * 0.8,
+            "rest": self.rest_max * random(),
             "happiness": self.happiness_max * 0.8
         }
         # self.build_params = set()
@@ -629,7 +629,6 @@ class Agent:
 
     def do_log_task(self):
 
-        self.is_busy = True
         status, sx, sz = self.collect_from_adjacent_spot(self.state, check_func=src.manipulation.is_log, manip_func=src.manipulation.cut_tree_at, prosperity_inc=src.my_utils.ACTION_PROSPERITY.LOGGING)
         # get log type
         y = self.state.rel_ground_hm[sx][sz]

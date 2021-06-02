@@ -104,6 +104,8 @@ class Simulation:
             http_framework.interfaceUtils.runCommand(
                 f'setblock {sx} {sy} {sz} minecraft:oak_sign')
             src.chronicle.write_coords_to_sign(sx, sy, sz, self.settlement_pos, (cx, cz))
+            http_framework.interfaceUtils.runCommand(
+                f'setblock {sx} {sy + 1} {sz} minecraft:torch')
         exit(0)
 
 
@@ -144,6 +146,8 @@ class Simulation:
             http_framework.interfaceUtils.runCommand(
                 f'setblock {sx} {sy} {sz} minecraft:oak_sign')
             src.chronicle.write_coords_to_sign(sx, sy, sz, self.settlement_pos, (cx,cz))
+            http_framework.interfaceUtils.runCommand(
+                f'setblock {sx} {sy+1} {sz} minecraft:torch')
         exit(0)
 
     def decide_max_y_diff(self):

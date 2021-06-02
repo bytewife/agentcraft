@@ -208,7 +208,6 @@ class TYPE_TILES:
 			# "minecraft:oak_sapling",
 		},
 		TYPE.BROWN.value: {  # BROWN
-			"minecraft:gravel",
 			"minecraft:diorite",
 			"minecraft:stone",
 			"minecraft:coarse_dirt",
@@ -216,11 +215,11 @@ class TYPE_TILES:
 		TYPE.CONSTRUCTION.value: {  # BUILDING
 			""
 		},
-		TYPE.MAJOR_ROAD.value: {  # MAJOR ROAD
+		TYPE.MAJOR_ROAD.value: {  # MAJOR ROAD, checks preexisting road
 			"minecraft:bricks", "minecraft:granite", "minecraft:polished_granite",
 			"minecraft:brick_slab", "minecraft:granite_slab", "minecraft:polished_granite_slab",
 			"minecraft:brick_stairs", "minecraft:granite_stairs", "minecraft:polished_granite_stairs",
-			"minecraft:stone_bricks", "minecraft:cobblestone", "minecraft:gravel",
+			"minecraft:stone_bricks", "minecraft:cobblestone",
 			"minecraft:stone_brick_slab[type=bottom]", "minecraft:cobblestone_slab",
 			"minecraft:stone_brick_stairs", "minecraft:cobblestone_stairs",
 			"minecraft:basalt", "minecraft:nether_bricks", "minecraft:blackstone",
@@ -523,17 +522,17 @@ class TYPE_TILES:
 			"minecraft:dark_oak_planks",
 			"minecraft:jungle_planks",
 			"minecraft:jungle_stairs",
-            "minecraft:spruce_stairs",
-            "minecraft:birch_stairs",
-            "minecraft:dark_oak_stairs",
-            "minecraft:acacia_stairs",
-            "minecraft:jungle_stairs",
-            "minecraft:oak_planks",
-            "minecraft:spruce_planks",
-            "minecraft:birch_planks",
-            "minecraft:dark_oak_planks",
-            "minecraft:acacia_planks",
-            "minecraft:jungle_planks",
+			"minecraft:spruce_stairs",
+			"minecraft:birch_stairs",
+			"minecraft:dark_oak_stairs",
+			"minecraft:acacia_stairs",
+			"minecraft:jungle_stairs",
+			"minecraft:oak_planks",
+			"minecraft:spruce_planks",
+			"minecraft:birch_planks",
+			"minecraft:dark_oak_planks",
+			"minecraft:acacia_planks",
+			"minecraft:jungle_planks",
         },
 		TYPE.LEAVES.value: {
 			"minecraft:dark_oak_sapling",
@@ -586,7 +585,7 @@ class TYPE_TILES:
 			"minecraft:dark_oak_sapling[distance=6]",
 			"minecraft:dark_oak_sapling[distance=7]",
 		},
-    }
+	}
 
 
 def correct_area(area):
@@ -604,7 +603,6 @@ def swap_array_elements(arr, a, b):
 
 
 def convert_coords_to_key(x, y, z):
-    # return str(x)+','+str(y)+','+str(z)
 	return (x, y, z)
 
 

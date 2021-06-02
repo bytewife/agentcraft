@@ -193,7 +193,8 @@ def cut_tree_at(state, x, y, z, times=1):
                   or is_leaf(state.get_adjacent_block(x, y, z, 0, 0, 1)) \
                   or is_leaf(state.get_adjacent_block(x, y, z, 0, 0, -1)):
               flood_kill_leaves(state, x, y + 1, z, 0)
-        if not is_log(state, x, y - 1, z):  # place sapling
+        replacing_tree = True if random() > 0.5 else False
+        if replacing_tree and not is_log(state, x, y - 1, z):  # place sapling
             # find green around here
             new_x = x
             new_y = y
@@ -230,7 +231,7 @@ def cut_tree_at(state, x, y, z, times=1):
             state.types[x][z] = removed_tree_tile_type.name
             if (x,z) in state.trees:  # when sniped
                 state.trees.remove((x,z))
-            if found_new_spot:
+            if replacing_tree and found_new_spot:  # 50% chance to place sapling back here
                 sapling_tile_type = state.determine_type(new_x, new_z, state.rel_ground_hm, yoff)  # -1 to account for sapling
                 state.types[new_x][new_z] = sapling_tile_type.name
                 src.states.set_state_block(state, new_x, new_y, new_z, new_replacement)
