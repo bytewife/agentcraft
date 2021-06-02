@@ -13,7 +13,7 @@ chronicle_events = {
     "BUILD": {"going": ["{a.name} gathered {A} supplies to follow the {a.build_params[4][11:]} blueprint!", "{a.name} gathered advice from {l.name} for their next building project."],
               "doing": ["{a.name} built based on the {a.build_params[4][11:]} blueprint. It turned out straight {A}.", "{a.name}\\'s {A} {a.build_params[4][11:]} rendition was told of across the land!"],},
     "SOCIALIZE_LOVER": {"doing": ["{a.name} and {l.name} exchanged {A} gifts to express their honeymoon.", "{a.name} and {l.name} shouted thankful words for {a.parent_1.name}\\'s approval for their marriage!"],},
-    "SOCIALIZE_FRIEND": {"doing": ["{a.name} and {s.name} found spare time perform a joint spiritual rite the {A} deity!", "{a.name} and {s.name}\\'s {A} collectively discovered how to craft with {A} logs!"],},
+    "SOCIALIZE_FRIEND": {"doing": ["{a.name} and {s.name} found spare time perform a joint spiritual rite the {A} deity!", "{a.name} and {s.name}\\'s collectively discovered how to craft with {A} logs!"],},
     "SOCIALIZE_ENEMY": {"doing": ["{a.name} insulted {s.name}\\'s parent, {s.parent_1.name}, for their {A}-ness.", "{a.name} and {s.name} broke into a{n} {A} sparring match after an insult was flung towards {l.name}."],},
     "PROPAGATE": {"doing": ["{a.name} blessed the land with {c.name}- named for their {A}-ness!", "{a.name} found time in their busy day to bear {c.name}! The deities said they\\'ll be {A}."],},
     "REST": {"going": ["{a.name} was seen sleepwalking while speaking {A} things of {l.name}.", "Gossip spread about {a.name}, saying they were ditching work to conjure {A} dreams."],

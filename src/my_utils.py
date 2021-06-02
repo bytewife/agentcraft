@@ -190,6 +190,8 @@ class TYPE_TILES:
 		},
 		TYPE.GREEN.value: {  # GREEN
 			"minecraft:grass_block",
+			"minecraft:gravel",
+			"gravel",
 			"grass_block",
 			"minecraft:grass_block[]",
 			"grass_block[]",

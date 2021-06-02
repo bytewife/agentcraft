@@ -1,7 +1,7 @@
 # AgentCraft
-An adaptive settlement creation using a social agent simulation in Minecraft! This is my entry for the [2021 Generative Design in Minecraft](https://gendesignmc.wikidot.com/wiki:settlement-generation-competition) competition (including the Chronicle Challenge)!
+An adaptive settlement creation using a social agent simulation in Minecraft! This is my entry for the [2021 Generative Design in Minecraft](https://gendesignmc.wikidot.com/wiki:settlement-generation-competition) competition (including the Chronicle Challenge)! Video demo [here.](https://www.youtube.com/watch?v=Gc5h54Bus_k)
 
-![Timelapse gif](demo.gif)
+![Timelapse gif](img/demo.gif)
 
 ## How to Run
 Tested on Minecraft 1.16.5, Python 3.9
@@ -45,11 +45,18 @@ Example:
      python3 run.py -a 0,0,200,200 -t 590 -s 2000 -f 0.4 --leavesign
  ```
 
+![overhead pic](img/roads1.png)
+![agents pic](img/agents_friendly.png)
+![chronicle pic](img/chronicle_page_1.png)
+
 ## Credits
-This project would not have been possible without:   
-+ [Nils Gawlik](https://github.com/nilsgawlik) for their [http server](https://github.com/nilsgawlik/gdmc_http_interface), which let's me communicate with a running Minecraft process!
-+ [Nevas Buildings](https://www.youtube.com/c/NevasBuildings/videos) for their permission to use and edit their beautiful buildings!
-+ Asiiah Song for their [TownSim generator](https://github.com/AugmentedDesignLab/town-sim-py), whose code I borrowed and warped!
-+ [Max Kreminski](https://github.com/mkremins) for their advice!
-+ [Blinkenlights](https://github.com/Flashing-Blinkenlights) for their optimization help!
-+ Troy, Ryan, & Trent for their pathfinding code in their 2020 [entry](https://gendesignmc.wikidot.com/wiki:2020-settlement-generation-competition)!
+Thank you:
++ [Max Kreminski](https://github.com/mkremins), my academic advisor for this project
++ [Nevas Buildings](https://www.youtube.com/c/NevasBuildings/videos) for their permission to use and edit their beautiful buildings
++ [Nils Gawlik](https://github.com/nilsgawlik) for their [http server](https://github.com/nilsgawlik/gdmc_http_interface), which let's me communicate with a running Minecraft process
++ Asiiah Song & Jim Whitehead for their [TownSim generator](https://github.com/AugmentedDesignLab/town-sim-py), which largely inspired the road generation system
++ Troy, Ryan, & Trent for their pathfinding code in their 2020 [entry](https://gendesignmc.wikidot.com/wiki:2020-settlement-generation-competition)
++ [Blinkenlights](https://github.com/Flashing-Blinkenlights) for help structuring the project
+
+## Known Bugs
++ Wells are functioning but not visible

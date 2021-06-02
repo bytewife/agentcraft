@@ -49,10 +49,10 @@ class Agent:
     # going first, doing second. Note: socializing is doubled bc 2 agents
     chronicle_rates = {
         Motive.LOGGING.name: (0.05, 0.02),
-        Motive.BUILD.name: (0.2, 0.2),
-        Motive.SOCIALIZE_LOVER.name: (0.0, 0.4),
-        Motive.SOCIALIZE_FRIEND.name: (0.0, 0.4),
-        Motive.SOCIALIZE_ENEMY.name: (0.0, 0.4),
+        Motive.BUILD.name: (0.1, 0.1),
+        Motive.SOCIALIZE_LOVER.name: (0.0, 0.5),
+        Motive.SOCIALIZE_FRIEND.name: (0.0, 0.5),
+        Motive.SOCIALIZE_ENEMY.name: (0.0, 0.5),
         Motive.REST.name: (0.2, 0.00),
         Motive.REPLENISH_TREE.name: (0.0, 0.01),
         Motive.PROPAGATE.name: (0.0, 1.0),
@@ -185,7 +185,7 @@ class Agent:
         self.happiness_decay = -0.05  # the inevitable creep of loneliness
         self.unshared_resources = {
             "water": self.water_max * 0.8,
-            "rest": self.rest_max * 0.1,
+            "rest": self.rest_max * 0.8,
             "happiness": self.happiness_max * 0.8
         }
         # self.build_params = set()
