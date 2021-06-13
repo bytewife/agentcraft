@@ -318,7 +318,7 @@ class Agent:
             return self.Motive.REST
         elif self.unshared_resources['water'] < self.thirst_thresh:
             return self.Motive.WATER
-        elif self.is_child_bearing and self.courtship_current >= self.courtship_requirement and self.state.agents < self.state.max_agents:
+        elif self.is_child_bearing and self.courtship_current >= self.courtship_requirement and self.state.num_agents < self.state.max_agents:
             return self.Motive.PROPAGATE
         elif self.state.generated_a_road and self.check_can_build(self.state.phase):
             return self.Motive.BUILD
