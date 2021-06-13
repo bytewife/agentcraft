@@ -318,7 +318,7 @@ class Agent:
             return self.Motive.REST
         elif self.unshared_resources['water'] < self.thirst_thresh:
             return self.Motive.WATER
-        elif self.is_child_bearing and self.courtship_current >= self.courtship_requirement:
+        elif self.is_child_bearing and self.courtship_current >= self.courtship_requirement and self.state.agents < self.state.max_agents:
             return self.Motive.PROPAGATE
         elif self.state.generated_a_road and self.check_can_build(self.state.phase):
             return self.Motive.BUILD
@@ -401,7 +401,6 @@ class Agent:
         status = False
         if len(self.path) > 0:
             nx, nz = self.path.pop()
-            print(str(nx) +" "+ str(nz))
             dx = max(min(nx-self.x, 1), -1)
             dz = max(min(nz-self.z, 1), -1)
             if self.state.legal_actions[self.x][self.z][src.movement.DeltaToDirIdx[(dx, dz)]] == 0:  # if not legal move (aka building was placed)
@@ -499,7 +498,7 @@ class Agent:
         self.is_mid_socializing = False
         self.found_and_moving_to_socialization = False
         self.is_busy = False
-        self.socialize_threshold += 5
+        self.socialize_threshold += self.state.num_agents * 2
 
     def find_adjacent_agent(self, agent, max_x, max_z):
         dx = agent.x - self.x
@@ -604,6 +603,7 @@ class Agent:
         if self.unshared_resources['rest'] < self.rest_max: # self.calc_motive() == self.Motive.REST:
             self.unshared_resources['rest'] += self.rest_inc_rate
             self.is_resting = True
+            self.is_busy = True
             return True
         else:
             self.is_resting = False

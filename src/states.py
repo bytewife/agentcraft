@@ -132,7 +132,8 @@ class State:
             self.agents = dict()  # holds agent and position
             self.agents_in_nodes = self.init_agents_in_nodes()
             self.new_agents = set()  # agents that were just created
-            self.max_agents = 20
+            self.max_agents = 10
+            self.num_agents = 0
             self.build_minimum_phase_1 = max(*[building_pair[1] for building_pair in src.my_utils.STRUCTURES['small']])
             self.build_minimum_phase_2 = max(*[building_pair[1] for building_pair in src.my_utils.STRUCTURES['med']])
             self.build_minimum_phase_3 = max(*[building_pair[1] for building_pair in src.my_utils.STRUCTURES['large']])
@@ -1550,7 +1551,9 @@ class State:
 
 
     def update_agents(self, is_rendering=True):
-        for agent in self.agents.keys():
+        agents = self.agents.keys()
+        self.num_agents = len(agents)
+        for agent in agents:
             agent.unshared_resources['rest'] += agent.rest_decay
             agent.unshared_resources['water'] += agent.water_decay
             agent.unshared_resources['happiness'] += agent.happiness_decay
@@ -2364,16 +2367,12 @@ class State:
                     # clamp road endpoints
                     # print("BUILDING ROAD. IS IT LONG?")
                     if x >= self.last_node_pointer_x:
-                        print("YES")
                         x = self.last_node_pointer_x
                     if x < 0:
-                        print("YES")
                         x = 0
                     if z >= self.last_node_pointer_z:
-                        print("YES")
                         z = self.last_node_pointer_z
                     if z < 0:
-                        print("YES")
                         z = 0
                 if abs(x2 - x) > xthr and abs(z2 - z) > zthr:
                     if not state.add_lot([(x2, z2), (x, z)]):
