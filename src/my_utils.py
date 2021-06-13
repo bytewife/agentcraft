@@ -22,8 +22,8 @@ boots_per_phase = {
 #_currently I don't use the slabs here
 set_choices = [
 	[["minecraft:bricks", "minecraft:granite", "minecraft:polished_granite"], ["minecraft:brick_slab", "minecraft:granite_slab", "minecraft:polished_granite_slab"], ["minecraft:brick_stairs", "minecraft:granite_stairs", "minecraft:polished_granite_stairs"]],
-	[["minecraft:stone_bricks", "minecraft:cobblestone", "minecraft:gravel"], ["minecraft:stone_brick_slab[type=bottom]", "minecraft:cobblestone_slab"], ["minecraft:stone_brick_stairs", "minecraft:cobblestone_stairs"]],
-	[["minecraft:basalt", "minecraft:nether_bricks", "minecraft:blackstone"], ["minecraft:nether_brick_slab[type=bottom]", "minecraft:blackstone_slab"], ["minecraft:nether_brick_stairs", "minecraft:blackstone_stairs"]],
+	# [["minecraft:stone_bricks", "minecraft:cobblestone", "minecraft:gravel"], ["minecraft:stone_brick_slab[type=bottom]", "minecraft:cobblestone_slab"], ["minecraft:stone_brick_stairs", "minecraft:cobblestone_stairs"]],
+	# [["minecraft:basalt", "minecraft:nether_bricks", "minecraft:blackstone"], ["minecraft:nether_brick_slab[type=bottom]", "minecraft:blackstone_slab"], ["minecraft:nether_brick_stairs", "minecraft:blackstone_stairs"]],
 	  # [["minecraft:sandstone", "minecraft:gravel", "minecraft:diorite"], ["minecraft:stone_brick_slab[type=bottom]", "minecraft:cobblestone_slab"],
 	#  [["minecraft:prismarine", "minecraft:prismarine_bricks", "minecraft:dark_prismarine"], ["minecraft:stone_brick_slab[type=bottom]", "minecraft:cobblestone_slab"],
 	 ]
