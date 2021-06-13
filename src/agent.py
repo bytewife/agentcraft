@@ -203,7 +203,7 @@ class Agent:
         self.walk_stage = 0  # whether moving left or right. do XOR with 1 and this
         self.is_resting = False
         self.socialize_want = 0
-        self.socialize_threshold = 10  # TODO change this
+        self.socialize_threshold = 20  # TODO change this
         self.socialize_partner = None
         self.found_and_moving_to_socialization = False  #_disables when either of the two found the other
         # self.social_partners_cooldowns = {}
@@ -401,6 +401,7 @@ class Agent:
         status = False
         if len(self.path) > 0:
             nx, nz = self.path.pop()
+            print(str(nx) +" "+ str(nz))
             dx = max(min(nx-self.x, 1), -1)
             dz = max(min(nz-self.z, 1), -1)
             if self.state.legal_actions[self.x][self.z][src.movement.DeltaToDirIdx[(dx, dz)]] == 0:  # if not legal move (aka building was placed)
@@ -485,7 +486,7 @@ class Agent:
             self.move_self(nx, nz, state=state, walkable_heightmap=walkable_heightmap)
             self.turns_staying_still = 0
         if nx == 0 and nz == 0:
-            self.is_busy = True  # to stop inf loop
+            # self.is_busy = True  # to stop inf loop
             self.turns_staying_still += 1
 
     def socialize_with_lover(self):
@@ -497,6 +498,8 @@ class Agent:
         # self.socialize_partner = None
         self.is_mid_socializing = False
         self.found_and_moving_to_socialization = False
+        self.is_busy = False
+        self.socialize_threshold += 5
 
     def find_adjacent_agent(self, agent, max_x, max_z):
         dx = agent.x - self.x

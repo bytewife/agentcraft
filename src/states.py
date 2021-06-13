@@ -1556,6 +1556,7 @@ class State:
             agent.unshared_resources['happiness'] += agent.happiness_decay
             agent.follow_path(state=self, walkable_heightmap=self.rel_ground_hm)
             agent.socialize(agent.found_and_moving_to_socialization)
+            print(agent.is_busy)
             if is_rendering:
                 agent.render()
         new_agents = self.new_agents.copy()
