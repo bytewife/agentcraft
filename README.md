@@ -27,7 +27,9 @@ Move .jar file from this repository into the mod folder.
 
 Restart Minecraft and launch the Forge Installation again. The mod should now appear in the mod list under "Mods".
 
-When you open a world the HTTP Server will be started automatically, and you should now be able to send HTTP requests to it.
+When you open a world the HTTP Server will be started automatically, and you should now be able to send HTTP requests to it.  
+
+After Forge and the Mod are set up, you can use the following command from this project's folder:  
 
 ## Usage
 ```
