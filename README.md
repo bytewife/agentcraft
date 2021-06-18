@@ -1,5 +1,10 @@
 # AgentCraft
-An adaptive settlement creation using a social agent simulation in Minecraft! This is my entry for the [2021 Generative Design in Minecraft](https://gendesignmc.wikidot.com/wiki:settlement-generation-competition) competition (including the Chronicle Challenge)! Video demo [here.](https://www.youtube.com/watch?v=Gc5h54Bus_k)
+An adaptive settlement creation using a social agent simulation in Minecraft! This is my entry for the [2021 Generative Design in Minecraft](https://gendesignmc.wikidot.com/wiki:settlement-generation-competition) competition (including the Chronicle Challenge)!  
+Video demos:  
++ [Mountain Settlement](https://www.youtube.com/watch?v=Gc5h54Bus_k)  
++ [Supercut](https://youtu.be/DGLiWOxWLig)  
+
+Paper (WIP) [here](https://aith.github.io/assets/pdf/AgentCraft__EXAG_2021__.draft1.pdf)
 
 ![Timelapse gif](img/demo.gif)
 

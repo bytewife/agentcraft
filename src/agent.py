@@ -23,7 +23,6 @@ from random import shuffle
 
 class Agent:
 
-
     small_pool = src.my_utils.STRUCTURES['decor'] + src.my_utils.STRUCTURES['small']
     med_pool = src.my_utils.STRUCTURES['decor'] + src.my_utils.STRUCTURES['decor'] + src.my_utils.STRUCTURES['decor'] + src.my_utils.STRUCTURES['decor'] + src.my_utils.STRUCTURES['small'] + src.my_utils.STRUCTURES['med'] + src.my_utils.STRUCTURES['med']
     large_pool = src.my_utils.STRUCTURES['decor'] + src.my_utils.STRUCTURES['med'] + src.my_utils.STRUCTURES['large']
