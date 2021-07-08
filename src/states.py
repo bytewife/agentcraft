@@ -13,7 +13,7 @@ from math import floor
 import http_framework.interfaceUtils
 import http_framework.worldLoader
 import src.my_utils
-import src.movement
+import src.movement_backup
 import src.pathfinding
 import src.scheme_utils
 import src.agent
@@ -96,10 +96,10 @@ class State:
 
 
             if precomp_legal_actions is None:
-                self.legal_actions = src.movement.gen_all_legal_actions(self,
-                    self.blocks_arr, vertical_ability=self.agent_jump_ability, heightmap=self.rel_ground_hm,
-                    actor_height=self.agent_height, unwalkable_blocks=["minecraft:water", 'minecraft:lava']
-                )
+                self.legal_actions = src.movement_backup.gen_all_legal_actions(self,
+                                                                               self.blocks_arr, vertical_ability=self.agent_jump_ability, heightmap=self.rel_ground_hm,
+                                                                               actor_height=self.agent_height, unwalkable_blocks=["minecraft:water", 'minecraft:lava']
+                                                                               )
             else:
                 self.legal_actions = precomp_legal_actions
 
@@ -271,7 +271,7 @@ class State:
         # get rotation based on neighboring road
         found_road = None
         face_dir = None
-        for dir in src.movement.cardinals:  # maybe make this cardinal only
+        for dir in src.movement_backup.cardinals:  # maybe make this cardinal only
             nx = ctrn_node.center[0] + dir[0] * ctrn_node.size
             nz = ctrn_node.center[1] + dir[1] * ctrn_node.size
             if self.out_of_bounds_Node(nx, nz): continue
@@ -297,7 +297,7 @@ class State:
         ## find site where x and z are reversed. this rotates
         highest_y = self.rel_ground_hm[ctrn_node.center[0]][ctrn_node.center[1]]
         lowest_y = self.rel_ground_hm[ctrn_node.center[0]][ctrn_node.center[1]]
-        for dir in src.movement.diagonals:
+        for dir in src.movement_backup.diagonals:
             if found_ctrn_dir != None:
                 break
             tiles = 0
@@ -542,7 +542,7 @@ class State:
         # build construction site ground - foundation
         for n in found_nodes:
             # for each of the nodes' tiles, generate random, based on dist. Also, add it to built.
-            for dir in src.movement.idirections:
+            for dir in src.movement_backup.directions + ([0, 0],):
                 x = n.center[0] + dir[0]
                 z = n.center[1] + dir[1]
                 # add to built
@@ -584,7 +584,7 @@ class State:
 
 
     def get_nearest_tree(self,x,z, iterations=5):
-        return src.movement.find_nearest(self, x,z,self.trees, 10, iterations, 15)
+        return src.movement_backup.find_nearest(self, x, z, self.trees, 10, iterations, 15)
 
 
     # note: not every block has a node. These will point to None
@@ -606,7 +606,7 @@ class State:
                 # node = self.Node(self, center=(cx, cz), types=[src.my_utils.TYPE.BROWN.name], size=self.node_size)  # TODO change type
                 # nodes[(cx, cz)] = node
                 node_pointers[cx][cz] = (cx, cz)  # TODO can lazy load this rather than gen here
-                for dir in src.movement.directions:
+                for dir in src.movement_backup.directions:
                     nx = cx + dir[0]
                     nz = cz + dir[1]
                     node_pointers[nx][nz] = (cx, cz)
@@ -788,7 +788,7 @@ class State:
 
         def gen_adjacent_centers(self, state):
             adj = set()
-            for dir in src.movement.directions:
+            for dir in src.movement_backup.directions:
                 pos = (self.center[0] + dir[0]*self.size, self.center[1] + dir[1]*self.size)
                 if state.out_of_bounds_Node(*pos): continue
                 adj.add(pos)
@@ -1061,7 +1061,7 @@ class State:
     #     return types
 
     def add_adjacent_tiles_to_nodes_with_land_neighbors(self, x, z):
-        for dir in src.movement.cardinals:
+        for dir in src.movement_backup.cardinals:
             self.tiles_with_land_neighbors.add((
                 max(min(x + dir[0], self.len_x), 0),
                 max(min(z + dir[1], self.len_z), 0)
@@ -1191,9 +1191,9 @@ class State:
                 if self.out_of_bounds_2D(bx, bz):
                     continue
                 # also need to update legal actions for neighbors
-                self.legal_actions[bx][bz] = src.movement.get_legal_actions_from_block(self, self.blocks_arr, bx, bz, self.agent_jump_ability,
-                                                                                   self.rel_ground_hm, self.agent_height,
-                                                                                   self.unwalkable_blocks)
+                self.legal_actions[bx][bz] = src.movement_backup.get_legal_actions_from_block(self, self.blocks_arr, bx, bz, self.agent_jump_ability,
+                                                                                              self.rel_ground_hm, self.agent_height,
+                                                                                              self.unwalkable_blocks)
 
         # if x z not in closed_for_propagation
         self.pathfinder.update_sector_for_block(x, z, self.sectors,
@@ -1628,8 +1628,8 @@ class State:
                 built_node_coords = [node.center for node in self.built]  # returns building node coords
 
                 built_diags = [(node[0] + dir[0] * self.node_size, node[1] + dir[1] * self.node_size)
-                               for node in built_node_coords for dir in src.movement.diagonals if is_valid(self, (node[0] + dir[0] * self.node_size, node[1] + dir[1] * self.node_size))]
-                nearest_builts = src.movement.find_nearest(self, *node_pos1, built_diags, 5, 30, 10)
+                               for node in built_node_coords for dir in src.movement_backup.diagonals if is_valid(self, (node[0] + dir[0] * self.node_size, node[1] + dir[1] * self.node_size))]
+                nearest_builts = src.movement_backup.find_nearest(self, *node_pos1, built_diags, 5, 30, 10)
                 # print("nearest builts is ")
                 # print(str(nearest_builts))
                 # self.bendcount += len(near)
@@ -1637,7 +1637,7 @@ class State:
                 found_bend = False
                 for built in nearest_builts:
                     if found_bend == True: break
-                    for diag in src.movement.diagonals:
+                    for diag in src.movement_backup.diagonals:
                         nx = self.node_size * diag[0] + built[0]
                         nz = self.node_size * diag[1] + built[1]
                         if (nx, nz) in closed: continue
@@ -2048,7 +2048,7 @@ class State:
         blocks_ordered, blocks_set = set_blocks_for_path(self,block_path,inner_block_rate)
 
         aux_paths = []
-        for card in src.movement.cardinals:
+        for card in src.movement_backup.cardinals:
             # offset1 = choice(src.movement.cardinals)
             def clamp_to_state_coords(state, x, z):
                 if x > state.last_node_pointer_x:

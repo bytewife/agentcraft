@@ -15,6 +15,8 @@ import src.my_utils
 import src.agent
 import src.states
 
+import src.movement
+
 IS_RENDERING_FRAMEWISE = True
 IS_WRITING_CHRONICLE = True
 IS_WRITING_CHRONICLE_TO_CONSOLE = False
@@ -113,6 +115,10 @@ Warning:
     return [x1,y1,x2,y2], time_limit, steps, frame_length, IS_RENDERING_FRAMEWISE
 
 if __name__ == '__main__':
+
+    src.movement.Movement()
+    exit(0)
+
     argv = sys.argv[1:]
     area, time_limit, steps, frame_duration, is_rendering_per_frame = parse_opts(argv)
     start = time.time()
@@ -136,6 +142,11 @@ if __name__ == '__main__':
     else:
         sim.run_without_render(steps, start, time_limit, IS_WRITING_LOCATION_AT_MIDPOINT)
 
+
+    print(src.agent.Agent.shared_resources)
+    print("Execution complete! Enjoy your new settlement :)")
+
+
     ## ROADS
     # for r in sim.state.roads:
     #     if r in sim.state.construction:
@@ -152,16 +163,16 @@ if __name__ == '__main__':
     #     z = b.center[1]
     #     y = sim.state.rel_ground_hm[x][z] + 1
     #     sim.state.set_block(x,y,z,"minecraft:gold_block")
-        # if src.my_utils.TYPE.WATER.name in b.get_type():
-        #     pass
+    # if src.my_utils.TYPE.WATER.name in b.get_type():
+    #     pass
 
     #HEIGHTMAP
     # for x in range(len(sim.state.blocks_arr)):
     #     for z in range(len(sim.state.blocks_arr[0][0])):
-            # y = sim.state.static_ground_hm[x][z]
-            # sim.state.set_block(x, y, z, "minecraft:oak_sign")
-            # y = sim.state.rel_ground_hm[x][z]
-            # sim.state.set_block(x, y, z, "minecraft:oak_sign")
+    # y = sim.state.static_ground_hm[x][z]
+    # sim.state.set_block(x, y, z, "minecraft:oak_sign")
+    # y = sim.state.rel_ground_hm[x][z]
+    # sim.state.set_block(x, y, z, "minecraft:oak_sign")
 
     #EXT HEIGHTMAP
     # for pos in sim.state.built_heightmap:
@@ -177,7 +188,3 @@ if __name__ == '__main__':
     #     sim.state.set_block(x,y,z,"minecraft:gold_block")
 
     # sim.state.step(1)
-
-    print(src.agent.Agent.shared_resources)
-    print("Execution complete! Enjoy your new settlement :)")
-

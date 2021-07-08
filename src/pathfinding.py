@@ -11,7 +11,7 @@ __version__ = "1.0"
 from heapq import heappop, heappush, heappushpop
 from math import sqrt
 from numpy import full_like
-import src.movement
+import src.movement_backup
 from bitarray.util import count_xor, rindex
 
 MAX_SECTOR_PROPAGATION_DEPTH = 10*150
@@ -79,8 +79,8 @@ class Pathfinding:
         curr_legal_actions = all_legal_actions[x][z]
         for n in range(8):  # num of diff moves
             if curr_legal_actions[n] == False: continue
-            dx = src.movement.directions[n][0]
-            dz = src.movement.directions[n][1]
+            dx = src.movement_backup.directions[n][0]
+            dz = src.movement_backup.directions[n][1]
             tx = parent.pos[0] + dx
             tz = parent.pos[1] + dz
             if tx < 0 or tz < 0 or tx > max_x or tz > max_z:
@@ -219,7 +219,7 @@ class Pathfinding:
                 depth = 0
                 depth_max = 50
                 if legal_actions[nx][nz][n] == True:
-                    dir = src.movement.directions[n]
+                    dir = src.movement_backup.directions[n]
                     cx = nx + dir[0]
                     cz = nz + dir[1]
                     if cx < 0 or cx >= len(legal_actions) or cz < 0 or cz >= len(legal_actions[0]):
@@ -253,7 +253,7 @@ class Pathfinding:
             self.add_to_sector(pos[0], pos[1], sector)
             for n in range(len(legal_actions[nx][nz])):  # check tiles reachable from here
                 if legal_actions[nx][nz][n]:
-                    dir = src.movement.directions[n]
+                    dir = src.movement_backup.directions[n]
                     cx = nx + dir[0]
                     cz = nz + dir[1]
                     if self.state.out_of_bounds_2D(cx, cz): continue
@@ -539,7 +539,7 @@ class Pathfinding:
                 # check the sectors height in new dir, compare heights
                 # if can jump between diff in heights, get sector with smaller size. this'll be the sector to propagate from the other
                 if bit == False: continue
-                dir = src.movement.Directions[i]
+                dir = src.movement_backup.Directions[i]
                 i += 1
                 ox = x+dir[0]
                 oz = z+dir[1]

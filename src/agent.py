@@ -13,7 +13,7 @@ from enum import Enum
 import src.pathfinding
 import src.states
 import src.manipulation
-import src.movement
+import src.movement_backup
 import src.my_utils
 import src.scheme_utils
 import src.chronicle
@@ -402,7 +402,7 @@ class Agent:
             nx, nz = self.path.pop()
             dx = max(min(nx-self.x, 1), -1)
             dz = max(min(nz-self.z, 1), -1)
-            if self.state.legal_actions[self.x][self.z][src.movement.DeltaToDirIdx[(dx, dz)]] == 0:  # if not legal move (aka building was placed)
+            if self.state.legal_actions[self.x][self.z][src.movement_backup.DeltaToDirIdx[(dx, dz)]] == 0:  # if not legal move (aka building was placed)
                 # print(self.name + " was blocked by building! Getting new motive.")
                 self.choose_motive()
                 return False
@@ -470,7 +470,7 @@ class Agent:
             # print("stayed still too long and now moving!")
             nx = nz = 0
             found_open = False
-            for dir in src.movement.directions:
+            for dir in src.movement_backup.directions:
                 nx = self.x + dir[0]
                 nz = self.z + dir[1]
                 ny = self.state.rel_ground_hm[nx][nz]
@@ -478,7 +478,7 @@ class Agent:
                     found_open = True
                     break
             if not found_open:
-                nx, nz = choice(src.movement.directions)
+                nx, nz = choice(src.movement_backup.directions)
                 nx += self.x
                 nz += self.z
             self.move_self(nx, nz, state=state, walkable_heightmap=walkable_heightmap)
@@ -522,7 +522,7 @@ class Agent:
         self.lover.courtship_requirement += 1
 
         empty_spot = (self.x, self.z)
-        for dir in src.movement.directions:
+        for dir in src.movement_backup.directions:
             tx = self.x + dir[0]
             tz = self.z + dir[1]
             if self.state.sectors[tx][tz] == self.state.sectors[self.x][self.z]:
@@ -572,7 +572,7 @@ class Agent:
         else:
             self.tree_grow_iteration = 0
             saps = set(self.state.saplings)
-            for dir in src.movement.directions:  # remove sapling from state, add to trees instead
+            for dir in src.movement_backup.directions:  # remove sapling from state, add to trees instead
                 x,z = (dir[0] + self.x, dir[1] + self.z)
                 if self.state.out_of_bounds_2D(x,z): continue
                 self.state.update_block_info(x,z)
@@ -649,7 +649,7 @@ class Agent:
         elif status == src.manipulation.TASK_OUTCOME.FAILURE.name:  # if they got sniped
             # print("tree sniped")
             # udate this tree
-            for dir in src.movement.idirections:
+            for dir in src.movement_backup.directions + ([0, 0],):
                 point = (dir[0] + self.x, dir[1] + self.z)
                 if point in self.state.trees:
                     self.state.trees.remove(point)
@@ -763,7 +763,7 @@ class Agent:
     def set_path_to_nearest_spot(self, search_array, starting_search_radius, max_iterations, radius_inc=1, search_neighbors_instead=True):
         closed = set()
         for i in range(max_iterations):
-            spots = src.movement.find_nearest(self.state, self.x, self.z, search_array, starting_search_radius+radius_inc*i, 1, radius_inc)
+            spots = src.movement_backup.find_nearest(self.state, self.x, self.z, search_array, starting_search_radius + radius_inc * i, 1, radius_inc)
             if spots == [] or spots is None: continue
             while len(spots) > 0:
                 chosen_spot = choice(spots)
@@ -772,7 +772,7 @@ class Agent:
                     continue
                 # see if theres a path to an adjacent tile
                 if search_neighbors_instead == True:
-                    for pos in src.movement.adjacents(self.state, *chosen_spot):
+                    for pos in src.movement_backup.adjacents(self.state, *chosen_spot):
                         if self.state.sectors[pos[0], pos[1]] == self.state.sectors[self.x][self.z]:
                             path = self.state.pathfinder.get_path((self.x, self.z), pos, self.state.len_x, self.state.len_z, self.state.legal_actions)
                             self.set_path(path)
@@ -792,7 +792,7 @@ class Agent:
 
     def collect_from_adjacent_spot(self, state, check_func, manip_func, prosperity_inc):
         status = src.manipulation.TASK_OUTCOME.FAILURE.name
-        for dir in src.movement.directions:
+        for dir in src.movement_backup.directions:
             xo, zo = dir
             bx = self.x + xo
             bz = self.z + zo

@@ -11,7 +11,7 @@ import src.my_utils
 import src.states
 from enum import Enum
 from random import randint, random, choice
-import src.movement
+import src.movement_backup
 import math
 class TASK_OUTCOME(Enum):
     FAILURE = 0
@@ -203,7 +203,7 @@ def cut_tree_at(state, x, y, z, times=1):
             if log_type[0] == 'j':  # because of how minecraft's heightmap doesn't consider leaves as air, put jungle saplings in same spot
                 found_new_spot = True
             else:
-                for dir in src.movement.directions:
+                for dir in src.movement_backup.directions:
                     tx = x + dir[0]
                     tz = z + dir[1]
                     if state.out_of_bounds_2D(tx,tz):
