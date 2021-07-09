@@ -141,7 +141,7 @@ class Node:
     def gen_neighbors_centers(self, state):
         neighbors = self.adjacent_centers.copy()
         i = 0
-        for r in range(2, state.Node.NEIGHBOR_RADIUS + 1):
+        for r in range(2, Node.NEIGHBOR_RADIUS + 1):
             for ox in range(-r, r + 1, 2 * r):  # rings only
                 for oz in range(-r, r + 1):
                     if ox == 0 and oz == 0: continue
@@ -163,7 +163,7 @@ class Node:
 
     def gen_local_centers(self, state):
         local = self.neighbors_centers.copy()
-        for r in range(state.Node.NEIGHBOR_RADIUS + 1, state.Node.LOCAL_RADIUS + 1):
+        for r in range( Node.NEIGHBOR_RADIUS + 1, Node.LOCAL_RADIUS + 1):
             for ox in range(-r, r + 1, 2 * r):
                 for oz in range(-r, r + 1):
                     x = (self.center[0]) + ox * self.size
@@ -182,7 +182,7 @@ class Node:
     def gen_range_centers(self, state):
         local = self.local_centers.copy()
         local.add(self.center)
-        for r in range(state.Node.LOCAL_RADIUS + 1, state.Node.RANGE_RADIUS + 1):
+        for r in range( Node.LOCAL_RADIUS + 1, Node.RANGE_RADIUS + 1):
             for ox in range(-r, r + 1, 2 * r):
                 for oz in range(-r, r + 1):
                     x = (self.center[0]) + ox * self.size

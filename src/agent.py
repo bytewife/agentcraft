@@ -304,9 +304,7 @@ class Agent:
     #         self.social_partners_cooldowns[past_partner] -= 1
 
     def do_build_task(self, found_road, ctrn_node, found_nodes, ctrn_dir, bld, rot, min_nodes_in_x, min_nodes_in_z, built_arr, wood_type):
-        status, build_y = self.state.place_building(found_road, ctrn_node, found_nodes, ctrn_dir, bld, rot,
-                                                    min_nodes_in_x, min_nodes_in_z, wood_type)
-        # self.state.place_platform(found_road, ctrn_node, found_nodes, ctrn_dir, bld, rot, min_nodes_in_x, min_nodes_in_z, built_arr, wood_type, build_y)
+        status, build_y = self.state.place_building(found_road, ctrn_node, found_nodes, ctrn_dir, bld, rot, min_nodes_in_x, min_nodes_in_z, built_arr, wood_type)
 
     def choose_motive(self):
         new_motive = self.calc_motive()

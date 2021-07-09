@@ -116,9 +116,6 @@ Warning:
 
 if __name__ == '__main__':
 
-    src.movement.Movement_CPP()
-    exit(0)
-
     argv = sys.argv[1:]
     area, time_limit, steps, frame_duration, is_rendering_per_frame = parse_opts(argv)
     start = time.time()

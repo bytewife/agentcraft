@@ -171,7 +171,7 @@ class Simulation:
         old_water = []
         while result is False:
             attempt+=1
-            self.state.reset(use_heavy=True)
+            self.state.reset()
             # self.state.construction.clear()
             # self.state.roads.clear()
             if attempt > max_tries: return False, attempt

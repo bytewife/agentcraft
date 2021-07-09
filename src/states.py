@@ -163,7 +163,7 @@ class State:
 
     def reset(self):
         """
-        Reset values that must be deleted in between iterations
+        Reset values that must be deleted in between initialization attempts
         :param use_heavy:
         :return:
         """
@@ -441,8 +441,7 @@ class State:
                     set_state_block(self, tx, py, tz, block)
         return True
 
-    def place_building(self, found_road, ctrn_node, found_nodes, ctrn_dir, bld, rot, min_nodes_in_x, min_nodes_in_z,
-                       wood_type):
+    def place_building(self,found_road, ctrn_node, found_nodes, ctrn_dir, bld, rot, min_nodes_in_x, min_nodes_in_z, built_arr, wood_type, ignore_road=False):
         """
         Place building via custom schematic file
         :param found_road:
@@ -536,8 +535,25 @@ class State:
         self.set_platform(found_nodes, wood_type, mean_y)
         built_list = list(building_heightmap.keys())
         ext_list = list(exterior_heightmap.keys())
+        def update_hm_bld_block(self, x, z):
+            if (x, z) in self.built_heightmap:  # ignore buildings
+                y = self.built_heightmap[(x, z)] - 1
+                self.abs_ground_hm[x][z] = y + self.world_y
+                self.rel_ground_hm[x][z] = y + 1
+            elif (x, z) in self.exterior_heightmap:
+                y = self.exterior_heightmap[(x, z)] - 1
+                self.abs_ground_hm[x][z] = y + self.world_y
+                self.rel_ground_hm[x][z] = y + 1
+            else:  # traverse down to find first non passable block
+                y = self.traverse_down_till_block(x, z) + 1  # only call this if needs traversing
+                self.abs_ground_hm[x][z] = y + self.world_y - 1
+                self.rel_ground_hm[x][z] = y
+            curr_height = self.rel_ground_hm[x][z]
+            if self.static_ground_hm[x][z] > curr_height:  # don't reduce heightmap ever. this is to avoid bugs rn
+                self.static_ground_hm[x][z] = curr_height
+            return
         for tile in built_list + ext_list:  # let's see if this stops tiles from being placed in buildings, where there used to be ground
-            self.update_heightmaps_single(tile[0], tile[1])
+            update_hm_bld_block(self,tile[0], tile[1])
         self.built_heightmap.update(building_heightmap)
         self.exterior_heightmap.update(exterior_heightmap)
         self.create_road(found_road.center, ctrn_node.center, road_type="None", points=None, add_road_type=True)
@@ -1133,7 +1149,7 @@ class State:
         if len(points) > 2:
             middle_nodes = points[1:len(points) - 1]
         self.road_segs.add(
-            RoadSegment(self.nodes(x1, y1), self.nodes(x2, y2), middle_nodes, src.my_utils.TYPE.MAJOR_ROAD.name,
+            src.road_segment.RoadSegment(self.nodes(x1, y1), self.nodes(x2, y2), middle_nodes, src.my_utils.TYPE.MAJOR_ROAD.name,
                         self.road_segs, self))
         status = self.init_construction(points)
         if status == False:
@@ -1389,7 +1405,7 @@ class State:
                     rs.split(n2, self.road_segs, self.road_nodes, state=self)
                     break
         if add_road_type == True:  # allows us to ignore the small paths from roads to buildings
-            road_segment = RoadSegment(self.nodes(*node_pos1), self.nodes(*node_pos2), middle_nodes, road_type,
+            road_segment = src.road_segment.RoadSegment(self.nodes(*node_pos1), self.nodes(*node_pos2), middle_nodes, road_type,
                                        self.road_segs, state=self)
             self.road_segs.add(road_segment)
 
@@ -1654,15 +1670,15 @@ class State:
                         src.my_utils.TYPE.GREEN.value].union(
                         src.my_utils.BLOCK_TYPE.tile_sets[src.my_utils.TYPE.PASSTHROUGH.value]) and \
                             self.node_pointers[(nx, nz)] is not None and self.nodes(*self.node_pointers[(nx, nz)]) not in self.built:
-                        self.set_scaffold_single(self, nx, y, nz)
+                        set_scaffold_single(self, nx, y, nz)
                         set_state_block(self, nx, y + 1, nz, "minecraft:air")
                     if (nx, nz) in self.exterior_heightmap:
-                        self.set_scaffold_single(self, nx, y, nz)
+                        set_scaffold_single(self, nx, y, nz)
                         set_state_block(self, nx, y, nz, choice(self.road_set[0]))
                     else:
                         if facing:
                             if (facing[0] in ['e', 'w'] and offx == 0) or (facing[0] in ['n', 's'] and offz == 0):
-                                self.set_scaffold_single(self, nx, y, nz)
+                                set_scaffold_single(self, nx, y, nz)
                                 set_state_block(self, nx, y, nz,
                                                 choice(self.road_set[type]) + """[facing={facing}]""".format(
                                                     facing=facing))
@@ -1670,7 +1686,7 @@ class State:
                             if dx is not None and (
                                     is_diagonal_stairs and dx == -offx or is_diagonal_stairs and dz == -offz):
                                 type = 0
-                            self.set_scaffold_single(self, nx, y, nz)
+                            set_scaffold_single(self, nx, y, nz)
                             set_state_block(self, nx, y, nz, choice(self.road_set[type]))
                     is_slab_or_stairs = type > 0
                     main_path_set.add((x + offx, z + offz, is_slab_or_stairs))
