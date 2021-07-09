@@ -116,7 +116,7 @@ Warning:
 
 if __name__ == '__main__':
 
-    src.movement.Movement()
+    src.movement.Movement_CPP()
     exit(0)
 
     argv = sys.argv[1:]

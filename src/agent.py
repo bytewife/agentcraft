@@ -225,7 +225,7 @@ class Agent:
         if self.socialize_want < self.socialize_threshold: return  # TODO unlock this somewhere
         if self.is_busy: return
         if found_socialization: return  # TODO unlock this somewhere
-        for agent in list(self.state.agents_in_nodes[self.node.center] - {self}):
+        for agent in list(self.state.agent_nodes[self.node.center] - {self}):
             if agent.socialize_want < agent.socialize_threshold: continue
             self.socialize_partner = agent
             agent.socialize_partner = self
@@ -304,7 +304,8 @@ class Agent:
     #         self.social_partners_cooldowns[past_partner] -= 1
 
     def do_build_task(self, found_road, ctrn_node, found_nodes, ctrn_dir, bld, rot, min_nodes_in_x, min_nodes_in_z, built_arr, wood_type):
-        status, build_y = self.state.place_schematic(found_road, ctrn_node, found_nodes, ctrn_dir, bld, rot, min_nodes_in_x, min_nodes_in_z, built_arr, wood_type)
+        status, build_y = self.state.place_building(found_road, ctrn_node, found_nodes, ctrn_dir, bld, rot,
+                                                    min_nodes_in_x, min_nodes_in_z, wood_type)
         # self.state.place_platform(found_road, ctrn_node, found_nodes, ctrn_dir, bld, rot, min_nodes_in_x, min_nodes_in_z, built_arr, wood_type, build_y)
 
     def choose_motive(self):
@@ -387,8 +388,8 @@ class Agent:
         n1 = self.state.nodes(*self.state.node_pointers[(x1,z1)])
         n2 = self.state.nodes(*self.state.node_pointers[(x2,z2)])
         if n1 != n2:
-            self.state.agents_in_nodes[n1.center].remove(self)
-            self.state.agents_in_nodes[n2.center].add(self)
+            self.state.agent_nodes[n1.center].remove(self)
+            self.state.agent_nodes[n2.center].add(self)
             self.node = n2
 
     def set_path(self, path):
@@ -529,7 +530,7 @@ class Agent:
                 empty_spot = (tx, tz)
                 break
 
-        child = Agent(self.state, *empty_spot, self.state.rel_ground_hm, name=names.get_first_name(), head=choice(src.states.State.agent_heads), parent_1=self, parent_2=self.lover)
+        child = Agent(self.state, *empty_spot, self.state.rel_ground_hm, name=names.get_first_name(), head=choice(src.states.State.AGENT_HEADS), parent_1=self, parent_2=self.lover)
         self.state.add_agent(child)
         self.children.append(child)
         self.lover.children.append(child)
@@ -540,7 +541,7 @@ class Agent:
     def do_replenish_tree_task(self):
         def is_in_state_saplings(state, x, y, z):
             result = (x,z) in state.saplings
-            if self.state.blocks(x,self.state.static_ground_hm[x][z], z) in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.MAJOR_ROAD.value]:
+            if self.state.blocks(x,self.state.static_ground_hm[x][z], z) in src.my_utils.BLOCK_TYPE.tile_sets[src.my_utils.TYPE.MAJOR_ROAD.value]:
                 src.states.set_state_block(self.state,x,self.state.static_ground_hm[x][z]+1, z, "minecraft:air")
                 if (x,z) in state.saplings:
                     state.saplings.remove((x,z))
@@ -677,7 +678,7 @@ class Agent:
                 self.unshared_resources['rest'] = self.rest_max  # this is a fallback needed for 1000x1000 optimizaiton, unfortunately
                 self.do_idle_task()
         elif new_motive.name == self.Motive.WATER.name:
-            self.set_path_to_nearest_spot(self.state.water_with_adjacent_land, 10, 10, 30, search_neighbors_instead=True)
+            self.set_path_to_nearest_spot(self.state.water_near_land, 10, 10, 30, search_neighbors_instead=True)
             # print(self.path)
             if len(self.path) < 1:
                 self.turns_staying_still = self.max_turns_staying_still
@@ -685,7 +686,7 @@ class Agent:
                 self.do_idle_task()
         elif new_motive.name == self.Motive.BUILD.name:
             building, cost = self.get_appropriate_build(self.state.phase)
-            result = self.state.find_build_location(self.x, self.z, building, self.building_material[:-4], self.building_max_y_diff)
+            result = self.state.find_build_spot(self.x, self.z, building, self.building_material[:-4], self.building_max_y_diff)
             # now move to teh road
             if result:
                 print(f"  {self.name} is building: {building[10:]}")
@@ -861,12 +862,4 @@ RightArm:[{right_arm}]}}\
     def get_head_tilt(self):  # unused currnetly
         if self.is_resting: return '45'
         else: return '350'
-
-
-
-# Pose:{{Head: [{head_tilt}f, 10f, 0f], \
-#        LeftLeg: [3f, 10f, 0f], \
-#        RightLeg: [348f, 18f, 0f], \
-#        LeftArm: [348f, 308f, 0f], \
-#        RightArm: [348f, 67f, 0f]}} \
 

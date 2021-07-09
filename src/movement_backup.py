@@ -88,7 +88,7 @@ def check_if_legal_move(state, x, y, z, x_offset, z_offset, jump_ability, height
         target = "minecraft:"+target
     if target[-1] == ']':
         target = target[:target.index('[')]
-    return target in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.PASSTHROUGH.value]  # door is finnicky here
+    return target in src.my_utils.BLOCK_TYPE.tile_sets[src.my_utils.TYPE.PASSTHROUGH.value]  # door is finnicky here
 
 def adjacents(state, x, z):
     adjacents = []

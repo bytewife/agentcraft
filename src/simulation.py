@@ -60,7 +60,7 @@ class Simulation:
         f = open("./assets/agent_heads.out.txt")
         agent_heads = f.readlines()
         agent_heads = [h.rstrip('\n') for h in agent_heads]
-        src.states.State.agent_heads = agent_heads
+        src.states.State.AGENT_HEADS = agent_heads
         f.close()
 
         if run_start:
@@ -73,11 +73,11 @@ class Simulation:
         is_writing = run.IS_WRITING_CHRONICLE_TO_CONSOLE
         run.IS_WRITING_CHRONICLE_TO_CONSOLE = False
         self.decide_max_y_diff()
-        viable_water_starts = list(set(self.state.water).intersection(self.state.tiles_with_land_neighbors))
+        viable_water_starts = list(set(self.state.water).intersection(self.state.blocks_near_land))
         max_tries = 99
         status, attempt = self.start(viable_water_starts, -1, max_tries)
         while status == False:
-            self.state.reset_for_restart()
+            self.state.reset()
             self.update_building_max_y_diff()
             status, attempt = self.start(viable_water_starts, attempt, max_tries)
             if attempt > max_tries:
@@ -113,11 +113,11 @@ class Simulation:
         is_writing = run.IS_WRITING_CHRONICLE_TO_CONSOLE
         run.IS_WRITING_CHRONICLE_TO_CONSOLE = False
         self.decide_max_y_diff()
-        viable_water_starts = list(set(self.state.water).intersection(self.state.tiles_with_land_neighbors))
+        viable_water_starts = list(set(self.state.water).intersection(self.state.blocks_near_land))
         max_tries = 99
         status, attempt = self.start(viable_water_starts, -1, max_tries)
         while status == False:
-            self.state.reset_for_restart()
+            self.state.reset()
             self.update_building_max_y_diff()
             status, attempt = self.start(viable_water_starts, attempt, max_tries)
             if attempt > max_tries:
@@ -171,12 +171,14 @@ class Simulation:
         old_water = []
         while result is False:
             attempt+=1
-            self.state.reset_for_restart(use_heavy=True)
+            self.state.reset(use_heavy=True)
             # self.state.construction.clear()
             # self.state.roads.clear()
             if attempt > max_tries: return False, attempt
             create_well = attempt > 25
-            result, old_water, self.chronicles_pos, self.original_agent = self.state.init_main_st(create_well, viable_water_starts, str(attempt+1)+"/"+str(max_tries+1))
+            result, old_water, self.chronicles_pos, self.original_agent = self.state.init_main_st(viable_water_starts,
+                                                                                                  str(attempt + 1) + "/" + str(
+                                                                                                      max_tries + 1))
 
         # build a house
         building = "./schemes/"+random.choice(src.my_utils.STRUCTURES['small'])[0]
@@ -198,12 +200,12 @@ class Simulation:
         wood = src.my_utils.get_wood_type(wood_type)
         # rx = random.randint(0,self.state.last_node_pointer_x)
         # rz = random.randint(0,self.state.last_node_pointer_z)
-        schematic_args = self.state.find_build_location(0,0,building,wood,ignore_sector=True, max_y_diff=self.building_max_y_diff, build_tries=100)
+        schematic_args = self.state.find_build_spot(0, 0, building, wood, ignore_sector=True, max_y_diff=self.building_max_y_diff, build_tries=100)
         if schematic_args is False:  # flip the x and z
             print(f"  Attempt {str(attempt+1)}/{str(max_tries+1)}: could not find build location! Trying again~")
             self.state.water = old_water
             return False, attempt
-        status, build_y = self.state.place_schematic(*schematic_args)
+        status, build_y = self.state.place_building(*schematic_args)
         if status is False:
             self.state.water = old_water
             return False, attempt
@@ -238,11 +240,11 @@ class Simulation:
         self.state.prosperity *= self.pDecay
         self.state.traffic *= self.tDecay
 
-        xInd, yInd = np.where(self.state.updateFlags > 0)  # to update these nodes
+        xInd, yInd = np.where(self.state.update_flags > 0)  # to update these nodes
         indices = list(zip(xInd, yInd))  # list of tuples
         random.shuffle(indices)  # shuffle coordinates to update
         for (i, j) in indices:  # update a specific random numbor of tiles
-            self.state.updateFlags[i][j] = 0
+            self.state.update_flags[i][j] = 0
             node_pos = self.state.node_pointers[(i,j)]  # possible optimization here
             node = self.state.nodes(*node_pos)
 
@@ -266,12 +268,14 @@ class Simulation:
                 if node.local_prosperity > self.brNum:  # bridge/new lot minimum
                     # print("built major bridge road")
                     # self.state.append_road(point=(i, j), road_type=src.my_utils.TYPE.MAJOR_ROAD.name, leave_lot=True, correction=self.corNum, bend_if_needed=True)
-                    if self.state.append_road(point=(i, j), road_type=src.my_utils.TYPE.MAJOR_ROAD.name, correction=self.corNum, bend_if_needed=True, only_place_if_walkable=True):
+                    if self.state.append_road(point=(i, j), road_type=src.my_utils.TYPE.MAJOR_ROAD.name,
+                                              correction=self.corNum, bend_if_needed=True):
                         self.state.generated_a_road = True
                     # print("road 1: at point "+str((i,j)))
                 else:
                     # print("built major normal road")
-                    if self.state.append_road(point=(i, j), road_type=src.my_utils.TYPE.MAJOR_ROAD.name, correction=self.corNum, bend_if_needed=True, only_place_if_walkable=True):
+                    if self.state.append_road(point=(i, j), road_type=src.my_utils.TYPE.MAJOR_ROAD.name,
+                                              correction=self.corNum, bend_if_needed=True):
                         self.state.generated_a_road = True
                     # print("road 2: at point " + str((i, j)))
             if node.local_prosperity > self.buNum and road_found_near:
@@ -291,17 +295,14 @@ class Simulation:
                     # print("building minor road")
                     # if not len([n for n in node.plot() if Type.BUILDING not in n.type]):
                     pass
-                    self.state.append_road((i, j), src.my_utils.TYPE.MINOR_ROAD.name, correction=self.corNum, bend_if_needed=True)
+                    self.state.append_road((i, j), src.my_utils.TYPE.MINOR_ROAD.name, correction=self.corNum,
+                                           bend_if_needed=True)
 
                 # calculate reservations of greenery
                 elif src.my_utils.TYPE.TREE.name in node.get_type() or src.my_utils.TYPE.GREEN.name in node.get_type():
                     if len(node.neighbors() & self.state.construction):
                         lot = node.get_lot()
                         if lot is not None:
-                            # if random.random() < 0.5:
-                            #     self.state.set_type_city_garden(lot)
-                            # else:
-                            #     self.state.set_type_building(lot)
                             self.state.set_type_building(lot)
 
 

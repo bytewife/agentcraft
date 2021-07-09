@@ -49,7 +49,7 @@ def grow_leaves(state, x, tree_top_y, z, type, leaves_height):
                 if state.out_of_bounds_2D(lx, lz):
                     continue
                 dist = math.dist((lx,lz), (x,z))
-                if dist <= rad and not state.out_of_bounds_3D(lx,y,lz) and state.blocks(lx,y,lz )in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.PASSTHROUGH.value]:
+                if dist <= rad and not state.out_of_bounds_3D(lx,y,lz) and state.blocks(lx,y,lz )in src.my_utils.BLOCK_TYPE.tile_sets[src.my_utils.TYPE.PASSTHROUGH.value]:
                     src.states.set_state_block(state, lx, y, lz, type)
 
 
@@ -157,14 +157,14 @@ def is_sapling(state, x, y, z):
 def is_water(state, x, y, z):
     if state.out_of_bounds_3D(x, y, z):
         return False
-    return state.blocks(x,y,z) in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.WATER.value]
+    return state.blocks(x,y,z) in src.my_utils.BLOCK_TYPE.tile_sets[src.my_utils.TYPE.WATER.value]
 
 
 def is_log(state, x, y, z):
     if state.out_of_bounds_3D(x, y, z):
         return False
     block = state.blocks(x,y,z)
-    return block in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.TREE.value]
+    return block in src.my_utils.BLOCK_TYPE.tile_sets[src.my_utils.TYPE.TREE.value]
 
 
 def collect_water_at(state, x, y, z, times=1):
@@ -244,7 +244,7 @@ def cut_tree_at(state, x, y, z, times=1):
 def do_recur_on_adjacent(state, x, y, z, target_block_checker, recur_func, forward_call, itr):
     if itr > 10: return
     forward_call(state, x, y, z)
-    adj_blocks = state.get_all_adjacent_blocks(x, y, z)
+    adj_blocks = state.get_adjacent_3D(x, y, z)
     for block in adj_blocks:
         if target_block_checker(block[0]):
             itr+=1
@@ -259,7 +259,7 @@ def flood_kill_leaves(state, leaf_x, leaf_y, leaf_z, itr):
 
 
 def is_log_flood(block):
-    return block in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.TREE.value]
+    return block in src.my_utils.BLOCK_TYPE.tile_sets[src.my_utils.TYPE.TREE.value]
 
 def flood_kill_logs(state, log_x, log_y, log_z, itr=12):
     def to_air(state, x, y, z):
@@ -268,7 +268,7 @@ def flood_kill_logs(state, log_x, log_y, log_z, itr=12):
 
 
 def is_leaf(block_name):
-    return block_name in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.LEAVES.value]
+    return block_name in src.my_utils.BLOCK_TYPE.tile_sets[src.my_utils.TYPE.LEAVES.value]
 
 
 def get_log_type(block_name):

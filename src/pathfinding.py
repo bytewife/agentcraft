@@ -544,7 +544,7 @@ class Pathfinding:
                 ox = x+dir[0]
                 oz = z+dir[1]
                 if self.state.out_of_bounds_2D(ox, oz): continue
-                if abs(self.state.rel_ground_hm[x][z] - self.state.rel_ground_hm[ox][oz]) <= self.state.agent_jump_ability: # can now go here after not being able to
+                if abs(self.state.rel_ground_hm[x][z] - self.state.rel_ground_hm[ox][oz]) <= self.state.AGENT_JUMP: # can now go here after not being able to
                     # get larger sector
                     if not did_merge:
                         sector = self.sectors[x][z]

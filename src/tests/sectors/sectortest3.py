@@ -32,7 +32,7 @@ print(sim.state.rel_ground_hm)
 
 f = open(building, "r")
 r = f.readline().split(' ')
-sim.state.create_road((4,1), (4,1), road_type=src.my_utils.TYPE.MAJOR_ROAD.name)
+sim.state.create_road((4, 1), (4, 1), road_type=src.my_utils.TYPE.MAJOR_ROAD.name)
 sim.state.construction.add(sim.state.nodes[sim.state.node_pointers[(1,1)]])
 
 # print(sim.state.construction)

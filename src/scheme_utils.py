@@ -218,7 +218,7 @@ def adjust_property_by_rotation(block, property, longest_len, rot, rot_factor=1,
 
 
 ## where the origin coords are the local coords within state
-def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, built_arr, dir_x=1, dir_y=-1, dir_z=1, rot=0, flex_tile = None, wood_type="spruce"):
+def place_building_in_state(state, file_name, origin_x, origin_y, origin_z, built_arr, dir_x=1, dir_y=-1, dir_z=1, rot=0, flex_tile = None, wood_type="spruce"):
     size, blocks = get_schematic_parts(file_name)
     length_x, length_y, length_z = size
 
@@ -270,7 +270,7 @@ def place_schematic_in_state(state, file_name, origin_x, origin_y, origin_z, bui
         if (x,z) not in height_traversal: return
         height_traversal[(x,z)].pop()
         height_traversal[(x,z)].appendleft(block)
-        if all(b in src.my_utils.TYPE_TILES.tile_sets[src.my_utils.TYPE.AIR.value] for b in height_traversal[(x,z)]) or '_door' in list(height_traversal[(x,z)])[-1] or "_carpet" in list(height_traversal[(x,z)])[-1]:
+        if all(b in src.my_utils.BLOCK_TYPE.tile_sets[src.my_utils.TYPE.AIR.value] for b in height_traversal[(x, z)]) or '_door' in list(height_traversal[(x, z)])[-1] or "_carpet" in list(height_traversal[(x, z)])[-1]:
             if y - 1 == origin_y or abs(x - origin_x) < 3 or abs(x - ex) < 3 or abs(z - origin_z) < 3 or abs( z - ez) < 3:
                 exterior_heightmap[(x,z)] = y - 1
             else:

@@ -142,7 +142,7 @@ class HEIGHTMAPS(Enum):
 	OCEAN_FLOOR = 3
 	WORLD_SURFACE = 4
 
-class TYPE_TILES:
+class BLOCK_TYPE:
 	tile_sets = {
 		TYPE.WATER.value: {  #WATER
 			"minecraft:water",

@@ -26,7 +26,7 @@ building = '../../../schemes/Sector_test_1'
 sim = src.simulation.Simulation(area, rendering_step_duration=0.2, run_start=False)
 f = open(building, "r")
 r = f.readline().split(' ')
-sim.state.create_road((4,1), (4,1), road_type=src.my_utils.TYPE.MAJOR_ROAD.name)
+sim.state.create_road((4, 1), (4, 1), road_type=src.my_utils.TYPE.MAJOR_ROAD.name)
 sim.state.construction.add(sim.state.nodes[sim.state.node_pointers[(1,1)]])
 
 print(sim.state.construction)
