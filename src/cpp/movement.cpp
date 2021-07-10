@@ -1,3 +1,4 @@
+
 extern "C" // required when using C++ compiler
 long long mysum(int n, int* array) {
     // return type is 64 bit integer

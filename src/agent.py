@@ -690,8 +690,8 @@ class Agent:
                 print(f"  {self.name} is building: {building[10:]}")
                 self.build_params = result
                 tx, tz = result[0].center
-                path = self.state.pathfinder.get_path((self.x, self.z), (tx, tz), self.state.len_x, self.state.len_z,
-                                                                  self.state.legal_actions)
+                path = self.state.pathfinder.search((self.x, self.z), (tx, tz), self.state.len_x, self.state.len_z,
+                                                    self.state.legal_actions)
                 self.build_cost = cost
                 self.shared_resources[self.building_material] -= cost  # preemptively apply cost to avoid races
                 self.is_busy = True
@@ -738,8 +738,8 @@ class Agent:
                     tz = self.z
                     # exit(1)  # TODO this is will prolly never happen
                 self.state.saplings.append((tx, tz))
-                path = self.state.pathfinder.get_path((self.x, self.z), (tx, tz), self.state.len_x, self.state.len_z,
-                                                      self.state.legal_actions)
+                path = self.state.pathfinder.search((self.x, self.z), (tx, tz), self.state.len_x, self.state.len_z,
+                                                    self.state.legal_actions)
                 self.set_path(path)
                 self.is_placing_sapling = True
             # self.is_busy = True  # dont get interrupted because operations were expensive
@@ -773,14 +773,14 @@ class Agent:
                 if search_neighbors_instead == True:
                     for pos in src.movement_backup.adjacents(self.state, *chosen_spot):
                         if self.state.sectors[pos[0], pos[1]] == self.state.sectors[self.x][self.z]:
-                            path = self.state.pathfinder.get_path((self.x, self.z), pos, self.state.len_x, self.state.len_z, self.state.legal_actions)
+                            path = self.state.pathfinder.search((self.x, self.z), pos, self.state.len_x, self.state.len_z, self.state.legal_actions)
                             self.set_path(path)
                             return True
                     closed.add(chosen_spot)
                 else:
                     if self.state.sectors[chosen_spot[0]][chosen_spot[1]] == self.state.sectors[self.x][self.z]:
-                        path = self.state.pathfinder.get_path((self.x, self.z), (chosen_spot[0], chosen_spot[1]), self.state.len_x, self.state.len_z,
-                                                              self.state.legal_actions)
+                        path = self.state.pathfinder.search((self.x, self.z), (chosen_spot[0], chosen_spot[1]), self.state.len_x, self.state.len_z,
+                                                            self.state.legal_actions)
                         self.set_path(path)
                         return True
                     closed.add(chosen_spot)

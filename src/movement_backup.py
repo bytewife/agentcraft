@@ -81,9 +81,8 @@ def check_if_legal_move(state, x, y, z, x_offset, z_offset, jump_ability, height
     target_block = state.blocks(target_x,target_y - 1,target_z)
     if target_block in unwalkable_blocks: return False
     if abs(y - target_y) > jump_ability: return False
-    i = 1
-    if target_y + i > state.len_y-1: return False  # out of bounds
-    target = state.blocks(target_x,target_y + i,target_z)
+    if target_y + 1 > state.len_y-1: return False  # out of bounds
+    target = state.blocks(target_x,target_y + 1,target_z)
     if not ':' in target:
         target = "minecraft:"+target
     if target[-1] == ']':
