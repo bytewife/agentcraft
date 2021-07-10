@@ -10,9 +10,10 @@ if __name__ == '__main__':
     setup(
         name='agentcraft',
         description='Settlement Generator + Agent Simulation in Minecraft',
-        license='BSD',
+        license='MIT',
         url="https://github.com/aith/agentcraft",
         python_requires=">=3.9",
+        install_requires=["bitarray", "numpy", "names", "nbt", "requests", "scipy", "wonderwords"],
         ext_modules=[Extension('movement', [CPP_DIR + 'movement.cpp'],
                                include_dirs=[CPP_DIR],  # For headers I believe
                                # library_dirs=[],
@@ -21,9 +22,6 @@ if __name__ == '__main__':
                                ),
                      Extension('movement', [CPP_DIR + 'movement.cpp'],
                                include_dirs=[CPP_DIR],  # For headers I believe
-                               # library_dirs=[],
-                               # libraries=[],
-                               # runtime_library_dirs = [],
                                )
                      ],
     )

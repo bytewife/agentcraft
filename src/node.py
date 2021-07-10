@@ -12,7 +12,7 @@ class Node:
     def __init__(self, state, center, types, size):
         self.center = center
         self.size = size
-        self.mask_type = set()
+        self.mask_type = set()  # Type given to Node but not Blocks
         self.mask_type.update(types)
         self.lot = None
         self.state = state
@@ -100,7 +100,7 @@ class Node:
         return self.type
 
 
-    def add_prosperity_to_node(self, amt):
+    def add_prosperity(self, amt):
         self.state.prosperity[self.center[0]][self.center[1]] += amt
         self.state.update_flags[self.center[0]][self.center[1]] = 1
 

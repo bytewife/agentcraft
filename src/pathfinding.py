@@ -168,36 +168,6 @@ class Pathfinding:
             x += 1
         return self.sectors
 
-    # def propagate_sector1(self, x, z, sector, sectors, sector_sizes, legal_actions, is_redoing=False):
-    #     open = [(x, z)]
-    #     closed = set()
-    #     while len(open) > 0:  # search all adjacent until you cant go anymore
-    #         pos = open.pop(0)
-    #         nx, nz = pos
-    #         if not is_redoing and sectors[nx][nz] != -1:
-    #             continue
-    #         sectors[nx][nz] = sector
-    #         sector_sizes[sector] += 1
-    #         for n in range(len(legal_actions[nx][nz])):  # check tiles reachable from here
-    #             if legal_actions[nx][nz][n] == True:
-    #                 dir = src.movement.directions[n]
-    #                 cx = nx + dir[0]
-    #                 cz = nz + dir[1]
-    #                 if cx < 0 or cx >= len(legal_actions) or cz < 0 or cz >= len(legal_actions[0]):
-    #                     continue
-    #                 childs_sector = sectors[cx][cz]
-    #                 if childs_sector != sector or childs_sector == -1:  # if the tile doesn't have a sector, add to list to expand
-    #                     child_pos = (cx, cz)
-    #                     if not child_pos in closed:
-    #                         open.append(child_pos)
-    #                     closed.add(child_pos)
-    #                 elif childs_sector != sector:
-    #                     sector_sizes[childs_sector] -= 1
-    #                     child_pos = (cx, cz)
-    #                     if not child_pos in closed:
-    #                         open.append(child_pos)  # the or allows re-sectoring
-    #                     closed.add(child_pos)
-
     def propagate_sector_depth_limited(self, x, z, sector, sectors, sector_sizes, legal_actions, is_redoing=False):
         open = [(x, z)]
         closed = set()

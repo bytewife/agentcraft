@@ -234,8 +234,6 @@ class Simulation:
             current = time.time()
         return True, times, i
 
-
-
     def handle_nodes(self):
         self.state.prosperity *= self.pDecay
         self.state.traffic *= self.tDecay
@@ -254,57 +252,31 @@ class Simulation:
                 return
 
             node.local_prosperity = sum([n.prosperity() for n in node.local()])
-            # print("going because local prosp is "+str(node.local_prosperity))
             node.local_traffic = sum([n.traffic() for n in node.range() if not self.state.out_of_bounds_Node(n.center[0], n.center[1])])
 
             road_found_far = len(set(node.range()) & set(self.state.roads))
-            # print("road found far is "+str(road_found_far))
             road_found_near = len(set(node.local()) & set(self.state.roads))
-            # print("road found near is "+str(road_found_far))
 
             # major roads
             if node.local_prosperity > self.maNum and not road_found_far:  # if node's local prosperity is high
-                # print("prosperity fulfilled; creating road")
                 if node.local_prosperity > self.brNum:  # bridge/new lot minimum
-                    # print("built major bridge road")
-                    # self.state.append_road(point=(i, j), road_type=src.my_utils.TYPE.MAJOR_ROAD.name, leave_lot=True, correction=self.corNum, bend_if_needed=True)
                     if self.state.append_road(point=(i, j), road_type=src.my_utils.TYPE.MAJOR_ROAD.name,
                                               correction=self.corNum, bend_if_needed=True):
                         self.state.generated_a_road = True
-                    # print("road 1: at point "+str((i,j)))
                 else:
-                    # print("built major normal road")
                     if self.state.append_road(point=(i, j), road_type=src.my_utils.TYPE.MAJOR_ROAD.name,
                                               correction=self.corNum, bend_if_needed=True):
                         self.state.generated_a_road = True
-                    # print("road 2: at point " + str((i, j)))
             if node.local_prosperity > self.buNum and road_found_near:
-                # print("prosperity fulfilled; creating building")
                 self.state.set_type_building(node.local()) # wait, the local is a building?
-
-            # if self.phase >= 2:
-            #     # bypasses
-            #     if node.local_traffic > self.byNum and not road_found_far:
-            #         # self.state.set_new_bypass(i, j, self.corNum)
-            #         self.state.set_new_bypass(i, j, self.corNum)
-
             # minor roads
             if self.phase >= 3:
-                # find closest road node, connect to it
                 if node.local_prosperity > self.miNum and not road_found_near:
-                    # print("building minor road")
-                    # if not len([n for n in node.plot() if Type.BUILDING not in n.type]):
                     pass
                     self.state.append_road((i, j), src.my_utils.TYPE.MINOR_ROAD.name, correction=self.corNum,
                                            bend_if_needed=True)
-
-                # calculate reservations of greenery
                 elif src.my_utils.TYPE.TREE.name in node.get_type() or src.my_utils.TYPE.GREEN.name in node.get_type():
                     if len(node.neighbors() & self.state.construction):
                         lot = node.get_lot()
                         if lot is not None:
                             self.state.set_type_building(lot)
-
-
-        # if use_auto_motive:
-        #     agent.auto_motive()

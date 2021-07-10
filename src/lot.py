@@ -20,16 +20,21 @@ class Lot:
 
         lot = set([center_node])
         self.border = set()
-        while True:
-            neighbors = set([e for n in lot for e in n.adjacent() if \
-                             e not in lot and e.lot is None and e.center[0] != pt1[0] and e.center[0] != pt2[0] and
-                             e.center[1] != pt1[1] and e.center[1] != pt2[1] \
-                             and src.my_utils.TYPE.WATER.name not in e.mask_type])
-            if len(neighbors) > 0:
-                lot.update(neighbors)
-                self.border = neighbors
-            else:
-                break
+        def comp_neighbors(self, lot):
+            while True:
+                neighbors = set([e for n in lot for e in n.adjacent() \
+                                 if e not in lot \
+                                 and e.lot is None \
+                                 and e.center[0] not in [pt1[0], pt2[0]] \
+                                 and e.center[1] not in [pt1[1], pt2[1]] \
+                                 and src.my_utils.TYPE.WATER.name not in e.mask_type])
+                if len(neighbors) > 0:
+                    lot.update(neighbors)
+                    self.border = neighbors
+                else:
+                    break
+
+        comp_neighbors(self,lot)
 
         for node in lot:
             node.lot = self

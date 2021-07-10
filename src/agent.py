@@ -379,7 +379,7 @@ class Agent:
         self.x = new_x
         self.z = new_z
         self.y = walkable_heightmap[new_x][new_z]
-        self.state.add_prosperity_from_tile(self.x, self.z, src.my_utils.ACTION_PROSPERITY.WALKING)
+        self.state.add_prosperity(self.x, self.z, src.my_utils.ACTION_PROSPERITY.WALKING)
         self.state.agents[self] = (self.x, self.y, self.z)
 
     def update_node_occupancy(self, x1, z1, x2, z2):
@@ -800,7 +800,7 @@ class Agent:
             by = int(state.abs_ground_hm[bx][bz]) - self.state.world_y  # this isn't being updated in heightmap
             if check_func(self.state, bx, by, bz):
                 status = manip_func(self.state, bx, by, bz)
-                state.add_prosperity_from_tile(bx, bz, prosperity_inc)
+                state.add_prosperity(bx, bz, prosperity_inc)
                 # if status == src.manipulation.TASK_OUTCOME.SUCCESS.name or status == src.manipulation.TASK_OUTCOME.IN_PROGRESS.name:
                 #     break  # cut one at a time
                 return status, bx, bz
