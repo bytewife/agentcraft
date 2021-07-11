@@ -1,5 +1,5 @@
 # AgentCraft
-An adaptive settlement creation using a social agent simulation in Minecraft! This is my entry for the [2021 Generative Design in Minecraft](https://gendesignmc.wikidot.com/wiki:settlement-generation-competition) competition (including the Chronicle Challenge)!  
+An adaptive settlement creation using a social agent simulation in Minecraft! This is my entry for the [2021 Generative Design in Minecraft](https://gendesignmc.wikidot.com/wiki:settlement-generation-competition) competition (including the Chronicle Challenge). 
 Video demos:  
 + [Mountain Settlement](https://www.youtube.com/watch?v=Gc5h54Bus_k)  
 + [Supercut](https://youtu.be/DGLiWOxWLig)  
@@ -14,7 +14,11 @@ Tested on Minecraft 1.16.5, Python 3.9
 ### Install Dependencies
 Install the following packages with setup.py:
 ```
-python3 setup.py
+python3 setup.py install
+```
+or download the dependencies manually:
+```
+pip install bitarray numpy names nbt requests scipy wonderwords
 ```
 
 ### Install Forge
@@ -64,6 +68,3 @@ Thank you:
 + Asiiah Song & Jim Whitehead for their [TownSim generator](https://github.com/AugmentedDesignLab/town-sim-py), which largely inspired the road generation system
 + Troy, Ryan, & Trent for their pathfinding code in their 2020 [entry](https://gendesignmc.wikidot.com/wiki:2020-settlement-generation-competition)
 + [Blinkenlights](https://github.com/Flashing-Blinkenlights) for help structuring the project
-
-## Known Bugs
-+ Wells are functioning but not visible

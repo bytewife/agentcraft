@@ -600,6 +600,7 @@ class Agent:
         Perform REPLENISH task
         :return:
         """
+
         def is_in_state_saplings(state, x, y, z):
             result = (x, z) in state.saplings
             if self.state.blocks(x, self.state.static_ground_hm[x][z], z) in src.utils.BLOCK_TYPE.tile_sets[
@@ -876,7 +877,7 @@ class Agent:
                         self.set_path(path)
                         return True
                     closed.add(chosen_spot)
-        self.set_path([]) # FAILURE
+        self.set_path([])  # FAILURE
         return False
 
     def collect_from_adjacent_spot(self, state, check_func, manip_func, prosperity_inc):
@@ -907,8 +908,8 @@ class Agent:
         http_framework.interfaceUtils.runCommand(kill_cmd)
         R = self.is_resting * 2
         S = self.is_mid_socializing * ((self.motive == self.Motive.SOCIALIZE_LOVER.name) * 4) + (
-                    (self.motive == self.Motive.SOCIALIZE_FRIEND.name) * 6) + (
-                        (self.motive == self.Motive.SOCIALIZE_ENEMY.name) * 8)
+                (self.motive == self.Motive.SOCIALIZE_FRIEND.name) * 6) + (
+                    (self.motive == self.Motive.SOCIALIZE_ENEMY.name) * 8)
         self.walk_stage = min(((self.walk_stage - R > 0) ^ 1) + R + S, 9)  # flip bit
         # RENDERING COMMAND
         spawn_cmd = """\
