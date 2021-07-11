@@ -70,7 +70,7 @@ class State:
             self.heightmaps = world_slice.heightmaps
             self.built = set() # Bulding nodes
             self.foreign_built = set() # non-generated Building nodes
-            self.road_set = choice(src.utils.ROAD_BLOCKS)
+            self.ROAD_CHOICE = choice(src.utils.ROAD_BLOCKS)
             self.generated_a_road = False  # prevents buildings blocking in the roads
             self.nodes_dict = {}
             ##### REUSE PRECOMPUTATIONS
@@ -1448,7 +1448,6 @@ class State:
                     block_type = 0
                     facing_data = False
                     block = choice(self.ROAD_CHOICE[0])
-                    # TODO make sure these arent overriden
                     if up_slab_next or up_stairs_next:
                         if up_slab_next:
                             up_slab_next = False
@@ -1815,9 +1814,7 @@ class State:
                     x = max(min(x, self.last_node_pointer_x), 0)
                     z = max(min(z, self.last_node_pointer_z), 0)
                 if abs(x2 - x) > xthr and abs(z2 - z) > zthr:
-                    if not state.add_lot([(x2, z2), (x, z)]):
-                        print("leave_lot = {} add lot failed".format(leave_lot))
-                        return None, None
+                    pass
         points = src.line_drawing.get_line((x, z), (node2.center[0], node2.center[1]))
         if len(points) <= 2:
             return None, None
