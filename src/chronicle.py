@@ -1,13 +1,16 @@
-import src.agent
+#! /usr/bin/python3
+"""
+Generate timeline of settlement's historical events
+"""
+
 import http_framework.interfaceUtils
-import src.states
 from random import choice, random
 import run
 import wonderwords
 
-word_picker = wonderwords.RandomWord()
+WORD_PICKER = wonderwords.RandomWord()
 
-chronicle_events = {
+CHRONICLE_EVENTS = {
     "LOGGING": {"going": ["{a.name} wrote one {A} song about {l.name}. It became a local hit.", "{a.name} catalogued some {A} variety of fauna during their walk."],
                 "doing": ["{a.name} discovered a{n} {A} style of log-cutting! It was shared amongst friends.", "{a.name} hacked away at a{n} {A} {a.last_log_type} tree."]},
     "BUILD": {"going": ["{a.name} gathered {A} supplies to follow the {a.build_params[4][11:]} blueprint!", "{a.name} gathered advice from {l.name} for their next building project."],
@@ -28,19 +31,30 @@ LINES_PER_PAGE = 13 # actually is 18 but need buffer
 MAX_TEXT_PER_PAGE = LINES_PER_PAGE*18 # actually is 23 but need buffer
 MAX_PAGES_PER_BOOK = 4
 
-chronicles_empty = [['']]
-chronicles = chronicles_empty.copy()  # array of BOOKS with arrays of PAGE text
+CHRONICLES_EMPTY = [['']]
+CHRONICLES = CHRONICLES_EMPTY.copy()  # array of BOOKS with arrays of PAGE text
+
 chronicle_book_index = 0
 chronicle_page_index = 0
 
 def chronicle_event(threshold_rate, motive, subcategory, time, agent, support=None):
+    """
+    Append event to chronicle if random() > given threshold
+    :param threshold_rate:
+    :param motive:
+    :param subcategory:
+    :param time:
+    :param agent:
+    :param support:
+    :return:
+    """
     if not run.IS_WRITING_CHRONICLE: return
-    adjective = word_picker.random_words(include_parts_of_speech=['adjectives'])[0]
+    adjective = WORD_PICKER.random_words(include_parts_of_speech=['adjectives'])[0]
     adjective_mod = 'n' if adjective[0] in ['a','e','i','o','u'] else ''
     try:
         if random() < threshold_rate:
             lover = agent.lover if agent.lover != None else agent.parent_2
-            choices = choice(chronicle_events[motive][subcategory])
+            choices = choice(CHRONICLE_EVENTS[motive][subcategory])
             child = None if len(agent.children) < 1 else agent.children[-1]
             result = choices.format(t=time, a=agent, l=lover, s=support, c=child, A=adjective, n=adjective_mod)
             result = f"{time}PC: " + result
@@ -52,21 +66,28 @@ def chronicle_event(threshold_rate, motive, subcategory, time, agent, support=No
 
 def append_to_chronicle(new_text):
     global chronicle_page_index, chronicle_book_index
-    text = chronicles[chronicle_book_index][chronicle_page_index] + new_text
+    text = CHRONICLES[chronicle_book_index][chronicle_page_index] + new_text
     if len(text) > MAX_TEXT_PER_PAGE:
         if chronicle_page_index < MAX_PAGES_PER_BOOK:
             chronicle_page_index += 1
-            chronicles[chronicle_book_index].append(new_text)
+            CHRONICLES[chronicle_book_index].append(new_text)
         elif chronicle_book_index+1 < 30:  # add new book if there's space in chest
             chronicle_page_index = 0
             chronicle_book_index += 1
-            chronicles.append([new_text])  # append BOOK with PAGE
+            CHRONICLES.append([new_text])  # append BOOK with PAGE
     else:
-        chronicles[chronicle_book_index][chronicle_page_index] += new_text
+        CHRONICLES[chronicle_book_index][chronicle_page_index] += new_text
 
 
 def make_book(text_pages, title ="", author ="", desc =""):
-    # append empty lines with spaces
+    """
+    Generate Written Book with in Minecraft item format
+    :param text_pages:
+    :param title:
+    :param author:
+    :param desc:
+    :return:
+    """
     bookstart = "pages:["
     pages_nbt = []
     for text in text_pages:
@@ -112,9 +133,15 @@ def add_items_to_chest(x, y, z, items):
         http_framework.interfaceUtils.runCommand(command)
 
 def create_chronicles(title, author):
+    """
+    Create list of Chronicles
+    :param title:
+    :param author:
+    :return:
+    """
     result = []
     i = 0
-    for book in chronicles:
+    for book in CHRONICLES:
         curr_title = title+f" {str(i+1)}"
         result.append((make_book(book, curr_title, author),1))
         i+=1
@@ -129,7 +156,18 @@ def place_chronicles(state, x,y,z, title, author):
     add_items_to_chest(ax, ay, az, nbt_books)
     # still need to step afterwards to render
 
-def setSignText(x, y, z, line1 = "", line2 = "", line3 = "", line4 = ""):
+def set_sign_text(x, y, z, line1 ="", line2 ="", line3 ="", line4 =""):
+    """
+    Set a sign at x,y,z with written text
+    :param x:
+    :param y:
+    :param z:
+    :param line1:
+    :param line2:
+    :param line3:
+    :param line4:
+    :return:
+    """
     l1 = 'Text1:\'{"text":"'+line1+'"}\''
     l2 = 'Text2:\'{"text":"'+line2+'"}\''
     l3 = 'Text3:\'{"text":"'+line3+'"}\''
@@ -139,7 +177,16 @@ def setSignText(x, y, z, line1 = "", line2 = "", line3 = "", line4 = ""):
                               + blockNBT)
 
 def write_coords_to_sign(x,y,z,start_xz, chronicle_coords):
+    """
+    Generate Settlement coordinates on a sign
+    :param x:
+    :param y:
+    :param z:
+    :param start_xz:
+    :param chronicle_coords:
+    :return:
+    """
     if run.IS_WRITING_CHRONICLE:
-        setSignText(x,y,z,f"result x {start_xz[0]}", f"result z {start_xz[1]}", "chronicles at", f"{start_xz[0]}, {start_xz[1]}")
+        set_sign_text(x, y, z, f"result x {start_xz[0]}", f"result z {start_xz[1]}", "chronicles at", f"{start_xz[0]}, {start_xz[1]}")
     else:
-        setSignText(x,y,z,f"result x {start_xz[0]}", f"result z {start_xz[1]}")
+        set_sign_text(x, y, z, f"result x {start_xz[0]}", f"result z {start_xz[1]}")

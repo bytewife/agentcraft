@@ -1,5 +1,10 @@
-import src.my_utils
-import src.movement_backup
+"""
+###Node Class
+3x3 areas of blocks that the settlement is built upon
+"""
+
+import src.utils
+import src.legal
 import math
 
 class Node:
@@ -68,7 +73,7 @@ class Node:
         if not self.gend_local:
             for pos in self.local_centers:
                 node = self.state.nodes(*pos)
-                if src.my_utils.TYPE.WATER.name in node.get_type():
+                if src.utils.TYPE.WATER.name in node.get_type():
                     continue
                 self.local_cached.add(node)
             self.gend_local = True
@@ -92,7 +97,7 @@ class Node:
 
     def get_type(self):
         if self in self.state.built:
-            self.add_mask_type(src.my_utils.TYPE.BUILT.name)
+            self.add_mask_type(src.utils.TYPE.BUILT.name)
         self.type = set()
         for tile_pos in self.get_tiles():
             self.type.add(self.state.types[tile_pos[0]][tile_pos[1]])  # each block has a single type
@@ -126,7 +131,7 @@ class Node:
 
     def gen_adjacent_centers(self, state):
         adj = set()
-        for dir in src.movement_backup.directions:
+        for dir in src.legal.ALL_DIRS:
             pos = (self.center[0] + dir[0] * self.size, self.center[1] + dir[1] * self.size)
             if state.out_of_bounds_Node(*pos): continue
             adj.add(pos)
@@ -218,13 +223,13 @@ class Node:
         new_neighbors = set()
         for i in range(5):
             new_neighbors = set([e for n in lot for e in n.adjacent() if e not in lot and (
-                    src.my_utils.TYPE.GREEN.name in e.mask_type or src.my_utils.TYPE.TREE.name in e.mask_type or src.my_utils.TYPE.CONSTRUCTION.name in e.mask_type)])
-            accept = set([n for n in new_neighbors if src.my_utils.TYPE.CONSTRUCTION.name not in n.mask_type])
+                    src.utils.TYPE.GREEN.name in e.mask_type or src.utils.TYPE.TREE.name in e.mask_type or src.utils.TYPE.CONSTRUCTION.name in e.mask_type)])
+            accept = set([n for n in new_neighbors if src.utils.TYPE.CONSTRUCTION.name not in n.mask_type])
             if len(new_neighbors) == 0:
                 break
             lot.update(accept)
         if len([n for n in new_neighbors if
-                src.my_utils.TYPE.CONSTRUCTION.name not in n.mask_type]) == 0:  # neighbors except self
+                src.utils.TYPE.CONSTRUCTION.name not in n.mask_type]) == 0:  # neighbors except self
             return lot
         else:
             return None

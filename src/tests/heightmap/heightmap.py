@@ -2,7 +2,7 @@ import src.states
 import src.scheme_utils
 import src.manipulation
 import http_framework.worldLoader
-import src.my_utils
+import src.utils
 import src.simulation
 
 x1 = -3
@@ -10,7 +10,7 @@ z1 = 47
 x2 = -8
 z2 = 52
 area = [x1,z1,x2,z2]
-area = src.my_utils.correct_area(area)
+area = src.utils.correct_area(area)
 
 sim = src.simulation.Simulation(area)
 

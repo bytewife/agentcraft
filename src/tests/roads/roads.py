@@ -4,10 +4,10 @@ import src.manipulation
 import src.simulation
 import http_framework.worldLoader
 import http_framework.interfaceUtils
-import src.my_utils
+import src.utils
 import src.agent
 import src.states
-from src.linedrawing import get_line
+from src.line_drawing import get_line
 from enum import Enum
 
 x1 = -10
@@ -15,7 +15,7 @@ z1 = 35
 x2 = -33
 z2 = 64
 area = [x1,z1,x2,z2]
-area = src.my_utils.correct_area(area)
+area = src.utils.correct_area(area)
 file_name = ""
 sim = src.simulation.Simulation(area)
 

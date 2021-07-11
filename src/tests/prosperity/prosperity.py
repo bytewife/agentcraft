@@ -4,12 +4,12 @@ import src.manipulation
 import src.simulation
 import http_framework.worldLoader
 import http_framework.interfaceUtils
-import src.my_utils
+import src.utils
 import src.agent
 import src.states
 import numpy as np
 
-from src.linedrawing import get_line
+from src.line_drawing import get_line
 from enum import Enum
 
 # x1 = 77
@@ -22,7 +22,7 @@ x2 = -73
 z2 = 134
 
 area = [x1,z1,x2,z2]
-area = src.my_utils.correct_area(area)
+area = src.utils.correct_area(area)
 file_name = ""
 # a = np.full((8, 8), 1.0)
 # a *= 0.8
@@ -50,7 +50,7 @@ for b in sim.state.construction:
     z = b.center[1]
     y = sim.state.rel_ground_hm[x][z] + 1
     sim.state.set_block(x,y,z,"minecraft:gold_block")
-    if src.my_utils.TYPE.WATER.name in b.get_type():
+    if src.utils.TYPE.WATER.name in b.get_type():
         pass
         # print("water found!")
 

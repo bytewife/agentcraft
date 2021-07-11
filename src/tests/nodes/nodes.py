@@ -3,7 +3,7 @@ import src.scheme_utils
 import src.manipulation
 import src.simulation
 import http_framework.worldLoader
-import src.my_utils
+import src.utils
 import src.agent
 from enum import Enum
 from math import floor, ceil
@@ -39,7 +39,7 @@ z1 = 21
 x2 = -23
 z2 = 34
 area = [x1,z1,x2,z2]
-area = src.my_utils.correct_area(area)
+area = src.utils.correct_area(area)
 sim = src.simulation.Simulation(area)
 # print(sim.state.abs_ground_hm)
 # sim.step(16, True, 1.0)

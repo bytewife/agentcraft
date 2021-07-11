@@ -12,9 +12,9 @@ Paper (WIP) [here](https://aith.github.io/assets/pdf/AgentCraft__EXAG_2021__.dra
 Tested on Minecraft 1.16.5, Python 3.9
 
 ### Install Dependencies
-Install the following packages with pip:
+Install the following packages with setup.py:
 ```
-bitarray numpy names nbt requests scipy wonderwords
+python3 setup.py
 ```
 
 ### Install Forge

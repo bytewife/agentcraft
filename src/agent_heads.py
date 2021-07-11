@@ -1,3 +1,0 @@
-AGENT_HEADS = [
-
-]

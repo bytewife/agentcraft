@@ -9,16 +9,15 @@ __version__ = "1.0"
 import http_framework.interfaceUtils
 import http_framework.worldLoader
 
-import src.my_utils
-import src.movement_backup
+import src.utils
+import src.legal
 import src.pathfinding
 import src.scheme_utils
 import src.agent
-import src.linedrawing
+import src.line_drawing
 import src.manipulation
 import src.chronicle
 import src.node
-import src.lot
 import src.road_segment
 
 from random import choice, random, randint
@@ -71,7 +70,7 @@ class State:
             self.heightmaps = world_slice.heightmaps
             self.built = set() # Bulding nodes
             self.foreign_built = set() # non-generated Building nodes
-            self.road_set = choice(src.my_utils.set_choices)
+            self.road_set = choice(src.utils.ROAD_BLOCKS)
             self.generated_a_road = False  # prevents buildings blocking in the roads
             self.nodes_dict = {}
             ##### REUSE PRECOMPUTATIONS
@@ -89,12 +88,12 @@ class State:
             else:
                 self.types = precomp_types
             if precomp_legal_actions is None:
-                self.legal_actions = src.movement_backup.gen_all_legal_actions(self,
-                                                                               self.blocks_arr,
-                                                                               vertical_ability=self.AGENT_JUMP,
-                                                                               heightmap=self.rel_ground_hm,
-                                                                               actor_height=self.AGENT_HEIGHT,
-                                                                               unwalkable_blocks=["minecraft:water",
+                self.legal_actions = src.legal.gen_all_legal_actions(self,
+                                                                     self.blocks_arr,
+                                                                     vertical_ability=self.AGENT_JUMP,
+                                                                     heightmap=self.rel_ground_hm,
+                                                                     actor_height=self.AGENT_HEIGHT,
+                                                                     unwalkable_blocks=["minecraft:water",
                                                                                                   'minecraft:lava'])
             else:
                 self.legal_actions = precomp_legal_actions
@@ -119,13 +118,13 @@ class State:
             self.total_changed_blocks_xz = set()
             self.phase = 1
             ##### BUILDINGS
-            self.build_minimum_phase_1 = max(*[building_pair[1] for building_pair in src.my_utils.STRUCTURES['small']])
-            self.build_minimum_phase_2 = max(*[building_pair[1] for building_pair in src.my_utils.STRUCTURES['med']])
-            self.build_minimum_phase_3 = max(*[building_pair[1] for building_pair in src.my_utils.STRUCTURES['large']])
+            self.build_minimum_phase_1 = max(*[building_pair[1] for building_pair in src.utils.STRUCTURES['small']])
+            self.build_minimum_phase_2 = max(*[building_pair[1] for building_pair in src.utils.STRUCTURES['med']])
+            self.build_minimum_phase_3 = max(*[building_pair[1] for building_pair in src.utils.STRUCTURES['large']])
             # TODO parametrize these
             self.phase2threshold = 200
             self.phase3threshold = 500
-            self.flag_color = choice(src.my_utils.colors)
+            self.flag_color = choice(src.utils.COLOR_PAIRS)
             #####
             self.traverse_from = np.copy(self.rel_ground_hm)
             self.traverse_update_flags = np.full((len(self.rel_ground_hm), len(self.rel_ground_hm[0])), False,
@@ -183,7 +182,7 @@ class State:
         self.total_changed_blocks = {}
         self.total_changed_blocks_xz.clear()
         self.changed_blocks_xz.clear()
-        src.chronicle.chronicles = src.chronicle.chronicles_empty.copy()
+        src.chronicle.CHRONICLES = src.chronicle.CHRONICLES_EMPTY.copy()
         self.agent_nodes = self.init_agent_nodes()
 
     def blocks(self, x, y, z):
@@ -209,7 +208,7 @@ class State:
             for z in range(len(a[0])):
                 y = a[x][z] - 1
                 while y > 0 and (src.manipulation.is_log(self, x, y, z) or self.blocks(x, y, z) in
-                                 src.my_utils.BLOCK_TYPE.tile_sets[src.my_utils.TYPE.PASSTHROUGH.value]):
+                                 src.utils.BLOCK_TYPE.tile_sets[src.utils.TYPE.PASSTHROUGH.value]):
                     y -= 1
                 hm[x][z] = y + 1
         return hm
@@ -292,7 +291,7 @@ class State:
         # Get rotation based on neighboring road
         found_road = None
         face_dir = None
-        for dir in src.movement_backup.cardinals:  # maybe make this cardinal only
+        for dir in src.legal.CARDINAL_DIRS:  # maybe make this cardinal only
             nx = ctrn_node.center[0] + dir[0] * ctrn_node.size
             nz = ctrn_node.center[1] + dir[1] * ctrn_node.size
             if self.out_of_bounds_Node(nx, nz): continue
@@ -316,7 +315,7 @@ class State:
         # Find site where x and z are reversed. this rotates
         highest_y = self.rel_ground_hm[ctrn_node.center[0]][ctrn_node.center[1]]
         lowest_y = self.rel_ground_hm[ctrn_node.center[0]][ctrn_node.center[1]]
-        for dir in src.movement_backup.diagonals:
+        for dir in src.legal.DIAGONAL_DIRS:
             if found_ctrn_dir != None:
                 break
             tiles = 0
@@ -425,10 +424,10 @@ class State:
                 tz = tile[1]
                 traverse = self.traverse_up(tx, tz, py - 1)
                 block = self.blocks(tx, py, tz)
-                if block in src.my_utils.BLOCK_TYPE.tile_sets[src.my_utils.TYPE.PASSTHROUGH.value]:
+                if block in src.utils.BLOCK_TYPE.tile_sets[src.utils.TYPE.PASSTHROUGH.value]:
                     block = self.blocks(tx, self.static_ground_hm[tx][tz] - 1, tz)
                     # Extend with dirt if road block
-                    if block in src.my_utils.BLOCK_TYPE.tile_sets[src.my_utils.TYPE.MAJOR_ROAD.value]:
+                    if block in src.utils.BLOCK_TYPE.tile_sets[src.utils.TYPE.MAJOR_ROAD.value]:
                         fill = "minecraft:dirt"
                         set_state_block(self, tx, self.static_ground_hm[tx][tz] - 1, tz, fill)
                     if len(traverse) > 1:
@@ -557,7 +556,7 @@ class State:
         self.exterior_heightmap.update(exterior_heightmap)
         self.create_road(found_road.center, ctrn_node.center, road_type="None", points=None, add_road_type=True)
         for n in front_nodes:
-            self.append_road(n.center, src.my_utils.TYPE.MINOR_ROAD.name)
+            self.append_road(n.center, src.utils.TYPE.MINOR_ROAD.name)
         for node in list(found_nodes):
             if node in self.construction:
                 self.construction.remove(node)
@@ -572,7 +571,7 @@ class State:
         return True, mean_y
 
     def get_nearest_tree(self, x, z, iterations=5):
-        return src.movement_backup.find_nearest(self, x, z, self.trees, 10, iterations, 15)
+        return src.pathfinding.find_nearest(self, x, z, self.trees, 10, iterations, 15)
 
     def init_node_pointers(self, len_x, len_z, node_size):
         """
@@ -596,7 +595,7 @@ class State:
                 cx = x * node_size + 1
                 cz = z * node_size + 1
                 node_pointers[cx][cz] = (cx, cz)  # TODO can lazy load this rather than gen here
-                for dir in src.movement_backup.directions:
+                for dir in src.legal.ALL_DIRS:
                     nx = cx + dir[0]
                     nz = cz + dir[1]
                     node_pointers[nx][nz] = (cx, cz)
@@ -617,7 +616,7 @@ class State:
         :return:
         """
         if (x, z) not in self.nodes_dict.keys():
-            node = src.node.Node(self, center=(x, z), types=[src.my_utils.TYPE.BROWN.name], size=self.NODE_SIZE)
+            node = src.node.Node(self, center=(x, z), types=[src.utils.TYPE.BROWN.name], size=self.NODE_SIZE)
             node.adjacent_centers = node.gen_adjacent_centers(self)
             node.neighbors_centers = node.gen_neighbors_centers(self)
             node.local_centers = node.gen_local_centers(self)
@@ -633,7 +632,7 @@ class State:
         :return:
         """
         x1, z1, x2, z2 = self.rect
-        abs_ground_hm = src.my_utils.get_heightmap(world_slice, "MOTION_BLOCKING_NO_LEAVES", -1)  # inclusive of ground
+        abs_ground_hm = src.utils.get_heightmap(world_slice, "MOTION_BLOCKING_NO_LEAVES", -1)  # inclusive of ground
         def get_y_bounds(hm):
             lowest = hm[0][0]
             highest = hm[0][0]
@@ -730,7 +729,7 @@ class State:
         """
         y = self.traverse_from[x][z] + 1  # don't start from top, but from max_building_height from rel
         while y > 0:
-            if self.blocks(x, y, z) not in src.my_utils.BLOCK_TYPE.tile_sets[src.my_utils.TYPE.PASSTHROUGH.value]:
+            if self.blocks(x, y, z) not in src.utils.BLOCK_TYPE.tile_sets[src.utils.TYPE.PASSTHROUGH.value]:
                 break
             y -= 1
         return y
@@ -747,7 +746,7 @@ class State:
             print("  Attempt: gen_types has empty lengths.")
         types = [["str" for j in range(zlen)] for i in range(xlen)]
         def add_blocks_near_land(x, z):
-            for dir in src.movement_backup.cardinals:
+            for dir in src.legal.CARDINAL_DIRS:
                 self.blocks_near_land.add((max(min(x + dir[0], self.len_x), 0), max(min(z + dir[1], self.len_z), 0)))
         for x in range(xlen):
             for z in range(zlen):
@@ -788,10 +787,10 @@ class State:
         """
         block_y = int(heightmap[x][z]) - 1 + yoffset
         block = self.blocks(x, block_y, z)
-        for i in range(1, len(src.my_utils.TYPE) + 1):
-            if block in src.my_utils.BLOCK_TYPE.tile_sets[i]:
-                return src.my_utils.TYPE(i)
-        return src.my_utils.TYPE.BROWN
+        for i in range(1, len(src.utils.TYPE) + 1):
+            if block in src.utils.BLOCK_TYPE.tile_sets[i]:
+                return src.utils.TYPE(i)
+        return src.utils.TYPE.BROWN
 
     def step(self, is_rendering=True, use_total_changed_blocks=False):
         """
@@ -849,12 +848,12 @@ class State:
                 if self.out_of_bounds_2D(bx, bz):
                     continue
                 # Update neighbor legal actions
-                self.legal_actions[bx][bz] = src.movement_backup.get_legal_actions_from_block(self, self.blocks_arr, bx,
-                                                                                              bz,
-                                                                                              self.AGENT_JUMP,
-                                                                                              self.rel_ground_hm,
-                                                                                              self.AGENT_HEIGHT,
-                                                                                              self.UNWALKABLE)
+                self.legal_actions[bx][bz] = src.legal.get_legal_actions_from_block(self, self.blocks_arr, bx,
+                                                                                    bz,
+                                                                                    self.AGENT_JUMP,
+                                                                                    self.rel_ground_hm,
+                                                                                    self.AGENT_HEIGHT,
+                                                                                    self.UNWALKABLE)
         # Update sector
         self.pathfinder.update_sector_for_block(x, z, self.sectors,
                                                 sector_sizes=self.pathfinder.sector_sizes,
@@ -917,36 +916,23 @@ class State:
         """
         return x < 0 or z < 0 or x > self.last_node_pointer_x or z > self.last_node_pointer_z  # the problem is that some assets don't point to a tile.
 
-    def set_block(self, x, y, z, block_name):
-        """
-        DEBUG ONLY
-        :param x:
-        :param y:
-        :param z:
-        :param block_name:
-        :return:
-        """
-        self.blocks_arr[x][y][z] = block_name
-        key = src.my_utils.convert_coords_to_key(x, y, z)
-        self.changed_blocks[key] = block_name
-
     def set_type_building(self, nodes):
         for node in nodes:
             if not node in self.built:
-                if src.my_utils.TYPE.GREEN.name in node.get_type() or \
-                        src.my_utils.TYPE.BROWN.name in node.type or \
-                        src.my_utils.TYPE.TREE.name in node.type:
+                if src.utils.TYPE.GREEN.name in node.get_type() or \
+                        src.utils.TYPE.BROWN.name in node.type or \
+                        src.utils.TYPE.TREE.name in node.type:
                     node.clear_type(self)
-                    node.add_mask_type(src.my_utils.TYPE.CONSTRUCTION.name)
+                    node.add_mask_type(src.utils.TYPE.CONSTRUCTION.name)
                     self.construction.add(node)
 
     def set_type_road(self, node_points, road_type):
         for point in node_points:
             node = self.nodes(*self.node_pointers[point])
-            if src.my_utils.TYPE.WATER.name in node.get_type():
+            if src.utils.TYPE.WATER.name in node.get_type():
                 node.clear_type(self)
                 node.add_mask_type(
-                    src.my_utils.TYPE.BRIDGE.name)  # we don't use add_type. instead we give each tile a type
+                    src.utils.TYPE.BRIDGE.name)  # we don't use add_type. instead we give each tile a type
             else:
                 node.clear_type(self)
                 node.add_mask_type(road_type)
@@ -1006,7 +992,7 @@ class State:
     def init_main_st(self, viable_water_choices, attempt):
         """
         Initialize the starting road + building
-        Return
+        Returns:
         (True, old_water, p1, agent_a) on success
         (False, [], [], None)          on failure
         :param viable_water_choices:
@@ -1015,6 +1001,7 @@ class State:
         """
         well_tiles = []
         water_choices = viable_water_choices
+        ## Create well
         if len(self.water) <= 10:  # or create_well:
             sx = randint(0, self.last_node_pointer_x)
             sz = randint(0, self.last_node_pointer_z)
@@ -1068,7 +1055,7 @@ class State:
             i = 0
             result = n1
             def is_safe_node(self, node):
-                return src.my_utils.TYPE.WATER.name not in node.type and src.my_utils.TYPE.LAVA.name not in node.type and src.my_utils.TYPE.FOREIGN_BUILT.name not in node.type
+                return src.utils.TYPE.WATER.name not in node.type and src.utils.TYPE.LAVA.name not in node.type and src.utils.TYPE.FOREIGN_BUILT.name not in node.type
             while not is_safe_node(self, result):  # generate and test until n1 isn't water
                 # n1 = np.random.choice(n1_options, replace=False)  # too slow?
                 result = n1_options.pop()
@@ -1088,7 +1075,7 @@ class State:
             self.water = old_water
             return False, [], [], None
         n2 = np.random.choice(n2_options, replace=False)  # n2 is based off of n1's range, - local to make it farther
-        points = src.linedrawing.get_line((n1.center[0], n1.center[1]), (n2.center[0], n2.center[1]))
+        points = src.line_drawing.get_line((n1.center[0], n1.center[1]), (n2.center[0], n2.center[1]))
         limit = 200
         def find_other_paths(self, node1, node2, n2_options, points, limit):
             """
@@ -1110,10 +1097,10 @@ class State:
                 find_new_n2 = False
 
                 def is_valid_path_block(block):
-                    return block not in src.my_utils.BLOCK_TYPE.tile_sets[
-                        src.my_utils.TYPE.WATER.value] and block not in \
-                           src.my_utils.BLOCK_TYPE.tile_sets[src.my_utils.TYPE.LAVA.value] and block not in \
-                           src.my_utils.BLOCK_TYPE.tile_sets[src.my_utils.TYPE.FOREIGN_BUILT.value]
+                    return block not in src.utils.BLOCK_TYPE.tile_sets[
+                        src.utils.TYPE.WATER.value] and block not in \
+                           src.utils.BLOCK_TYPE.tile_sets[src.utils.TYPE.LAVA.value] and block not in \
+                           src.utils.BLOCK_TYPE.tile_sets[src.utils.TYPE.FOREIGN_BUILT.value]
 
                 for p in points:
                     x = self.node_pointers[p][0]
@@ -1125,7 +1112,7 @@ class State:
                         if len(n2_options) < 1:
                             return False
                         n2 = n2_options.pop()
-                        points = src.linedrawing.get_line((n1.center[0], n1.center[1]), (n2.center[0], n2.center[1]))
+                        points = src.line_drawing.get_line((n1.center[0], n1.center[1]), (n2.center[0], n2.center[1]))
                         find_new_n2 = True
                         i += 1
                         break
@@ -1143,13 +1130,13 @@ class State:
         (x1, y1) = points[0]
         (x2, y2) = points[len(points) - 1]
         self.set_type_road(points,
-                           src.my_utils.TYPE.MAJOR_ROAD.name)  # TODO check if the fact that this leads to repeats causes issue
+                           src.utils.TYPE.MAJOR_ROAD.name)  # TODO check if the fact that this leads to repeats causes issue
         middle_nodes = []
         if len(points) > 2:
             middle_nodes = points[1:len(points) - 1]
         self.road_segs.add(
-            src.road_segment.RoadSegment(self.nodes(x1, y1), self.nodes(x2, y2), middle_nodes, src.my_utils.TYPE.MAJOR_ROAD.name,
-                        self.road_segs, self))
+            src.road_segment.RoadSegment(self.nodes(x1, y1), self.nodes(x2, y2), middle_nodes, src.utils.TYPE.MAJOR_ROAD.name,
+                                         self.road_segs, self))
         status = self.init_construction(points)
         if status == False:
             print(f"  Attempt {attempt}: tried to build road outside of bounds! Trying again~")
@@ -1158,7 +1145,7 @@ class State:
         p1 = (x1, y1)
         p2 = (x2, y2)
         # self.init_lots(*p1, *p2)  # main street is a lot
-        if self.create_road(node_pos1=p1, node_pos2=p2, road_type=src.my_utils.TYPE.MAJOR_ROAD.name) == False:
+        if self.create_road(node_pos1=p1, node_pos2=p2, road_type=src.utils.TYPE.MAJOR_ROAD.name) == False:
             print(f"  Attempt {attempt}: Main street wasn't valid! Trying again~")
             self.water = old_water
             return False, [], [], None
@@ -1307,7 +1294,7 @@ class State:
                 last_y = y
             return True
         if points == None:
-            block_path = src.linedrawing.get_line(node_pos1, node_pos2)  # inclusive
+            block_path = src.line_drawing.get_line(node_pos1, node_pos2)  # inclusive
         else:
             block_path = points
         if use_bend:
@@ -1316,21 +1303,21 @@ class State:
             if any(not is_valid(self, tile) for tile in block_path) or not is_walkable(self, block_path):
                 built_node_coords = [node.center for node in self.built]  # returns building node coords
                 built_diags = [(node[0] + dir[0] * self.NODE_SIZE, node[1] + dir[1] * self.NODE_SIZE)
-                               for node in built_node_coords for dir in src.movement_backup.diagonals if
+                               for node in built_node_coords for dir in src.legal.DIAGONAL_DIRS if
                                is_valid(self, (node[0] + dir[0] * self.NODE_SIZE, node[1] + dir[1] * self.NODE_SIZE))]
-                nearest_builts = src.movement_backup.find_nearest(self, *node_pos1, built_diags, 5, 30, 10)
+                nearest_builts = src.pathfinding.find_nearest(self, *node_pos1, built_diags, 5, 30, 10)
                 closed = set()
                 found_bend = False
                 for built in nearest_builts:
                     if found_bend == True: break
-                    for diag in src.movement_backup.diagonals:
+                    for diag in src.legal.DIAGONAL_DIRS:
                         nx = self.NODE_SIZE * diag[0] + built[0]
                         nz = self.NODE_SIZE * diag[1] + built[1]
                         if (nx, nz) in closed: continue
                         closed.add((nx, nz))
                         if self.out_of_bounds_Node(nx, nz): continue
-                        p1_to_diag = src.linedrawing.get_line(node_pos1,
-                                                              (nx, nz))  # TODO add aux to p1 so it checks neigrboars
+                        p1_to_diag = src.line_drawing.get_line(node_pos1,
+                                                               (nx, nz))  # TODO add aux to p1 so it checks neigrboars
                         if any(not is_valid(self, tile) for tile in p1_to_diag) or not is_walkable(self,
                                                                                                    p1_to_diag): continue
                         closest_point, p2_to_diag = self.get_closest_point(node=self.nodes(nx, nz),
@@ -1456,24 +1443,24 @@ class State:
                     py = y
                     pz = z
                     if (px, pz) in self.road_blocks or (
-                            py - 1 >= 0 and self.blocks(px, py - 1, pz) in src.my_utils.BLOCK_TYPE.tile_sets[
-                        src.my_utils.TYPE.MAJOR_ROAD.value]): continue  # might not work well.
+                            py - 1 >= 0 and self.blocks(px, py - 1, pz) in src.utils.BLOCK_TYPE.tile_sets[
+                        src.utils.TYPE.MAJOR_ROAD.value]): continue  # might not work well.
                     block_type = 0
                     facing_data = False
-                    block = choice(self.road_set[0])
+                    block = choice(self.ROAD_CHOICE[0])
                     # TODO make sure these arent overriden
                     if up_slab_next or up_stairs_next:
                         if up_slab_next:
                             up_slab_next = False
-                            block = choice(self.road_set[1])
+                            block = choice(self.ROAD_CHOICE[1])
                             block_type = 1
                         elif up_stairs_next:
                             if next_facing is not None:
                                 facing_data = next_facing
-                                block = choice(self.road_set[2]) + """[facing={facing}]""".format(facing=facing_data)
+                                block = choice(self.ROAD_CHOICE[2]) + """[facing={facing}]""".format(facing=facing_data)
                                 block_type = 2
                             else:
-                                block = choice(self.road_set[0])
+                                block = choice(self.ROAD_CHOICE[0])
                                 block_type = 1  # slab to make it smooth nonetheless
                                 is_diagonal = True
                             up_stairs_next = False
@@ -1519,11 +1506,11 @@ class State:
                                     pass
                                 if facing is not None:
                                     facing_data = facing
-                                    block = choice(self.road_set[2]) + """[facing={facing}]""".format(
+                                    block = choice(self.ROAD_CHOICE[2]) + """[facing={facing}]""".format(
                                         facing=facing_data)
                                     block_type = 2
                                 else:
-                                    block = choice(self.road_set[0])
+                                    block = choice(self.ROAD_CHOICE[0])
                                     block_type = 1
                                     is_diagonal = True
                             elif down_stairs_capping:  # slope -1
@@ -1543,15 +1530,15 @@ class State:
                                     pass
                                 if facing is not None:
                                     facing_data = facing
-                                    block = choice(self.road_set[2]) + """[facing={facing}]""".format(
+                                    block = choice(self.ROAD_CHOICE[2]) + """[facing={facing}]""".format(
                                         facing=facing_data)
                                     block_type = 2
                                 else:
-                                    block = choice(self.road_set[0])
+                                    block = choice(self.ROAD_CHOICE[0])
                                     block_type = 1
                                     is_diagonal = True
                             elif ndy < 0 and nndy == 0:  # slab below (in place)
-                                block = choice(self.road_set[1])
+                                block = choice(self.ROAD_CHOICE[1])
                                 block_type = 1
                             elif ndy > 0 and nndy > 0:  # slope 1
                                 dx = path[i + 2][0] - path[i + 1][0]
@@ -1576,10 +1563,10 @@ class State:
                             if ndy > 0:
                                 px = path[i + 1][0]
                                 pz = path[i + 1][1]
-                                block = choice(self.road_set[1])
+                                block = choice(self.ROAD_CHOICE[1])
                                 block_type = 1
                             elif ndy < 0:
-                                block = choice(self.road_set[1])
+                                block = choice(self.ROAD_CHOICE[1])
                                 block_type = 1
                     static_temp[px][pz] = py + 1
                     if not self.out_of_bounds_3D(px, py + 1, pz):
@@ -1619,8 +1606,8 @@ class State:
                 py = build_y - 1
                 traverse = self.traverse_up(tx, tz, py - 1)
                 block = self.blocks(tx, py, tz)
-                if block in src.my_utils.BLOCK_TYPE.tile_sets[src.my_utils.TYPE.PASSTHROUGH.value] or block in \
-                        src.my_utils.ROAD_SETS['default_slabs']:
+                if block in src.utils.BLOCK_TYPE.tile_sets[src.utils.TYPE.PASSTHROUGH.value] or block in \
+                        src.utils.ROAD_SETS['default_slabs']:
                     block = self.blocks(tx, self.static_ground_hm[tx][tz] - 1, tz)
                     fill = block
                     if len(traverse) > 0:
@@ -1647,8 +1634,8 @@ class State:
                 """
                 nx = x + offx
                 nz = z + offz
-                if (nx, nz) in self.road_blocks or self.blocks(nx, y - 1, nz) in src.my_utils.BLOCK_TYPE.tile_sets[
-                    src.my_utils.TYPE.MAJOR_ROAD.value]: return False  # might not work well.
+                if (nx, nz) in self.road_blocks or self.blocks(nx, y - 1, nz) in src.utils.BLOCK_TYPE.tile_sets[
+                    src.utils.TYPE.MAJOR_ROAD.value]: return False  # might not work well.
                 nonlocal main_path_set
                 # Validation checks
                 if src.manipulation.is_log(self, nx, y + 1, nz):
@@ -1661,28 +1648,28 @@ class State:
                         self.saplings.remove((nx, nz))
                 # No repeats
                 if (nx, nz, 1) not in main_path_set and random() < rate:  # Prioritize slabs
-                    if self.blocks(nx, y + 1, nz) in src.my_utils.BLOCK_TYPE.tile_sets[
-                        src.my_utils.TYPE.GREEN.value].union(
-                        src.my_utils.BLOCK_TYPE.tile_sets[src.my_utils.TYPE.PASSTHROUGH.value]) and \
+                    if self.blocks(nx, y + 1, nz) in src.utils.BLOCK_TYPE.tile_sets[
+                        src.utils.TYPE.GREEN.value].union(
+                        src.utils.BLOCK_TYPE.tile_sets[src.utils.TYPE.PASSTHROUGH.value]) and \
                             self.node_pointers[(nx, nz)] is not None and self.nodes(*self.node_pointers[(nx, nz)]) not in self.built:
                         set_scaffold_single(self, nx, y, nz)
                         set_state_block(self, nx, y + 1, nz, "minecraft:air")
                     if (nx, nz) in self.exterior_heightmap:
                         set_scaffold_single(self, nx, y, nz)
-                        set_state_block(self, nx, y, nz, choice(self.road_set[0]))
+                        set_state_block(self, nx, y, nz, choice(self.ROAD_CHOICE[0]))
                     else:
                         if facing:
                             if (facing[0] in ['e', 'w'] and offx == 0) or (facing[0] in ['n', 's'] and offz == 0):
                                 set_scaffold_single(self, nx, y, nz)
                                 set_state_block(self, nx, y, nz,
-                                                choice(self.road_set[type]) + """[facing={facing}]""".format(
+                                                choice(self.ROAD_CHOICE[type]) + """[facing={facing}]""".format(
                                                     facing=facing))
                         else:  # Correct
                             if dx is not None and (
                                     is_diagonal_stairs and dx == -offx or is_diagonal_stairs and dz == -offz):
                                 type = 0
                             set_scaffold_single(self, nx, y, nz)
-                            set_state_block(self, nx, y, nz, choice(self.road_set[type]))
+                            set_state_block(self, nx, y, nz, choice(self.ROAD_CHOICE[type]))
                     is_slab_or_stairs = type > 0
                     main_path_set.add((x + offx, z + offz, is_slab_or_stairs))
                     if type == 1:
@@ -1702,7 +1689,7 @@ class State:
                 add_aux_block(self, x, y, z, 0, -1, type, facing, is_diagonal, dx, dz)
 
         blocks_ordered, blocks_set = set_blocks_for_path(self, block_path, inner_block_rate)
-        for card in src.movement_backup.cardinals:
+        for card in src.legal.CARDINAL_DIRS:
             aux_path = []
             for block in block_path:
                 # Clamp
@@ -1729,7 +1716,7 @@ class State:
         :param breaks_list:
         :return:
         """
-        max_path = src.linedrawing.get_line(start, end)
+        max_path = src.line_drawing.get_line(start, end)
         result_path = []
         for tile in max_path:
             node_ptr = self.node_pointers[(tile)]
@@ -1772,8 +1759,8 @@ class State:
                                                           path_points)  # connects 2nd end of minor roads to the nearest major or minor road. I think it's a single point
         if closest_point is not None:
             point = closest_point
-            path_points.extend(src.linedrawing.get_line((x2, y2),
-                                                        point))  # append to the points list the same thing in reverse? or is this a diff line?
+            path_points.extend(src.line_drawing.get_line((x2, y2),
+                                                         point))  # append to the points list the same thing in reverse? or is this a diff line?
         status = self.create_road(point, (x2, y2), road_type=road_type, points=path_points,
                                   use_bend=bend_if_needed)  # , only_place_if_walkable=only_place_if_walkable, dont_rebuild)
         if status == False:
@@ -1789,9 +1776,9 @@ class State:
             if x2 >= self.last_node_pointer_x or z2 >= self.last_node_pointer_z or x2 < 0 or z2 < 0:
                 break
             landtype = self.nodes(*self.node_pointers[(x2, z2)]).get_type()
-            if src.my_utils.TYPE.GREEN.name in landtype or src.my_utils.TYPE.TREE.name in landtype or src.my_utils.TYPE.WATER.name in landtype:
+            if src.utils.TYPE.GREEN.name in landtype or src.utils.TYPE.TREE.name in landtype or src.utils.TYPE.WATER.name in landtype:
                 break
-            if src.my_utils.TYPE.MAJOR_ROAD.name in landtype or src.my_utils.TYPE.MINOR_ROAD.name in landtype:  # and src.my_utils.TYPE.BYPASS.name not in landtype:
+            if src.utils.TYPE.MAJOR_ROAD.name in landtype or src.utils.TYPE.MINOR_ROAD.name in landtype:  # and src.my_utils.TYPE.BYPASS.name not in landtype:
                 return (x2, z2)
             (x2, z2) = (x2 + x, z2 + z)
         return None
@@ -1808,7 +1795,7 @@ class State:
             if x2 >= self.last_node_pointer_x or z2 >= self.last_node_pointer_z or x2 < 0 or z2 < 0:
                 break
             landtype = self.nodes(*self.node_pointers[(x2, z2)]).get_type()
-            if src.my_utils.TYPE.WATER.name in landtype:
+            if src.utils.TYPE.WATER.name in landtype:
                 break
             if (x2, z2) in border:
                 return (x2, z2)
@@ -1831,12 +1818,12 @@ class State:
                     if not state.add_lot([(x2, z2), (x, z)]):
                         print("leave_lot = {} add lot failed".format(leave_lot))
                         return None, None
-        points = src.linedrawing.get_line((x, z), (node2.center[0], node2.center[1]))
+        points = src.line_drawing.get_line((x, z), (node2.center[0], node2.center[1]))
         if len(points) <= 2:
             return None, None
         if not leave_lot:
             for (i, j) in points:
-                if src.my_utils.TYPE.WATER.name in self.nodes(*self.node_pointers[(i, j)]).mask_type:
+                if src.utils.TYPE.WATER.name in self.nodes(*self.node_pointers[(i, j)]).mask_type:
                     return None, None
         closest_point = (node2.center[0], node2.center[1])
         return closest_point, points

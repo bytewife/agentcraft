@@ -11,11 +11,11 @@ import getopt
 import src.simulation
 import http_framework.interfaceUtils
 import time
-import src.my_utils
+import src.utils
 import src.agent
 import src.states
 
-import src.movement
+import src.legal
 
 IS_RENDERING_FRAMEWISE = True
 IS_WRITING_CHRONICLE = True
@@ -121,7 +121,7 @@ if __name__ == '__main__':
     start = time.time()
     x1, z1, x2, z2 = area
     print(f"Executing in area [{str(x1)}, {str(z1)}, {str(x2)}, {str(z2)}] with {steps} steps in {time_limit} seconds!")
-    area = src.my_utils.correct_area(area)
+    area = src.utils.correct_area(area)
     file_name = ""
     clean_rad = int(max(abs(x2-x1), abs(z2-z1)))
     clean_agents_cmd = "kill @e[type=minecraft:armor_stand,x={},y=64,z={},distance=..{}]".format(str((x2+x1)/2), str((z2+z1)/2), clean_rad)

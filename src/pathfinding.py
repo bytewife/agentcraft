@@ -1,5 +1,6 @@
 #! /usr/bin/python3
-"""### A* Implementation with Dynamic Sector Precomputation Optimization
+"""
+### A* Implementation with Dynamic Sector Precomputation Optimization
 Based on Troy, Ryan, & Trent's implementation.
 """
 __all__ = []
@@ -9,10 +10,23 @@ __version__ = "1.0"
 from heapq import heappop, heappush, heappushpop
 from math import sqrt
 from numpy import full_like
-import src.movement_backup
+from scipy.spatial import KDTree
+
+import src.legal
 from bitarray.util import count_xor, rindex
 
 class Pathfinding:
+
+    DIRECTIONS = {
+        0: (1, 0),
+        1: (0, 1),
+        2: (-1, 0),
+        3: (0, -1),
+        4: (1, 1),
+        5: (-1, 1),
+        6: (-1, -1),
+        7: (1, -1),
+    }
 
     MAX_SECTOR_PROPAGATION_DEPTH = 10 * 150
     CARDINAL_COST = 100
@@ -88,8 +102,8 @@ class Pathfinding:
         curr_legal_actions = all_legal_actions[x][z]
         for n in range(8):  # num of diff moves
             if curr_legal_actions[n] == False: continue
-            dx = src.movement_backup.directions[n][0]
-            dz = src.movement_backup.directions[n][1]
+            dx = src.legal.ALL_DIRS[n][0]
+            dz = src.legal.ALL_DIRS[n][1]
             tx = parent.pos[0] + dx
             tz = parent.pos[1] + dz
             if tx < 0 or tz < 0 or tx > max_x or tz > max_z:
@@ -183,7 +197,7 @@ class Pathfinding:
             sector_sizes[sector] += 1
             for n in range(8):  # check tiles reachable from here
                 if legal_actions[nx][nz][n] == True:
-                    dir = src.movement_backup.directions[n]
+                    dir = src.legal.ALL_DIRS[n]
                     cx = nx + dir[0]
                     cz = nz + dir[1]
                     if cx < 0 or cx >= len(legal_actions) or cz < 0 or cz >= len(legal_actions[0]):
@@ -226,7 +240,7 @@ class Pathfinding:
             self.add_to_sector(pos[0], pos[1], sector)
             for n in range(len(legal_actions[nx][nz])):  # check tiles reachable from here
                 if legal_actions[nx][nz][n]:
-                    dir = src.movement_backup.directions[n]
+                    dir = src.legal.ALL_DIRS[n]
                     cx = nx + dir[0]
                     cz = nz + dir[1]
                     if self.state.out_of_bounds_2D(cx, cz): continue
@@ -254,7 +268,7 @@ class Pathfinding:
             did_merge = False
             for bit in changed:
                 if bit == False: continue
-                dir = src.movement_backup.Directions[i]
+                dir = self.DIRECTIONS[i]
                 i += 1
                 ox = x+dir[0]
                 oz = z+dir[1]
@@ -283,3 +297,28 @@ class Pathfinding:
                 self.sectors[x][z] = self.n_sectors
                 self.propagate_sector_depth_limited(x, z, sector=self.n_sectors, sectors=self.sectors, sector_sizes=sector_sizes, legal_actions=legal_actions, is_redoing=True)
 
+
+def find_nearest(state, x, z, spot_coords, starting_search_radius, max_iterations=20, radius_inc=1): # can be used at a sort
+    """
+    Use KDTree to find nearest position within given spots
+    :param state:
+    :param x:
+    :param z:
+    :param spot_coords:
+    :param starting_search_radius:
+    :param max_iterations:
+    :param radius_inc:
+    :return:
+    """
+    if type(spot_coords) != list or len(spot_coords) <= 0: return []
+    kdtree = KDTree(spot_coords)
+    for iteration in range(max_iterations):
+        radius = starting_search_radius + iteration * radius_inc
+        idx = kdtree.query_ball_point([x, z], r=radius)
+        if len(idx) > 0:
+            result = []
+            for i in idx:
+                if (state.out_of_bounds_Node(*spot_coords[i])): continue
+                result.append(spot_coords[i])
+            return result
+    return []

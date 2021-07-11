@@ -7,11 +7,11 @@ __author__ = "aith"
 __version__ = "1.0"
 
 
-import src.my_utils
+import src.utils
 import src.states
 from enum import Enum
 from random import randint, random, choice
-import src.movement_backup
+import src.legal
 import math
 class TASK_OUTCOME(Enum):
     FAILURE = 0
@@ -49,7 +49,7 @@ def grow_leaves(state, x, tree_top_y, z, type, leaves_height):
                 if state.out_of_bounds_2D(lx, lz):
                     continue
                 dist = math.dist((lx,lz), (x,z))
-                if dist <= rad and not state.out_of_bounds_3D(lx,y,lz) and state.blocks(lx,y,lz )in src.my_utils.BLOCK_TYPE.tile_sets[src.my_utils.TYPE.PASSTHROUGH.value]:
+                if dist <= rad and not state.out_of_bounds_3D(lx,y,lz) and state.blocks(lx,y,lz )in src.utils.BLOCK_TYPE.tile_sets[src.utils.TYPE.PASSTHROUGH.value]:
                     src.states.set_state_block(state, lx, y, lz, type)
 
 
@@ -157,14 +157,14 @@ def is_sapling(state, x, y, z):
 def is_water(state, x, y, z):
     if state.out_of_bounds_3D(x, y, z):
         return False
-    return state.blocks(x,y,z) in src.my_utils.BLOCK_TYPE.tile_sets[src.my_utils.TYPE.WATER.value]
+    return state.blocks(x,y,z) in src.utils.BLOCK_TYPE.tile_sets[src.utils.TYPE.WATER.value]
 
 
 def is_log(state, x, y, z):
     if state.out_of_bounds_3D(x, y, z):
         return False
     block = state.blocks(x,y,z)
-    return block in src.my_utils.BLOCK_TYPE.tile_sets[src.my_utils.TYPE.TREE.value]
+    return block in src.utils.BLOCK_TYPE.tile_sets[src.utils.TYPE.TREE.value]
 
 
 def collect_water_at(state, x, y, z, times=1):
@@ -203,7 +203,7 @@ def cut_tree_at(state, x, y, z, times=1):
             if log_type[0] == 'j':  # because of how minecraft's heightmap doesn't consider leaves as air, put jungle saplings in same spot
                 found_new_spot = True
             else:
-                for dir in src.movement_backup.directions:
+                for dir in src.legal.ALL_DIRS:
                     tx = x + dir[0]
                     tz = z + dir[1]
                     if state.out_of_bounds_2D(tx,tz):
@@ -212,7 +212,7 @@ def cut_tree_at(state, x, y, z, times=1):
                     node_ptr = state.node_pointers[(tx,tz)]
                     if node_ptr == None: continue
                     node = state.nodes(*node_ptr)
-                    if ttype == src.my_utils.TYPE.GREEN.name \
+                    if ttype == src.utils.TYPE.GREEN.name \
                         and node not in state.built \
                         and node not in state.roads: # check if right
                         new_x = tx
@@ -259,7 +259,7 @@ def flood_kill_leaves(state, leaf_x, leaf_y, leaf_z, itr):
 
 
 def is_log_flood(block):
-    return block in src.my_utils.BLOCK_TYPE.tile_sets[src.my_utils.TYPE.TREE.value]
+    return block in src.utils.BLOCK_TYPE.tile_sets[src.utils.TYPE.TREE.value]
 
 def flood_kill_logs(state, log_x, log_y, log_z, itr=12):
     def to_air(state, x, y, z):
@@ -268,7 +268,7 @@ def flood_kill_logs(state, log_x, log_y, log_z, itr=12):
 
 
 def is_leaf(block_name):
-    return block_name in src.my_utils.BLOCK_TYPE.tile_sets[src.my_utils.TYPE.LEAVES.value]
+    return block_name in src.utils.BLOCK_TYPE.tile_sets[src.utils.TYPE.LEAVES.value]
 
 
 def get_log_type(block_name):

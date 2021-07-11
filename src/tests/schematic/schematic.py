@@ -3,7 +3,7 @@ import src.scheme_utils
 import src.manipulation
 import src.simulation
 import http_framework.worldLoader
-import src.my_utils
+import src.utils
 import src.agent
 import numpy as np
 from enum import Enum
@@ -13,7 +13,7 @@ z1 = 0
 x2 = 50
 z2 = 50
 area = [x1,z1,x2,z2]
-area = src.my_utils.correct_area(area)
+area = src.utils.correct_area(area)
 file_name = "schematic"
 
 sim = src.simulation.Simulation(area)

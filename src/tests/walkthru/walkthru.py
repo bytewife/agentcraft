@@ -4,13 +4,13 @@ import src.manipulation
 import src.simulation
 import http_framework.worldLoader
 import http_framework.interfaceUtils
-import src.my_utils
+import src.utils
 import src.agent
 import src.states
 from pprint import pprint
 import numpy as np
 
-from src.linedrawing import get_line
+from src.line_drawing import get_line
 from enum import Enum
 x1 = 0
 z1 = 0
@@ -18,7 +18,7 @@ x2 = 30
 z2 = 30
 
 area = [x1,z1,x2,z2]
-area = src.my_utils.correct_area(area)
+area = src.utils.correct_area(area)
 file_name = ""
 
 clean_agents = "kill @e[type=minecraft:armor_stand,x={},y=64,z={},distance=..100]".format(str((x2+x1)/2), str((z2+z1)/2))

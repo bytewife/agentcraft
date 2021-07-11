@@ -4,13 +4,13 @@ import src.manipulation
 import src.simulation
 import http_framework.worldLoader
 import http_framework.interfaceUtils
-import src.my_utils
+import src.utils
 import src.agent
 import src.states
 import numpy as np
 import random
 
-from src.linedrawing import get_line
+from src.line_drawing import get_line
 from enum import Enum
 
 x1 = 0
@@ -18,7 +18,7 @@ z1 = 0
 x2 = 6
 z2 = 3
 area = [x1,z1,x2,z2]
-area = src.my_utils.correct_area(area)
+area = src.utils.correct_area(area)
 
 clean_agents = "kill @e[type=minecraft:armor_stand,x={},y=64,z={},distance=..100]".format(str((x2+x1)/2), str((z2+z1)/2))
 http_framework.interfaceUtils.runCommand(clean_agents)
@@ -32,7 +32,7 @@ print(sim.state.rel_ground_hm)
 
 f = open(building, "r")
 r = f.readline().split(' ')
-sim.state.create_road((4, 1), (4, 1), road_type=src.my_utils.TYPE.MAJOR_ROAD.name)
+sim.state.create_road((4, 1), (4, 1), road_type=src.utils.TYPE.MAJOR_ROAD.name)
 sim.state.construction.add(sim.state.nodes[sim.state.node_pointers[(1,1)]])
 
 # print(sim.state.construction)
