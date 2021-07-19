@@ -17,18 +17,13 @@ import requests
 from http_framework.bitarray import BitArray
 
 
-def getChunks(x, z, dx, dz, rtype='text'):
+def get_chunks(x, z, dx, dz, rtype='text'):
     """**Get raw chunk data**."""
-    # print(f"getting chunks {x} {z} {dx} {dz} ")
-
     url = f'http://localhost:9000/chunks?x={x}&z={z}&dx={dx}&dz={dz}'
-    # print(f"request url: {url}")
-    acceptType = 'application/octet-stream' if rtype == 'bytes' else 'text/raw'
-    response = requests.get(url, headers={"Accept": acceptType})
-    # print(f"result: {response.status_code}")
+    accept_type = 'application/octet-stream' if rtype == 'bytes' else 'text/raw'
+    response = requests.get(url, headers={"Accept": accept_type})
     if response.status_code >= 400:
         print(f"error: {response.text}")
-
     if rtype == 'text':
         return response.text
     elif rtype == 'bytes':
@@ -60,7 +55,7 @@ class WorldSlice:
                           - (self.rect[1] >> 4) + 1)
         self.heightmapTypes = heightmapTypes
 
-        bytes = getChunks(*self.chunkRect, rtype='bytes')
+        bytes = get_chunks(*self.chunkRect, rtype='bytes')
         file_like = BytesIO(bytes)
 
         print("Retrieving NBT data from running Minecraft World! Please don't modify it until complete.")
@@ -82,16 +77,12 @@ class WorldSlice:
         self.sections = [[[None for i in range(16)] for z in range(
             self.chunkRect[3])] for x in range(self.chunkRect[2])]
 
-        # heightmaps
-        # print("extracting heightmaps")
-
         for x in range(self.chunkRect[2]):
             for z in range(self.chunkRect[3]):
                 chunkID = x + z * self.chunkRect[2]
 
                 hms = self.nbtfile['Chunks'][chunkID]['Level']['Heightmaps']
                 for hmName in self.heightmapTypes:
-                    # hmRaw = hms['MOTION_BLOCKING']
                     hmRaw = hms[hmName]
                     heightmapBitArray = BitArray(9, 16 * 16, hmRaw)
                     heightmap = self.heightmaps[hmName]
@@ -103,9 +94,6 @@ class WorldSlice:
                                     = heightmapBitArray.getAt(cz * 16 + cx)
                             except IndexError:
                                 pass
-
-        # sections
-        # print("extracting chunk sections")
 
         for x in range(self.chunkRect[2]):
             for z in range(self.chunkRect[3]):

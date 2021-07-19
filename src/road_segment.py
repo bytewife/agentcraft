@@ -1,4 +1,7 @@
 class RoadSegment:
+    """
+    Old Road Segnment - TO BE REMOVED
+    """
     def __init__(self, rnode1, rnode2, nodes, type, rslist, state):
         self.start = rnode1
         self.end = rnode2
@@ -16,7 +19,7 @@ class RoadSegment:
         self.nodes.append((match.x, match.y))
         if rs2.end == match:
             rs2.shape.reverse()
-            rs2.end = rs2.start
+            rs2.end = rs2.start_time
         self.shape.extend(rs2.shape)
         self.nodes.extend(rs2.nodes)
         self.end = rs2.end

@@ -16,6 +16,9 @@ import src.legal
 from bitarray.util import count_xor, rindex
 
 class Pathfinding:
+    """
+    A* Pathfinding with Sectoring
+    """
 
     DIRECTIONS = {
         0: (1, 0),
@@ -183,8 +186,8 @@ class Pathfinding:
         closed = set()
         if sector not in self.sectors_nodes.keys():
             self.sectors_nodes[sector] = set()
-        i = 0
-        while len(open) > 0 and i < self.MAX_SECTOR_PROPAGATION_DEPTH:  # search all adjacent until you cant go anymore
+        depth_count = 0
+        while len(open) > 0 and depth_count < self.MAX_SECTOR_PROPAGATION_DEPTH:  # search all adjacent until you cant go anymore
             pos = open.pop(0)
             nx, nz = pos
             if not is_redoing and sectors[nx][nz] != -1:
@@ -213,7 +216,7 @@ class Pathfinding:
                         if not child_pos in closed:
                             open.append(child_pos)  # the or allows re-sectoring
                         closed.add(child_pos)
-            i+=1
+            depth_count+=1
 
     def add_to_sector(self, x, z, sector):
         self.sectors_nodes[sector].add((x,z))

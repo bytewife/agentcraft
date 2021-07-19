@@ -8,20 +8,21 @@ import src.legal
 import math
 
 class Node:
-
+    """
+    A 3x3 group of blocks holding holistic information
+    """
     LOCAL_RADIUS = 3
     RANGE_RADIUS = 4
     NEIGHBOR_RADIUS = 1
     ADJACENT_RADIUS = 1
 
-    def __init__(self, state, center, types, size):
+    def __init__(self, state, center, types, size=3):
         self.center = center
         self.size = size
         self.mask_type = set()  # Type given to Node but not Blocks
         self.mask_type.update(types)
         self.lot = None
         self.state = state
-        self.action_cost = 100
         self.tiles = self.gen_tiles()
         self.type = None
         self.adjacent_centers = None
@@ -112,12 +113,6 @@ class Node:
 
     def prosperity(self):
         return self.state.prosperity[self.center[0]][self.center[1]]
-
-
-    def traffic(self):
-        if not self.state.out_of_bounds_Node(self.center[0], self.center[1]):  # let's get rid of this check later
-            return self.state.traffic[self.center[0]][self.center[1]]
-
 
     def add_mask_type(self, type):
         self.mask_type.add(type)

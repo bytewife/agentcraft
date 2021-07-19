@@ -27,6 +27,10 @@ import numpy as np
 
 
 class State:
+    """
+    Holds state of block states of simulation, settlement & Agents
+    """
+
     AGENT_HEADS = []
     TALLEST_BUILDING_HEIGHT = 30
     UNWALKABLE = ['minecraft:water', 'minecraft:lava']
@@ -36,9 +40,8 @@ class State:
     NODE_SIZE = 3
     MAX_SECTOR_PROPAGATION_DEPTH = 150
 
-    def __init__(self, rect, world_slice, precomp_legal_actions=None, blocks_file=None, precomp_pathfinder=None,
-                 precomp_sectors=None, precomp_types=None, precomp_nodes=None, precomp_node_pointers=None,
-                 max_y_offset=TALLEST_BUILDING_HEIGHT, water_with_adjacent_land=None):
+    def __init__(self, rect, world_slice, cached_legal_actions=None, cached_pathfinder=None,
+                 cached_sectors=None, cached_types=None, cached_nodes=None, cached_node_ptrs=None):
         if world_slice:
             self.rect = rect
             self.world_slice = world_slice
@@ -74,20 +77,20 @@ class State:
             self.generated_a_road = False  # prevents buildings blocking in the roads
             self.nodes_dict = {}
             ##### REUSE PRECOMPUTATIONS
-            if precomp_nodes is None or precomp_node_pointers is None:
+            if cached_nodes is None or cached_node_ptrs is None:
                 self.node_pointers = self.init_node_pointers(self.len_x, self.len_z, self.NODE_SIZE)
             else:
-                self.nodes_dict = precomp_nodes
-                self.node_pointers = precomp_node_pointers
+                self.nodes_dict = cached_nodes
+                self.node_pointers = cached_node_ptrs
                 nodes_in_x = int(self.len_x / self.NODE_SIZE)
                 nodes_in_z = int(self.len_z / self.NODE_SIZE)
                 self.last_node_pointer_x = nodes_in_x * self.NODE_SIZE - 1  # TODO verify the -1
                 self.last_node_pointer_z = nodes_in_z * self.NODE_SIZE - 1
-            if precomp_types == None:
+            if cached_types == None:
                 self.types = self.gen_types(self.rel_ground_hm)
             else:
-                self.types = precomp_types
-            if precomp_legal_actions is None:
+                self.types = cached_types
+            if cached_legal_actions is None:
                 self.legal_actions = src.legal.gen_all_legal_actions(self,
                                                                      self.blocks_arr,
                                                                      vertical_ability=self.AGENT_JUMP,
@@ -96,18 +99,17 @@ class State:
                                                                      unwalkable_blocks=["minecraft:water",
                                                                                                   'minecraft:lava'])
             else:
-                self.legal_actions = precomp_legal_actions
-            if precomp_pathfinder is None:
+                self.legal_actions = cached_legal_actions
+            if cached_pathfinder is None:
                 self.pathfinder = src.pathfinding.Pathfinding(self)
             else:
-                self.pathfinder = precomp_pathfinder
-            if precomp_sectors is None:
+                self.pathfinder = cached_pathfinder
+            if cached_sectors is None:
                 self.sectors = self.pathfinder.create_sectors(self.heightmaps["MOTION_BLOCKING_NO_LEAVES"],
                                                               self.legal_actions)
             else:
-                self.sectors = precomp_sectors
+                self.sectors = cached_sectors
             self.prosperity = np.zeros((self.len_x, self.len_z))
-            self.traffic = np.zeros((self.len_x, self.len_z))
             self.update_flags = np.zeros((self.len_x, self.len_z))
             self.built_heightmap = {}
             self.exterior_heightmap = {}
@@ -126,7 +128,7 @@ class State:
             self.phase3threshold = 500
             self.flag_color = choice(src.utils.COLOR_PAIRS)
             #####
-            self.traverse_from = np.copy(self.rel_ground_hm)
+            self.traverse_from_hm = np.copy(self.rel_ground_hm)
             self.traverse_update_flags = np.full((len(self.rel_ground_hm), len(self.rel_ground_hm[0])), False,
                                                  dtype=bool)  # Flag that block needs to be updated
             self.hm_update_flags = set()
@@ -142,22 +144,6 @@ class State:
             self.num_agents = 0
             self.adam = src.agent.Agent(self, 0, 0, self.rel_ground_hm, "Adam, the Original", "")
             self.eve = src.agent.Agent(self, 0, 0, self.rel_ground_hm, "Eve, the Original", "")
-        else:  # for testing
-            print("State instantiated for testing!")
-
-            def parse_blocks_file(file_name):
-                size, blocks = src.scheme_utils.get_schematic_parts(file_name)
-                dx, dy, dz = size
-                blocks3D = [[[0 for z in range(dz)] for y in range(dy)] for x in range(dx)]
-                for x in range(dx):
-                    for y in range(dy):
-                        for z in range(dz):
-                            index = y * (dz) * (dx) + z * (dx) + x
-                            inv_y = dy - 1 - y
-                            blocks3D[x][inv_y][z] = "minecraft:" + blocks[index]
-                return dx, dy, dz, blocks3D
-
-            self.len_x, self.len_y, self.len_z, self.blocks_arr = parse_blocks_file(blocks_file)
 
     def reset(self):
         """
@@ -238,9 +224,8 @@ class State:
         :param build_tries: 
         :return:
         """
-        f = open(building_file, "r")
-        size = f.readline()
-        f.close()
+        with open(building_file, "r") as f:
+            size = f.readline()
         x_size, y_size, z_size = [int(n) for n in size.split(' ')]
         i = 0
         # build_tries = 25
@@ -263,7 +248,6 @@ class State:
                     if self.sectors[ax][az] == self.sectors[nx][nz] or ignore_sector:  # this seems wrong
                         assert type(result[2]) == set
                         for node in result[2].union({result[1]}):  # this is equal to
-                            # src.states.set_state_block(self.state, node.center[0], self.state.rel_ground_hm[node.center[0]][node.center[1]]+10, node.center[1], 'minecraft:gold_block')
                             self.built.add(
                                 node)  # add to built in order to avoid roads being placed before buildings placed
                             pass
@@ -727,7 +711,7 @@ class State:
         :param z:
         :return:
         """
-        y = self.traverse_from[x][z] + 1  # don't start from top, but from max_building_height from rel
+        y = self.traverse_from_hm[x][z] + 1  # don't start from top, but from max_building_height from rel
         while y > 0:
             if self.blocks(x, y, z) not in src.utils.BLOCK_TYPE.tile_sets[src.utils.TYPE.PASSTHROUGH.value]:
                 break
@@ -942,7 +926,6 @@ class State:
             if node in self.construction:
                 self.construction.discard(node)
             self.roads.append(node)  # put node in roads array
-            node.action_cost = 50  # src.states.State.Node.ACTION_COSTS[src.my_utils.TYPE.MINOR_ROAD.name]
 
     def create_well(self, sx, sz, len_x, len_z):
         """
@@ -1325,8 +1308,7 @@ class State:
                                                                            possible_targets=self.roads,
                                                                            road_type=road_type,
                                                                            state=self,
-                                                                           leave_lot=False,
-                                                                           correction=correction)
+                                                                           leave_lot=False)
                         if p2_to_diag is None: continue  # if none found, try again
                         # if building is in path. try again
                         if any(not is_valid(self, tile) for tile in p2_to_diag) or not is_walkable(self, p2_to_diag):
@@ -1729,12 +1711,11 @@ class State:
             result_path.append(tile)
         return False, None
 
-    def append_road(self, point, road_type, correction=5, bend_if_needed=False):
+    def append_road(self, point, road_type, bend_if_needed=False):
         """
         Build road from point that connects to already-created roads
         :param point:
         :param road_type:
-        :param correction:
         :param bend_if_needed:
         :return:
         """
@@ -1749,8 +1730,7 @@ class State:
                                                             possible_targets=self.roads,
                                                             road_type=road_type,
                                                             state=self,
-                                                            leave_lot=False,
-                                                            correction=correction)
+                                                            leave_lot=False)
         if closest_point == None:
             return False
         (x2, y2) = closest_point
@@ -1801,7 +1781,7 @@ class State:
             (x2, z2) = (x2 + x, z2 + z)
         return None
 
-    def get_closest_point(self, node, lots, possible_targets, road_type, state, leave_lot, correction=5):
+    def get_closest_point(self, node, lots, possible_targets, road_type, state, leave_lot):
         x, z = node.center
         nodes = possible_targets
         dists = [math.hypot(n.center[0] - x, n.center[1] - z) for n in nodes]
@@ -1839,7 +1819,7 @@ def set_state_block(state, x, y, z, block_name):
     :return:
     """
     if state.out_of_bounds_Node(x, z) or y >= state.len_y: return False
-    state.traverse_from[x][z] = max(y, state.traverse_from[x][z])
+    state.traverse_from_hm[x][z] = max(y, state.traverse_from_hm[x][z])
     state.traverse_update_flags[x][z] = True
     state.hm_update_flags.add((x, z))
     state.blocks_arr[x][y][z] = block_name

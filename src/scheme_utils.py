@@ -100,14 +100,13 @@ def download_schematic(origin_x, origin_y, origin_z, end_x, end_y, end_z, file_n
     :param leave_dark_oak:
     :return:
     """
-    file = open(file_name, "w")
-    len_x = abs(origin_x - end_x) + 1
-    len_y = abs(origin_y - end_y) + 1
-    len_z = abs(origin_z - end_z) + 1
-    file.write(str(len_x) + " " + str(len_y) + " " + str(len_z))
-    file.write("\n")
-    file.write(download_area(origin_x, origin_y, origin_z, end_x, end_y, end_z, flexible_tiles, leave_dark_oak))
-    file.close()
+    with open(file_name, "w") as file:
+        len_x = abs(origin_x - end_x) + 1
+        len_y = abs(origin_y - end_y) + 1
+        len_z = abs(origin_z - end_z) + 1
+        file.write(str(len_x) + " " + str(len_y) + " " + str(len_z))
+        file.write("\n")
+        file.write(download_area(origin_x, origin_y, origin_z, end_x, end_y, end_z, flexible_tiles, leave_dark_oak))
 
 
 def place_schematic_in_world(file_name, origin_x, origin_y, origin_z, dir_x=1, dir_y=-1, dir_z=1, rot=0):
@@ -366,17 +365,17 @@ def place_building_in_state(state, file_name, origin_x, origin_y, origin_z, buil
 
 
 def get_schematic_parts(file_name):
-    file = open(file_name)
-    raw = file.readlines()
-    size_str = raw[0]
-    size_arr = [int(i) for i in size_str.split()]
-    blocks_lines = raw[1:]
-    blocks_str = ''
-    for n in range(len(blocks_lines)):
-        blocks_str += blocks_lines[n]
-    blocks_arr = blocks_str.split()
-    file.close()
-    return size_arr, blocks_arr
+    with open(file_name) as file:
+        raw = file.readlines()
+        size_str = raw[0]
+        size_arr = [int(i) for i in size_str.split()]
+        blocks_lines = raw[1:]
+        blocks_str = ''
+        for n in range(len(blocks_lines)):
+            blocks_str += blocks_lines[n]
+        blocks_arr = blocks_str.split()
+        file.close()
+        return size_arr, blocks_arr
 
 
 def rotate_schematic(origin_x, origin_y, origin_z, end_x, end_y, end_z, dir_x, dir_y, dir_z):
@@ -400,8 +399,3 @@ def rotate_schematic(origin_x, origin_y, origin_z, end_x, end_y, end_z, dir_x, d
     if dir_z == -1:
         origin_z, end_z = end_z, origin_z - 2
     return (origin_x, origin_y, origin_z, end_x, end_y, end_z)
-
-
-def download_heightmap(heightmap, file_name):
-    f = open(file_name, "w")
-    f.write(heightmap)
