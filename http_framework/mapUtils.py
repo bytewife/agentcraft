@@ -27,7 +27,7 @@ def calcGoodHeightmap(worldSlice):
     """
     hm_mbnl = worldSlice.heightmaps["MOTION_BLOCKING_NO_LEAVES"]
     heightmapNoTrees = hm_mbnl[:]
-    area = worldSlice.rect
+    area = worldSlice.bounding_rect
 
     for x in range(area[2]):
         for z in range(area[3]):

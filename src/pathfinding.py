@@ -16,9 +16,7 @@ import src.legal
 from bitarray.util import count_xor, rindex
 
 class Pathfinding:
-    """
-    A* Pathfinding with Sectoring
-    """
+    """ A* Pathfinding with Sectoring """
 
     DIRECTIONS = {
         0: (1, 0),
@@ -34,7 +32,7 @@ class Pathfinding:
     MAX_SECTOR_PROPAGATION_DEPTH = 10 * 150
     CARDINAL_COST = 100
     DIAGONAL_COST = 141
-    PATH_COST_LOOKUP = {
+    DIRECTION_COSTS = {
         (0, 1): CARDINAL_COST,
         (-1, 0): CARDINAL_COST,
         (0, -1): CARDINAL_COST,
@@ -51,44 +49,44 @@ class Pathfinding:
         self.sectors_nodes = {}
         pass
 
-    class Node:
-        def __init__(self, pos, g=0, h=0, parent=None, action_to_here=0, action_cost=0, legal_actions=0):
+    class PathNode:
+        def __init__(self, pos, g=0.0, h=0.0, parent=None, legal_moves=None):
             self.pos = pos
             self.g = g
             self.parent = parent
             self.h = h
             self.f = g + h
-            self.parent = parent
-            self.action_cost = action_cost
-            self.legal_actions = legal_actions
+            self.legal_actions = legal_moves
             self.sectors = []  # Optimization where we cache each blocks' reachability
             self.sector_sizes = {}
 
         def __lt__(self, other):  # required for heapq sort
             return self.f < other.f
 
-    def search(self, start, end : list, max_x, max_z, legal_actions):
+    def search(self, start: tuple, goal: tuple, max_x, max_z, legal_moves):
         """
         Perform A* Search for path
         :param start:
-        :param end:
+        :param goal:
         :param max_x:
         :param max_z:
-        :param legal_actions:
+        :param legal_moves:
         :return:
         """
-        first = self.Node(start, g=0, h=self.heuristic(*start, *end), parent=None, action_to_here=None, action_cost=0, legal_actions=legal_actions)
+        first = self.PathNode(start, g=0, h=self.heuristic(*start, *goal), parent=None, legal_moves=legal_moves)
         open = [first]  # heap
         closed = set()
         g_lookup = {}
         while len(open) > 0:
             node = heappop(open)
-            if node.pos[0] == end[0] and node.pos[1] == end[1]:
+            if node.pos[0] == goal[0] and node.pos[1] == goal[1]:
                 return self.backwards_traverse(node, start)
             closed.add(node.pos)
-            for child in self.expand(node, node.g, end, max_x, max_z, legal_actions, g_lookup):
-                if child.pos in closed: continue
-                if child.pos in g_lookup and g_lookup[child.pos] <= child.g: continue
+            for child in self.expand(node, node.g, goal, legal_moves):
+                if child.pos in closed:
+                    continue
+                if child.pos in g_lookup and g_lookup[child.pos] <= child.g:
+                    continue
                 g_lookup[child.pos] = child.g
                 heappush(open, child)
         return []
@@ -96,30 +94,24 @@ class Pathfinding:
     def calc_g(self, parent_pos, g_lookup, p_to_c_cost_action_cost, dir_cost):
         return g_lookup[parent_pos] + p_to_c_cost_action_cost + dir_cost
 
-    def expand(self, parent : Node, parent_g, goal, max_x, max_z, all_legal_actions, g_lookup):
-        """
-        Creates child PathNodes from adjacent tiles to parent
-        """
-        children = []
-        x, z = parent.pos
-        curr_legal_actions = all_legal_actions[x][z]
-        for n in range(8):  # num of diff moves
-            if curr_legal_actions[n] == False: continue
-            dx = src.legal.ALL_DIRS[n][0]
-            dz = src.legal.ALL_DIRS[n][1]
-            tx = parent.pos[0] + dx
-            tz = parent.pos[1] + dz
-            if tx < 0 or tz < 0 or tx > max_x or tz > max_z:
+    def expand(self, parent: PathNode, parent_g: float, goal: tuple, all_legal_moves):
+        """ Returns list of child PathNodes from adjacent tiles to parent """
+        result = []
+        curr_legal_actions = all_legal_moves[parent.pos[0], parent.pos[1]]
+        for n in range(len(self.DIRECTIONS)):
+            if not curr_legal_actions[n]:
                 continue
-            nptr = self.state.node_pointers[(tx, tz)]
-            action_cost = 0 if nptr is not None and self.state.nodes(*nptr) in self.state.roads else 200
-            g = parent_g + action_cost + self.PATH_COST_LOOKUP[(dx, dz)]
-            h = self.heuristic(tx, tz, goal[0], goal[1])
-            children.append(self.Node(
-                (tx, tz), g, h, parent,
-                action_to_here=(-dx, -dz), action_cost=action_cost, legal_actions=all_legal_actions[tx][tz]
-            ))
-        return children
+            dx, dz = src.legal.ALL_DIRS[n]
+            new_pos = (parent.pos[0] + dx, parent.pos[1] + dz)
+            if self.state.out_of_bounds_Node(*new_pos):
+                continue
+            action_cost = 0 if self.state.nodes(*self.state.node_pointers[new_pos]) in self.state.roads else 200
+            result.append(self.PathNode(new_pos,
+                                        g=parent_g + action_cost + self.DIRECTION_COSTS[(dx, dz)],
+                                        h=self.heuristic(*new_pos, goal[0], goal[1]),
+                                        parent=parent,
+                                        legal_moves=all_legal_moves[new_pos[0], new_pos[1]]))
+        return result
 
 
     def backwards_traverse(self, node, end):
@@ -155,22 +147,22 @@ class Pathfinding:
         self.sector_sizes[new] += self.sector_sizes[to_remove]
         self.sector_sizes[to_remove] = 0
 
-    def create_sectors(self, heightmap, legal_actions):
+    def create_sectors(self, heightmap, legal_moves):
         self.sectors = full_like(heightmap, -1, int)
         self.n_sectors = 0
         self.sector_sizes = {}
-        for x in range(len(legal_actions)):
-            for z in range(len(legal_actions[0])):
+        for x in range(len(legal_moves)):
+            for z in range(len(legal_moves[0])):
                 if self.sectors[x][z] == -1:
                     self.n_sectors +=1
                     self.sector_sizes[self.n_sectors] = 0
                     self.sectors_nodes[self.n_sectors] = set()
-                    self.init_propagate_sector(x, z, self.n_sectors, self.sectors, self.sector_sizes, legal_actions)
+                    self.init_propagate_sector(x, z, self.n_sectors, self.sectors, self.sector_sizes, legal_moves)
                 z += 1
             x += 1
         return self.sectors
 
-    def propagate_sector_depth_limited(self, x, z, sector, sectors, sector_sizes, legal_actions, is_redoing=False):
+    def propagate_sector_depth_limited(self, x, z, sector, sectors, sector_sizes, legal_moves, is_redoing=False):
         """
         Update sector up to MAX_SECTOR_PROPAGATION_DEPTH away (for performance)
         :param x:
@@ -178,7 +170,7 @@ class Pathfinding:
         :param sector:
         :param sectors:
         :param sector_sizes:
-        :param legal_actions:
+        :param legal_moves:
         :param is_redoing:
         :return:
         """
@@ -199,11 +191,11 @@ class Pathfinding:
             sector_sizes[prev_sector] -= 1
             sector_sizes[sector] += 1
             for n in range(8):  # check tiles reachable from here
-                if legal_actions[nx][nz][n] == True:
+                if legal_moves[nx][nz][n] == True:
                     dir = src.legal.ALL_DIRS[n]
                     cx = nx + dir[0]
                     cz = nz + dir[1]
-                    if cx < 0 or cx >= len(legal_actions) or cz < 0 or cz >= len(legal_actions[0]):
+                    if cx < 0 or cx >= len(legal_moves) or cz < 0 or cz >= len(legal_moves[0]):
                         continue
                     childs_sector = sectors[cx][cz]
                     if childs_sector == -1:  # if the tile doesn't have a sector, add to list to expand
@@ -223,7 +215,7 @@ class Pathfinding:
         self.sector_sizes[sector] += 1
         self.sectors[x][z] = sector
 
-    def init_propagate_sector(self, x, z, sector, sectors, sector_sizes, legal_actions, is_redoing=False):
+    def init_propagate_sector(self, x, z, sector, sectors, sector_sizes, legal_moves, is_redoing=False):
         """
         Initialize all sectors
         :param x:
@@ -231,7 +223,7 @@ class Pathfinding:
         :param sector:
         :param sectors:
         :param sector_sizes:
-        :param legal_actions:
+        :param legal_moves:
         :param is_redoing:
         :return:
         """
@@ -241,8 +233,8 @@ class Pathfinding:
             pos = open.pop(0)
             nx, nz = pos
             self.add_to_sector(pos[0], pos[1], sector)
-            for n in range(len(legal_actions[nx][nz])):  # check tiles reachable from here
-                if legal_actions[nx][nz][n]:
+            for n in range(len(legal_moves[nx][nz])):  # check tiles reachable from here
+                if legal_moves[nx][nz][n]:
                     dir = src.legal.ALL_DIRS[n]
                     cx = nx + dir[0]
                     cz = nz + dir[1]
@@ -253,19 +245,19 @@ class Pathfinding:
                             open.append(child_pos)
                         closed.add(child_pos)
 
-    def update_sector_for_block(self,x,z, sectors, sector_sizes, legal_actions, old_legal_actions):
+    def update_sector_for_block(self, x, z, sectors, sector_sizes, legal_moves, old_legal_actions):
         """
         Update the sector for a block based on whether they're newly reachable or unreachable from neighbors
         :param x:
         :param z:
         :param sectors:
         :param sector_sizes:
-        :param legal_actions:
+        :param legal_moves:
         :param old_legal_actions:
         :return:
         """
-        if count_xor(legal_actions[x][z], old_legal_actions[x][z]) > 0:
-            changed = legal_actions[x][z] ^ old_legal_actions[x][z]
+        if count_xor(legal_moves[x][z], old_legal_actions[x][z]) > 0:
+            changed = legal_moves[x][z] ^ old_legal_actions[x][z]
             i = 0
             new_sector_created = False
             did_merge = False
@@ -298,9 +290,10 @@ class Pathfinding:
                 self.sector_sizes[self.n_sectors] = 1
                 self.sectors_nodes[self.n_sectors] = {(x, z)}
                 self.sectors[x][z] = self.n_sectors
-                self.propagate_sector_depth_limited(x, z, sector=self.n_sectors, sectors=self.sectors, sector_sizes=sector_sizes, legal_actions=legal_actions, is_redoing=True)
+                self.propagate_sector_depth_limited(x, z, sector=self.n_sectors, sectors=self.sectors, sector_sizes=sector_sizes, legal_moves=legal_moves, is_redoing=True)
 
 
+# def find_nearest(state, x, z, choices: list, start_radius: 0.0, iterations=20, increment=1):
 def find_nearest(state, x, z, spot_coords, starting_search_radius, max_iterations=20, radius_inc=1): # can be used at a sort
     """
     Use KDTree to find nearest position within given spots

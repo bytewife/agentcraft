@@ -28,12 +28,12 @@ src.states.set_state_block(state, state_x, state_y, state_z, "minecraft:air")
 print(state.sectors)
 
 # update sectors
-state.step()
+state.update_blocks()
 
 # store in file
 src.scheme_utils.arrayXZ_to_schema(state.sectors, state.len_x, state.len_z, file_name + ".out")
 
 # put it back
 src.states.set_state_block(state, state_x, state_y, state_z, "minecraft:diorite")
-state.step()
+state.update_blocks()
 print(file_name+" complete")

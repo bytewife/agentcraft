@@ -89,7 +89,7 @@ class Simulation:
             attempt += 1
         run.IS_WRITING_CHRONICLE_TO_CONSOLE = is_writing
         max_steps = steps - 1 # because another step is performed afterwards for the chest placement
-        finished_fully,steps = self.step(max_steps, True, start, time_limit)
+        finished_fully,step_count = self.step(max_steps, True, start, time_limit)
         x = self.chronicles_pos[0]
         z = self.chronicles_pos[1]
         y = self.state.rel_ground_hm[x][z]
@@ -99,7 +99,7 @@ class Simulation:
         src.chronicle.place_chronicles(self.state, x, y, z, f"History of {self.settlement_name}",
                                        self.original_agent.name)
         print("Simulation finished after " + str(time.time() - start) + " seconds. " + str(
-            steps + 1) + " steps performed, out of " + str(max_steps + 1) + " steps.")
+            step_count + 1) + " steps performed, out of " + str(max_steps + 1) + " steps.")
         cx = self.state.world_x + x
         cz = self.state.world_z + z
         print(f"Chronicles placed at {cx}, {self.state.world_y + y}, {cz}! ")
@@ -141,17 +141,17 @@ class Simulation:
             attempt += 1
         run.IS_WRITING_CHRONICLE_TO_CONSOLE = is_writing
         max_steps = steps - 1
-        finished_fully, steps = self.step(max_steps, False, start, time_limit)
+        finished_fully, step_count = self.step(max_steps, False, start, time_limit)
         x = self.chronicles_pos[0]
         z = self.chronicles_pos[1]
         y = self.state.rel_ground_hm[x][z]
-        self.state.step(is_rendering=True, use_total_changed_blocks=True)
+        self.state.update_blocks(is_rendering=True, use_total_changed_blocks=True)
         http_framework.interfaceUtils.runCommand(
             f'setblock {x + self.state.world_x} {y + self.state.world_y} {z + self.state.world_z} minecraft:chest')
         finished_fully = src.chronicle.place_chronicles(self.state, x, y, z, f"History of {self.settlement_name}",
                                                         self.original_agent.name)
         print("Simulation finished after " + str(time.time() - start) + " seconds. " + str(
-            steps + 1) + " steps performed, out of " + str(times + 1) + " steps.")
+            steps + 1) + " steps performed, out of " + str(step_count + 1) + " steps.")
         cx = self.state.world_x + x
         cz = self.state.world_z + z
         print(f"Chronicles placed at {cx}, {self.state.world_y + y}, {cz}! ")
@@ -197,13 +197,11 @@ class Simulation:
         """
         result = False  # returns agent positions or False
         attempt = attempt_start - 1
-        create_well = False
         old_water = []
         while result is False:
             attempt += 1
             self.state.reset()
             if attempt > max_tries: return False, attempt
-            create_well = attempt > 25
             result, old_water, self.chronicles_pos, self.original_agent = self.state.init_main_st(viable_water_starts,
                                                                                                   str(attempt + 1) + "/" + str(
                                                                                                       max_tries + 1))
@@ -233,66 +231,21 @@ class Simulation:
         if status is False:
             self.state.water = old_water
             return False, attempt
-        self.state.step()  # check if this affects agent pahs. it seems to.
+        self.state.update_blocks()  # check if this affects agent pahs. it seems to.
         print("Finished simulation init!")
         self.settlement_pos = (
             schematic_args[0].center[0] + self.state.world_x, schematic_args[0].center[1] + self.state.world_z)
         print("Successfully initialized main street! Go to position " + str(self.settlement_pos))
         return True, -1
 
-    def step(self, times, is_rendering, start, time_limit):
-        """
-        Iterate through simulation
-        :param times:
-        :param is_rendering:
-        :param start:
-        :param time_limit:
-        :return:
-        """
-        current = time.time()
-        buffer = 10 # Safety to allow for book-writing
+    def step(self, times, is_rendering, start_time, time_limit, limit_buffer=10):
+        """ Iterate through simulation """
         for step_count in range(times + 1):
-            if current - start > time_limit - buffer:
+            if time.time() - start_time > time_limit - limit_buffer:  # Complete before time limit
                 return False, step_count
-            self.update_nodes()
+            self.state.update_nodes(self.prosp_decay,self.road_threshold, self.extra_road_threshold)
             self.state.update_agents(is_rendering)
-            self.state.step(is_rendering)
-            time.sleep(self.rendering_step_duration * is_rendering)
-            current = time.time()
+            self.state.update_blocks(is_rendering)
+            self.state.update_phase()
+            time.sleep(self.rendering_step_duration * is_rendering)  # Wait for step duration
         return True, times
-
-    def update_nodes(self):
-        """
-        Update Nodes by prosperity and State Phase if needed
-        :return:
-        """
-        self.state.prosperity *= self.prosp_decay
-        xInd, yInd = np.where(self.state.update_flags > 0)  # to update these nodes
-        indices = list(zip(xInd, yInd))  # list of tuples
-        random.shuffle(indices)  # shuffle coordinates to update
-        for (i, j) in indices:  # update a specific random numbor of tiles
-            self.state.update_flags[i][j] = 0
-            node_pos = self.state.node_pointers[(i, j)]  # possible optimization here
-            node = self.state.nodes(*node_pos)
-            # calculate roads
-            if src.utils.TYPE.GREEN.name in node.get_type() \
-                    and src.utils.TYPE.TREE.name in node.type \
-                    and src.utils.TYPE.CONSTRUCTION.name in node.type:
-                return
-            node.local_prosperity = sum([n.prosperity() for n in node.local()])
-            road_found_far = len(set(node.range()) & set(self.state.roads))
-            road_found_near = len(set(node.local()) & set(self.state.roads))
-            # major roads
-            if node.local_prosperity > self.road_threshold and not road_found_far:  # if node's local prosperity is high
-                if self.state.append_road(point=(i, j), road_type=src.utils.TYPE.MAJOR_ROAD.name, bend_if_needed=True):
-                    self.state.generated_a_road = True
-            # more roads for phase 3
-            if self.phase >= 3:
-                if node.local_prosperity > self.extra_road_threshold and not road_found_near:
-                    pass
-                    self.state.append_road((i, j), src.utils.TYPE.MINOR_ROAD.name, bend_if_needed=True)
-                elif src.utils.TYPE.TREE.name in node.get_type() or src.utils.TYPE.GREEN.name in node.get_type():
-                    if len(node.neighbors() & self.state.construction):
-                        lot = node.get_lot()
-                        if lot is not None:
-                            self.state.set_type_building(lot)

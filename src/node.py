@@ -107,12 +107,12 @@ class Node:
 
 
     def add_prosperity(self, amt):
-        self.state.prosperity[self.center[0]][self.center[1]] += amt
+        self.state.prosperities[self.center[0]][self.center[1]] += amt
         self.state.update_flags[self.center[0]][self.center[1]] = 1
 
 
-    def prosperity(self):
-        return self.state.prosperity[self.center[0]][self.center[1]]
+    def get_prosperity(self):
+        return self.state.prosperities[self.center[0]][self.center[1]]
 
     def add_mask_type(self, type):
         self.mask_type.add(type)

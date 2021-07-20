@@ -63,7 +63,7 @@ sim.run_with_render(300)
 #         y = sim.state.rel_ground_hm[x][z]
 #         sim.state.set_block(x, y, z, "minecraft:oak_sign")
 
-sim.state.step(1)
+sim.state.update_blocks(1)
 
 # pprint(sim.state.rel_ground_hm)
 # print(sim.state.static_ground_hm)
