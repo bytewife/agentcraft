@@ -43,7 +43,7 @@ while sim.state.place_building_at(sim.state.nodes[sim.state.node_pointers[(0,0)]
 sim.step(1)
 
 print("legal actions are ")
-print(sim.state.legal_actions)
+print(sim.state.legal_moves)
 print("after abs heightmap is ")
 print(sim.state.abs_ground_hm)
 print("after rel heightmap is ")

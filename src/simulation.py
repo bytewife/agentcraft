@@ -34,7 +34,7 @@ class Simulation:
         else:
             self.world_slice = cached_world_slice
         self.state = src.states.State(XZXZ, self.world_slice, cached_pathfinder=cached_pathfinder,
-                                      cached_legal_actions=cached_legal_actions, cached_types=cached_types,
+                                      cached_legal_moves=cached_legal_actions, cached_types=cached_types,
                                       cached_sectors=cached_sectors, cached_nodes=cached_nodes,
                                       cached_node_ptrs=cached_node_ptrs)
         self.road_threshold = maNum
@@ -238,12 +238,12 @@ class Simulation:
         print("Successfully initialized main street! Go to position " + str(self.settlement_pos))
         return True, -1
 
-    def step(self, times, is_rendering, start_time, time_limit, limit_buffer=10):
+    def step(self, times: int, is_rendering: bool, start_time: float, time_limit: float, safety_buffer=10):
         """ Iterate through simulation """
         for step_count in range(times + 1):
-            if time.time() - start_time > time_limit - limit_buffer:  # Complete before time limit
+            if time.time() - start_time > time_limit - safety_buffer:  # Complete before time limit
                 return False, step_count
-            self.state.update_nodes(self.prosp_decay,self.road_threshold, self.extra_road_threshold)
+            self.state.update_nodes(self.prosp_decay, self.road_threshold, self.extra_road_threshold)
             self.state.update_agents(is_rendering)
             self.state.update_blocks(is_rendering)
             self.state.update_phase()

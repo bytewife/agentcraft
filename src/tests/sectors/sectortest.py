@@ -15,7 +15,7 @@ worldSlice = http_framework.worldLoader.WorldSlice(area)  #_so area is chunks?
 file_name = "sectors/sectortest"
 
 state = src.states.State(worldSlice)
-state.pathfinder.create_sectors(state.heightmaps["MOTION_BLOCKING_NO_LEAVES"],state.legal_actions)  # add tihs into State
+state.pathfinder.init_sectors(state.legal_moves)  # add tihs into State
 hm = state.rel_ground_hm
 
 src.scheme_utils.arrayXZ_to_schema(state.sectors, state.len_x, state.len_z, file_name + ".in")

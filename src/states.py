@@ -40,7 +40,7 @@ class State:
     NODE_SIZE = 3
     MAX_SECTOR_PROPAGATION_DEPTH = 150
 
-    def __init__(self, bounding_rect, world_slice, cached_legal_actions=None, cached_pathfinder=None,
+    def __init__(self, bounding_rect, world_slice, cached_legal_moves=None, cached_pathfinder=None,
                  cached_sectors=None, cached_types=None, cached_nodes=None, cached_node_ptrs=None):
         if world_slice:
             self.bounding_rect = bounding_rect
@@ -65,19 +65,19 @@ class State:
             self.end_z = self.bounding_rect[3]
             self.interface, self.blocks_arr, self.world_y, self.len_y, self.abs_ground_hm = self.gen_blocks_array(
                 world_slice)
-            self.rel_ground_hm = self.init_rel_ground_hm(self.abs_ground_hm)  # Gen relative heighmap
+            self.rel_ground_hm = self.gen_rel_ground_hm(self.abs_ground_hm)  # Gen relative heighmap
             self.static_ground_hm = self.gen_static_ground_hm(self.rel_ground_hm)  # Gen unchanging rel heightmap
             self.heightmaps = world_slice.heightmaps
             self.built = set()  # Bulding nodes
             self.foreign_built = set()  # non-generated Building nodes
             self.ROAD_CHOICE = random.choice(src.utils.ROAD_BLOCKS)
-            self.generated_a_road = False  # prevents buildings blocking in the roads
-            self.nodes_dict = {}
+            self.road_count = 1
+            self.nodes_lookup = {}
             ##### REUSE PRECOMPUTATIONS
             if cached_nodes is None or cached_node_ptrs is None:
                 self.node_pointers = self.init_node_pointers(self.len_x, self.len_z, self.NODE_SIZE)
             else:
-                self.nodes_dict = cached_nodes
+                self.nodes_lookup = cached_nodes
                 self.node_pointers = cached_node_ptrs
                 nodes_in_x = int(self.len_x / self.NODE_SIZE)
                 nodes_in_z = int(self.len_z / self.NODE_SIZE)
@@ -87,23 +87,20 @@ class State:
                 self.types = self.gen_types(self.rel_ground_hm)
             else:
                 self.types = cached_types
-            if cached_legal_actions is None:
-                self.legal_actions = src.legal.gen_all_legal_actions(self,
-                                                                     self.blocks_arr,
-                                                                     vertical_ability=self.AGENT_JUMP,
-                                                                     heightmap=self.rel_ground_hm,
-                                                                     actor_height=self.AGENT_HEIGHT,
-                                                                     unwalkable_blocks=["minecraft:water",
-                                                                                        'minecraft:lava'])
+            if cached_legal_moves is None:
+                self.legal_moves = src.pathfinding.gen_all_legal_moves(self, vertical_ability=self.AGENT_JUMP,
+                                                                       heightmap=self.rel_ground_hm,
+                                                                       actor_height=self.AGENT_HEIGHT,
+                                                                       unwalkable_blocks=["minecraft:water",
+                                                                                      'minecraft:lava'])
             else:
-                self.legal_actions = cached_legal_actions
+                self.legal_moves = cached_legal_moves
             if cached_pathfinder is None:
                 self.pathfinder = src.pathfinding.Pathfinding(self)
             else:
                 self.pathfinder = cached_pathfinder
             if cached_sectors is None:
-                self.sectors = self.pathfinder.create_sectors(self.heightmaps["MOTION_BLOCKING_NO_LEAVES"],
-                                                              self.legal_actions)
+                self.sectors = self.pathfinder.init_sectors(self.legal_moves)
             else:
                 self.sectors = cached_sectors
             self.prosperities = np.zeros((self.len_x, self.len_z))
@@ -115,6 +112,7 @@ class State:
             self.changed_blocks_xz = set()
             self.total_changed_blocks = {}
             self.total_changed_blocks_xz = set()
+            self.old_legal_actions = None  # for rendering
             self.phase = 1
             # BUILDINGS
             self.build_minimum_phase_1 = max(*[building_pair[1] for building_pair in src.utils.STRUCTURES['small']])
@@ -151,7 +149,7 @@ class State:
         self.construction.clear()
         self.road_nodes = []
         self.road_segs.clear()
-        self.nodes_dict = {}
+        self.nodes_lookup = {}
         self.node_pointers = self.init_node_pointers(self.len_x, self.len_z, self.NODE_SIZE)
         self.agent_nodes.clear()
         for pos in self.changed_blocks.keys():
@@ -165,13 +163,7 @@ class State:
         self.agent_nodes = self.init_agent_nodes()
 
     def blocks(self, x, y, z):
-        """
-        Return lazily loaded blocks
-        :param x:
-        :param y:
-        :param z:
-        :return:
-        """
+        """ Return lazily loaded block at given position """
         if self.blocks_arr[x][y][z] == 0:
             self.blocks_arr[x][y][z] = self.world_slice.getBlockAt(self.world_x + x, self.world_y + y, self.world_z + z)
         return self.blocks_arr[x][y][z]
@@ -268,7 +260,7 @@ class State:
         # Get rotation based on neighboring road
         found_road = None
         face_dir = None
-        for dir in src.legal.CARDINAL_DIRS:  # maybe make this cardinal only
+        for dir in src.pathfinding.CARDINAL_DIRS:  # maybe make this cardinal only
             nx = ctrn_node.center[0] + dir[0] * ctrn_node.size
             nz = ctrn_node.center[1] + dir[1] * ctrn_node.size
             if self.out_of_bounds_Node(nx, nz): continue
@@ -292,7 +284,7 @@ class State:
         # Find site where x and z are reversed. this rotates
         highest_y = self.rel_ground_hm[ctrn_node.center[0]][ctrn_node.center[1]]
         lowest_y = self.rel_ground_hm[ctrn_node.center[0]][ctrn_node.center[1]]
-        for dir in src.legal.DIAGONAL_DIRS:
+        for dir in src.pathfinding.DIAGONAL_DIRS:
             if found_ctrn_dir != None:
                 break
             tiles = 0
@@ -575,7 +567,7 @@ class State:
                 cx = x * node_size + 1
                 cz = z * node_size + 1
                 node_pointers[cx][cz] = (cx, cz)  # TODO can lazy load this rather than gen here
-                for dir in src.legal.ALL_DIRS:
+                for dir in src.pathfinding.ALL_DIRS:
                     nx = cx + dir[0]
                     nz = cz + dir[1]
                     node_pointers[nx][nz] = (cx, cz)
@@ -589,20 +581,15 @@ class State:
         return tx + dx, tz + dz
 
     def nodes(self, x, z):
-        """
-        Return a lazily loaded Node
-        :param x:
-        :param z:
-        :return:
-        """
-        if (x, z) not in self.nodes_dict.keys():
+        """ Return a lazily loaded Node at center x, z """
+        if (x, z) not in self.nodes_lookup.keys():
             node = src.node.Node(self, center=(x, z), types=[src.utils.TYPE.BROWN.name], size=self.NODE_SIZE)
             node.adjacent_centers = node.gen_adjacent_centers(self)
             node.neighbors_centers = node.gen_neighbors_centers(self)
             node.local_centers = node.gen_local_centers(self)
             node.range_centers = node.gen_range_centers(self)
-            self.nodes_dict[(x, z)] = node
-        return self.nodes_dict[(x, z)]
+            self.nodes_lookup[(x, z)] = node
+        return self.nodes_lookup[(x, z)]
 
     def gen_blocks_array(self, world_slice, max_y_offset=TALLEST_BUILDING_HEIGHT):
         """
@@ -651,7 +638,7 @@ class State:
         len_y = y2 - y1
         return interface, blocks_arr, world_y, len_y, abs_ground_hm
 
-    def init_rel_ground_hm(self, abs_ground_hm):
+    def gen_rel_ground_hm(self, abs_ground_hm):
         """
         Initialize rel_ground_hm
         :param abs_ground_hm:
@@ -729,7 +716,7 @@ class State:
         types = [["str" for j in range(zlen)] for i in range(xlen)]
 
         def add_blocks_near_land(x, z):
-            for dir in src.legal.CARDINAL_DIRS:
+            for dir in src.pathfinding.CARDINAL_DIRS:
                 self.blocks_near_land.add((max(min(x + dir[0], self.len_x), 0), max(min(z + dir[1], self.len_z), 0)))
 
         for x in range(xlen):
@@ -788,7 +775,7 @@ class State:
         if use_total_changed_blocks:
             changed_arr = self.total_changed_blocks
             changed_arr_xz = self.total_changed_blocks_xz
-        self.old_legal_actions = self.legal_actions.copy()  # needed to update
+        self.old_legal_actions = self.legal_moves.copy()  # needed to update
         for position, block in changed_arr.items():
             x, y, z = position
             if is_rendering == True:
@@ -832,7 +819,7 @@ class State:
             # major roads
             if node.local_prosperity > road_thresh and not road_found_far:  # if node's local prosperity is high
                 if self.append_road(point=(i, j), road_type=src.utils.TYPE.MAJOR_ROAD.name, bend_if_needed=True):
-                    self.generated_a_road = True
+                    self.road_count += 1
             # more roads for phase 3
             if self.phase >= 3:
                 if node.local_prosperity > extra_road_thresh and not road_found_near:
@@ -858,17 +845,13 @@ class State:
                 if self.out_of_bounds_2D(bx, bz):
                     continue
                 # Update neighbor legal actions
-                self.legal_actions[bx][bz] = src.legal.get_legal_actions_from_block(self, self.blocks_arr, bx,
-                                                                                    bz,
-                                                                                    self.AGENT_JUMP,
-                                                                                    self.rel_ground_hm,
-                                                                                    self.AGENT_HEIGHT,
-                                                                                    self.UNWALKABLE)
+                self.legal_moves[bx][bz] = src.pathfinding.get_block_legal_moves(self, bx, bz, self.AGENT_JUMP,
+                                                                                 self.rel_ground_hm, self.AGENT_HEIGHT,
+                                                                                 self.UNWALKABLE)
         # Update sector
-        self.pathfinder.update_sector_for_block(x, z, self.sectors,
-                                                sector_sizes=self.pathfinder.sector_sizes,
-                                                legal_moves=self.legal_actions,
-                                                old_legal_actions=self.old_legal_actions)
+        self.pathfinder.update_block_sector(x, z, sector_sizes=self.pathfinder.sector_sizes,
+                                            legal_moves=self.legal_moves,
+                                            old_legal_moves=self.old_legal_actions)
 
     def get_adjacent_block(self, x_origin, y_origin, z_origin, x_off, y_off, z_off):
         x_target = x_origin + x_off
@@ -1217,7 +1200,7 @@ class State:
         ax = agent.x
         az = agent.z
         self.agent_nodes[self.node_pointers[(ax, az)]].add(agent)
-        agent.set_motive(agent.Motive.LOGGING)
+        agent.set_action(agent.Action.LOGGING)
 
     def update_agents(self, is_rendering=True):
         """
@@ -1233,7 +1216,7 @@ class State:
             agent.unshared_resources['water'] += agent.water_decay
             agent.unshared_resources['happiness'] += agent.happiness_decay
             # Agents move forward
-            agent.follow_path(state=self, walkable_heightmap=self.rel_ground_hm)
+            agent.step(walkable_heightmap=self.rel_ground_hm)
             agent.socialize(agent.found_and_moving_to_socialization)
             if is_rendering:
                 agent.render()
@@ -1323,7 +1306,7 @@ class State:
                                                                                                              block_path):
                 built_node_coords = [node.center for node in self.built]  # returns building node coords
                 built_diags = [(node[0] + dir[0] * self.NODE_SIZE, node[1] + dir[1] * self.NODE_SIZE)
-                               for node in built_node_coords for dir in src.legal.DIAGONAL_DIRS if
+                               for node in built_node_coords for dir in src.pathfinding.DIAGONAL_DIRS if
                                is_block_traversable(self, (
                                node[0] + dir[0] * self.NODE_SIZE, node[1] + dir[1] * self.NODE_SIZE))]
                 nearest_builts = src.pathfinding.find_nearest(self, *node_pos1, built_diags, 5, 30, 10)
@@ -1331,7 +1314,7 @@ class State:
                 found_bend = False
                 for built in nearest_builts:
                     if found_bend == True: break
-                    for diag in src.legal.DIAGONAL_DIRS:
+                    for diag in src.pathfinding.DIAGONAL_DIRS:
                         nx = self.NODE_SIZE * diag[0] + built[0]
                         nz = self.NODE_SIZE * diag[1] + built[1]
                         if (nx, nz) in closed: continue
@@ -1713,7 +1696,7 @@ class State:
                 add_aux_block(self, x, y, z, 0, -1, type, facing, is_diagonal, dx, dz)
 
         blocks_ordered, blocks_set = set_blocks_for_path(self, block_path, inner_block_rate)
-        for card in src.legal.CARDINAL_DIRS:
+        for card in src.pathfinding.CARDINAL_DIRS:
             aux_path = []
             for block in block_path:
                 # Clamp
@@ -1787,6 +1770,7 @@ class State:
                                   use_bend=bend_if_needed)  # , only_place_if_walkable=only_place_if_walkable, dont_rebuild)
         if status == False:
             return False
+        self.road_count += 1
         return True
 
     def get_point_to_close_gap_minor(self, x1, z1, points):

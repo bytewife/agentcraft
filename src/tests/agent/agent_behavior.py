@@ -27,7 +27,7 @@ sim = src.simulation.Simulation(area, rendering_step_duration=1, run_start=False
 
 sim.state.saplings.append((4,4))
 
-ag = src.agent.Agent(sim.state, 3, 3, sim.state.rel_ground_hm, "George", """SkullOwner:{Id:[I;412153319,853231097,-1973860048,684905748],Properties:{textures:[{Value:"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYjI0M2NkMmUyYjMxMWExMzY5Zjg2M2FmMWIzMjNiOTkxNzRhM2JkM2E5OTFjMWI0NDA3MzAxYTI2NGNlZTZmYyJ9fX0="}]}}""", motive=src.agent.Agent.Motive.REPLENISH_TREE.name)
+ag = src.agent.Agent(sim.state, 3, 3, sim.state.rel_ground_hm, "George", """SkullOwner:{Id:[I;412153319,853231097,-1973860048,684905748],Properties:{textures:[{Value:"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYjI0M2NkMmUyYjMxMWExMzY5Zjg2M2FmMWIzMjNiOTkxNzRhM2JkM2E5OTFjMWI0NDA3MzAxYTI2NGNlZTZmYyJ9fX0="}]}}""", action=src.agent.Agent.Action.REPLENISH_TREE.name)
 sim.add_agent(ag, use_auto_motive=False)
 
 sim.step(14)

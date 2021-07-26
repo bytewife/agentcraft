@@ -62,35 +62,35 @@ STRUCTURES = {
         ("ornamental_tree_1_flex", 15),
     ],
     "small": [
-        ("tiny_house_1", 35),
-        ("tiny_house_2", 35),
-        ("tiny_house_3", 35),
-        ("tiny_house_4", 35),
-        ("storage_1_flex", 35),
+        ("tiny_house_1", 30),
+        ("tiny_house_2", 30),
+        ("tiny_house_3", 30),
+        ("tiny_house_4", 30),
+        ("storage_1_flex", 30),
         # need to give these heads
-        ("tiny_house_1_flex", 35),
-        ("tiny_house_2_flex", 35),
-        ("tiny_house_3_flex", 35),
-        ("tiny_house_4_flex", 35),
-        ("storage_1", 35),
+        ("tiny_house_1_flex", 30),
+        ("tiny_house_2_flex", 30),
+        ("tiny_house_3_flex", 30),
+        ("tiny_house_4_flex", 30),
+        ("storage_1", 30),
     ],
     "med": [
-        ("small_house_1_flex", 50),
-        ("small_house_2_flex", 50),
-        ("small_house_3_flex", 50),
-        ("small_house_4_flex", 50),
-        ("med_house_1_flex_keep_dark", 50),
-        ("med_house_2_flex", 50),
-        ("med_house_3_flex", 50),
-        ("med_house_4_flex", 50),
-        ("med_house_5_flex", 50),
-        ("tower_1", 50),
-        ("tower_1_flex", 50),
+        ("small_house_1_flex", 40),
+        ("small_house_2_flex", 40),
+        ("small_house_3_flex", 40),
+        ("small_house_4_flex", 40),
+        ("med_house_1_flex_keep_dark", 40),
+        ("med_house_2_flex", 40),
+        ("med_house_3_flex", 40),
+        ("med_house_4_flex", 40),
+        ("med_house_5_flex", 40),
+        ("tower_1", 45),
+        ("tower_1_flex", 45),
     ],
     "large": [
-        ("church_1_flex", 70),
-        ("church_2_flex", 70),
-        ("castle_1_flex", 70),
+        ("church_1_flex", 50),
+        ("church_2_flex", 50),
+        ("castle_1_flex", 50),
     ],
 }
 
@@ -686,3 +686,6 @@ def get_heightmap(world_slice, heightmap_type="MOTION_BLOCKING_NO_LEAVES", y_off
             for z in range(len(heightmap[x])):
                 heightmap[x][z] += y_offset
     return np.array(heightmap, dtype=np.uint8)
+
+def clamp(x, a, b):
+    return max(min(x, b), a)

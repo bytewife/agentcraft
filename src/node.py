@@ -2,7 +2,7 @@
 ###Node Class
 3x3 areas of blocks that the settlement is built upon
 """
-
+import src.pathfinding
 import src.utils
 import src.legal
 import math
@@ -126,7 +126,7 @@ class Node:
 
     def gen_adjacent_centers(self, state):
         adj = set()
-        for dir in src.legal.ALL_DIRS:
+        for dir in src.pathfinding.ALL_DIRS:
             pos = (self.center[0] + dir[0] * self.size, self.center[1] + dir[1] * self.size)
             if state.out_of_bounds_Node(*pos): continue
             adj.add(pos)

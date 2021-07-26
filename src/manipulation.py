@@ -7,6 +7,7 @@ __all__ = []
 __author__ = "aith"
 __version__ = "1.0"
 
+import src.pathfinding
 import src.utils
 import src.states
 from enum import Enum
@@ -206,7 +207,7 @@ def cut_tree_at(state, x, y, z, times=1):
             if log_type[0] == 'j':  # put jungle saplings in same spot
                 found_new_spot = True
             else:
-                for dir in src.legal.ALL_DIRS:
+                for dir in src.pathfinding.ALL_DIRS:
                     tx = x + dir[0]
                     tz = z + dir[1]
                     if state.out_of_bounds_2D(tx, tz):
