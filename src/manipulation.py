@@ -12,7 +12,6 @@ import src.utils
 import src.states
 from enum import Enum
 from random import randint, random, choice
-import src.legal
 import math
 
 

@@ -14,7 +14,6 @@ from enum import Enum
 import src.pathfinding
 import src.states
 import src.manipulation
-import src.legal
 import src.utils
 import src.scheme_utils
 import src.chronicle

@@ -13,7 +13,6 @@ import http_framework.interfaceUtils
 import time
 import src.utils
 import src.agent
-import src.legal
 
 IS_RENDERING_FRAMEWISE = True
 IS_WRITING_CHRONICLE = True

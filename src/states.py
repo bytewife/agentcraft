@@ -10,7 +10,6 @@ import http_framework.interfaceUtils
 import http_framework.worldLoader
 
 import src.utils
-import src.legal
 import src.pathfinding
 import src.scheme_utils
 import src.agent

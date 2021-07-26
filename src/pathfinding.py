@@ -15,7 +15,6 @@ import numpy as np
 from numpy import full_like
 from scipy.spatial import KDTree
 
-import src.legal
 from bitarray.util import count_xor, rindex
 
 import src.utils

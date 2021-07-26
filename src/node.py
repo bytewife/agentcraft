@@ -4,7 +4,6 @@
 """
 import src.pathfinding
 import src.utils
-import src.legal
 import math
 
 class Node:
