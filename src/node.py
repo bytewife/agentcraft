@@ -54,7 +54,7 @@ class Node:
                 node = self.state.nodes(*pos)
                 if node.type == None:
                     node.get_type()
-                if "WATER" in node.type:
+                if src.utils.TYPE.WATER.name in node.type:
                     continue
                 self.range_cached.add(node)
             self.gend_range = True

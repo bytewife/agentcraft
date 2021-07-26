@@ -67,6 +67,7 @@ class State:
             self.rel_ground_hm = self.gen_rel_ground_hm(self.abs_ground_hm)  # Gen relative heighmap
             self.static_ground_hm = self.gen_static_ground_hm(self.rel_ground_hm)  # Gen unchanging rel heightmap
             self.heightmaps = world_slice.heightmaps
+            self.water_set = set()
             self.built = set()  # Bulding nodes
             self.foreign_built = set()  # non-generated Building nodes
             self.ROAD_CHOICE = random.choice(src.utils.ROAD_BLOCKS)
@@ -309,7 +310,7 @@ class State:
                         is_valid = False
                         break
                     for tile in node.get_tiles():
-                        if tile in self.water or tile in self.lava:
+                        if tile in self.water_set or tile in self.lava:
                             is_valid = False
                             break
                     tiles += 1
@@ -398,11 +399,16 @@ class State:
                     if block in src.utils.BLOCK_TYPE.tile_sets[src.utils.TYPE.MAJOR_ROAD.value]:
                         fill = "minecraft:dirt"
                         set_state_block(self, tx, self.static_ground_hm[tx][tz] - 1, tz, fill)
+                    elif block in src.utils.BLOCK_TYPE.tile_sets[src.utils.TYPE.WATER.value]:
+                        block = "minecraft:scaffolding"
                     if len(traverse) > 1:
                         for y in traverse:
                             set_state_block(self, tx, y, tz, fill)
                         block = wood_type + '_planks'
                     elif len(traverse) == 1:
+                        if block in src.utils.BLOCK_TYPE.tile_sets[src.utils.TYPE.WATER.value]  \
+                                or block in src.utils.BLOCK_TYPE.tile_sets[src.utils.TYPE.PASSTHROUGH.value]:
+                            block = "minecraft:scaffolding"
                         set_state_block(self, tx, py - 1, tz, block)
                     set_state_block(self, tx, py, tz, block)
         return True
@@ -712,7 +718,7 @@ class State:
         zlen = self.len_z
         if xlen == 0 or zlen == 0:
             print("  Attempt: gen_types has empty lengths.")
-        types = [["str" for j in range(zlen)] for i in range(xlen)]
+        types = [["" for j in range(zlen)] for i in range(xlen)]
 
         def add_blocks_near_land(x, z):
             for dir in src.pathfinding.CARDINAL_DIRS:
@@ -721,24 +727,25 @@ class State:
         for x in range(xlen):
             for z in range(zlen):
                 type_name = self.determine_type(x, z, heightmap).name
-                if type_name == "WATER":
+                if type_name == src.utils.TYPE.WATER.name:
                     self.water.append((x, z))
-                elif type_name == "BROWN":
+                    self.water_set.add((x, z))
+                elif type_name == src.utils.TYPE.BROWN.name:
                     add_blocks_near_land(x, z)
-                elif type_name == "GREEN":
+                elif type_name == src.utils.TYPE.GREEN.name:
                     add_blocks_near_land(x, z)
-                elif type_name == "TREE":
+                elif type_name == src.utils.TYPE.TREE.name:
                     self.trees.append((x, z))
                     add_blocks_near_land(x, z)
-                elif type_name == "ROAD":
+                elif type_name == src.utils.TYPE.MAJOR_ROAD.name:
                     nptr = self.node_pointers[(x, z)]
                     if nptr != None:
                         node = self.nodes(*nptr)
                         self.roads.append(node)
-                        self.road_nodes.add(node)
-                elif type_name == "LAVA":
+                        self.road_nodes.append(node)
+                elif type_name == src.utils.TYPE.LAVA.name:
                     self.lava.add((x, z))
-                elif type_name == "FOREIGN_BUILT":
+                elif type_name == src.utils.TYPE.FOREIGN_BUILT.name:
                     node_ptr = self.node_pointers[(x, z)]
                     if node_ptr:
                         node = self.nodes(node_ptr)
