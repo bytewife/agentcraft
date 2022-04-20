@@ -4,8 +4,6 @@ Video demos:
 + [Mountain Settlement](https://www.youtube.com/watch?v=Gc5h54Bus_k)  
 + [Supercut](https://youtu.be/DGLiWOxWLig)  
 
-Paper (WIP) [here](https://aith.github.io/assets/pdf/AgentCraft__EXAG_2021__.draft1.pdf)
-
 ![Timelapse gif](img/demo.gif)
 
 ## How to Run
