@@ -5,6 +5,7 @@ Video demos:
 + [Mountain Settlement](https://www.youtube.com/watch?v=Gc5h54Bus_k)  
 + [Supercut](https://youtu.be/DGLiWOxWLig)  
 + [Misc](https://www.youtube.com/watch?v=QM6RB2U0kEw&feature=youtu.be)
++ [Paper](https://escholarship.org/uc/item/83p272pq)
 
 ![Timelapse gif](img/demo.gif)
 
